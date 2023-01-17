@@ -1,0 +1,5 @@
+name: swarm-learning
+channels:
+  - defaults
+dependencies:
+  - black
