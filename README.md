@@ -8,6 +8,7 @@ To import our environment for the first time:
 
 ```bash
 conda env create -n swarm-learning --file conda-environment.yml
+make env-update
 ```
 
 ## Exporting a new environment
