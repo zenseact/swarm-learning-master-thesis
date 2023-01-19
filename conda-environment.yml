@@ -2,4 +2,9 @@ name: swarm-learning
 channels:
   - defaults
 dependencies:
+  - ipykernel
+  - pip
   - black
+  - matplotlib
+  - pytorch
+  - torchvision
