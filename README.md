@@ -1,36 +1,23 @@
-# Development
+# Quick installation for command line tools including pytorch and ZOD sdk
 
-We suggest that you use Anaconda and the provided environments. If you have not installed Anaconda please visit https://docs.conda.io/projects/conda/en/latest/user-guide/install/
+* Download Anaconda Python from https://www.anaconda.com/distribution/ if you don't have it locally.
 
-## Getting started
+* After installation, run the command `conda init`
 
-To import our environment for the first time:
+* Close all terminal windows currently open (the conda init step above will not have any effect on existing terminal windows - only on new ones).
 
-```bash
-conda env create -n swarm-learning --file conda-environment.yml
-make env-update
-```
+* Run the following command in the terminal if you intend to use cpu (Mac or Linux)
 
-## Exporting a new environment
+`conda env create -f conda-environment-files/conda-environment-cpu-unix.yml`
 
-If you are developing and adding new requirements/dependencies for the conda environment. Ensure to export this updated environment.
+* OR the following if you use GPU (customize cuda version if neaded). This works on Mac and Linux.
+* Note! You need to change the version of CUDA drivers in the yml script before running the following command so you don't get inconsistent version with TorchVision  
 
-```makefile
-make env-export
-```
+`conda env create -f conda-environment-files/conda-environment-gpu-unix.yml`
 
-## Updating your environment
+* Run
 
-If there have been new dependencies added that are not in your local conda environment. You can update and prune your environment using
+`conda activate zen`
 
-```makefile
-make env-update
-```
+Now you have a virtual environment from which you can use all functionalities in the ZOD sdk and you have pytorch installed also!
 
-## Code submission
-
-When committing to this repository, ensure that you have run black to properly format your code.
-
-```makefile
-make black
-```
