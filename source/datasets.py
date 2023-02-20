@@ -77,11 +77,11 @@ class ZodDataset(Dataset):
         return image, label
 
 
-def main():
-    nr_clients = 2
-    subset_factor = SUBSET_FACTOR
-    img_size = IMG_SIZE
-    batch_size = BATCH_SIZE
+def main(
+        nr_clients=2,
+        subset_factor=SUBSET_FACTOR,
+        img_size=IMG_SIZE,
+        batch_size=BATCH_SIZE):
 
     # import Zod data into memory
     zod = ZODImporter(subset_factor=subset_factor, img_size=img_size, batch_size=batch_size)

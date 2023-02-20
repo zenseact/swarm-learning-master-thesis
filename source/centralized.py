@@ -48,13 +48,13 @@ class Centralized_Simulator:
         return float(loss), len(valloader), {"accuracy": float(accuracy) if accuracy else None}
 
 
-def main():
-    nr_clients = 2
-    nr_local_epochs = 2
-    subset_factor = SUBSET_FACTOR
-    img_size = IMG_SIZE
-    batch_size = BATCH_SIZE
-    device = DEVICE
+def main(
+        nr_clients=2,
+        nr_local_epochs=2,
+        subset_factor=SUBSET_FACTOR,
+        img_size=IMG_SIZE,
+        batch_size=BATCH_SIZE,
+        device=DEVICE):
 
     # import Zod data into memory
     zod = ZODImporter(subset_factor=subset_factor, img_size=img_size, batch_size=batch_size)
