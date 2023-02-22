@@ -11,26 +11,22 @@ def main():
     parser = argparse.ArgumentParser(
         prog="holisticpath",
         usage="holistic path project runner",
-        description="""choose one of the following modules to run and choose its\
-                        arguments. If Arguments are not specified, the default argu\
-                       ments specified in static_parameters.py will apply. 
-    Note th\
-                       at centralized, federated and swarm choices doesn't neet you\
+        description="""choose one of the following modules to run and choose its
+                        arguments. If Arguments are not specified, the default
+                        arguments specified in static_parameters.py will apply. 
+                        Note that centralized, federated and swarm choices doesn't neet you
                         to run datasets first
 
     modules:
-    --module = dataset, central\
-                       ized, federated and swarm
+    --module = dataset, centralized, federated and swarm
 
     args:
     --nr_clients
-    --nr_local_epo\
-                       chs
+    --nr_local_epochs
     --nr_global_rounds
     --subset_factor
     --img_size
-    --batch_si\
-                       ze
+    --batch_size
     --device"""
     )
     parser.add_argument(

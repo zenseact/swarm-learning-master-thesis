@@ -6,7 +6,7 @@ dependencies:
 - python=3.9
 - pytorch=1.12.1
 - torchvision=0.13
-- cudatoolkit=11.3
+#- cudatoolkit=11.7
 - pip
 - numpy
 - jupyter
@@ -17,7 +17,7 @@ dependencies:
 - seaborn
 - nltk
 - h5py
-- spacy
+- spacy                            
 - unidecode
 - pip:
   - future
@@ -47,3 +47,4 @@ dependencies:
   - tqdm
   - numba
   - networkx
+  - torch summary

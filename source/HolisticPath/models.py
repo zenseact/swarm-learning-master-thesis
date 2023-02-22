@@ -9,7 +9,8 @@ class Net(nn.Module):
         nr_cv = 2
         # get the dimentions correct
         size_before_fc = IMG_SIZE
-        for i in range(0, nr_cv): size_before_fc = (size_before_fc - 2 * stride) // 2
+        for i in range(0, nr_cv):
+            size_before_fc = (size_before_fc - 2 * stride) // 2
 
         self.conv = nn.Sequential(
             nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, stride=stride, padding=0),
