@@ -109,10 +109,21 @@ def main():
                   img_size=args.img_size,
                   batch_size=args.batch_size)
     else:
-        run_datasets(nr_clients=args.nr_clients,
-                     subset_factor=args.subset_factor,
-                     img_size=args.img_size,
-                     batch_size=args.batch_size)
+        run_centralized(nr_clients=args.nr_clients,
+                        nr_local_epochs=args.nr_local_epochs,
+                        subset_factor=args.subset_factor,
+                        img_size=args.img_size,
+                        batch_size=args.batch_size,
+                        tb_path=TB_PATH,
+                        centralized_subpath=TB_CENTRALIZED_SUB_PATH)
+
+        run_federated(nr_clients=args.nr_clients,
+                      nr_local_epochs=args.nr_local_epochs,
+                      nr_global_rounds=args.nr_global_rounds,
+                      subset_factor=args.subset_factor,
+                      img_size=args.img_size,
+                      batch_size=args.batch_size,
+                      tb_path=TB_PATH)
 
 
 if __name__ == "__main__":

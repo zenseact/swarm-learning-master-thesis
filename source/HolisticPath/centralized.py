@@ -2,13 +2,15 @@ from utilities import *
 from datasets import *
 
 
-class Centralized_Simulator:
+class CentralizedSimulator:
 
-    def __int__(self, trainloaders, valloaders, testloader, device=DEVICE):
+    def __init__(self, trainloaders, valloaders, testloader, device=DEVICE, tb_path=None, centralized_subpath=None):
         self.trainloaders = trainloaders
         self.valloaders = valloaders
         self.testloader = testloader
         self.device = device
+        self.tb_path = tb_path
+        self.centralized_subpath=centralized_subpath
 
     def sim_cen(self, print_summery=False, nr_local_epochs=NUM_LOCAL_EPOCHS):
         # create the net
@@ -28,6 +30,8 @@ class Centralized_Simulator:
         if (print_summery):
             print(summary(net, trainloader.dataset[0][0].shape))
 
+        writer = SummaryWriter(self.tb_path)
+
         # train & val
         train(
             net,
@@ -37,7 +41,10 @@ class Centralized_Simulator:
             contin_val=True,
             plot=True,
             verbose=0,
-            model_name=f"Centralized"
+            model_name=f"Centralized",
+            tb_subpath=self.centralized_subpath,
+            tb_writer=writer,
+            server_round=1
         )
         loss, accuracy = test(net, self.testloader)
         if (ML_TASK == TASK.CLASSIFICATION):
@@ -45,6 +52,7 @@ class Centralized_Simulator:
         else:
             print(f"►►► test RMSE {loss}")
 
+        writer.close()
         return float(loss), len(valloader), {"accuracy": float(accuracy) if accuracy else None}
 
 
@@ -54,16 +62,18 @@ def main(
         subset_factor=SUBSET_FACTOR,
         img_size=IMG_SIZE,
         batch_size=BATCH_SIZE,
-        device=DEVICE):
+        device=DEVICE,
+        tb_path=TB_PATH,
+        centralized_subpath=TB_CENTRALIZED_SUB_PATH):
 
     # import Zod data into memory
-    zod = ZODImporter(subset_factor=subset_factor, img_size=img_size, batch_size=batch_size)
+    zod = ZODImporter(subset_factor=subset_factor, img_size=img_size, batch_size=batch_size, tb_path=tb_path)
 
     # create pytorch loaders
     trainloaders, valloaders, testloader = zod.load_datasets(nr_clients)
 
     # create federated simulator
-    cen_sim = Centralized_Simulator(trainloaders, valloaders, testloader, device)
+    cen_sim = CentralizedSimulator(trainloaders, valloaders, testloader, device, tb_path, centralized_subpath)
 
     # simulate federated learning
     cen_sim.sim_cen(print_summery=False, nr_local_epochs=nr_local_epochs)

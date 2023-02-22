@@ -1,8 +1,8 @@
 from static_params import *
-
+from utilities import *
 
 class ZODImporter:
-    def __init__(self, root=None, subset_factor=SUBSET_FACTOR, img_size=IMG_SIZE, batch_size=BATCH_SIZE):
+    def __init__(self, root=None, subset_factor=SUBSET_FACTOR, img_size=IMG_SIZE, batch_size=BATCH_SIZE, tb_path=None):
         dataset_root = root if root else "/staging/dataset_donation/round_2"
         version = "full"  # "mini" or "full"
         self.zod_frames = ZodFrames(dataset_root=dataset_root, version=version)
@@ -17,8 +17,10 @@ class ZODImporter:
         print('validation_frames length:', len(self.validation_frames))
         self.img_size = img_size
         self.batch_size = batch_size
+        self.tb_path = tb_path
 
     def load_datasets(self, num_clients: int):
+        seed = 42
         transform = transforms.Compose([transforms.ToTensor(), transforms.Resize((self.img_size, self.img_size))])
 
         trainset = ZodDataset(zod_frames=self.zod_frames, frames_id_set=self.training_frames, transform=transform)
@@ -28,19 +30,26 @@ class ZODImporter:
         partition_size = len(trainset) // num_clients
         lengths = [partition_size] * (num_clients - 1)
         lengths.append(len(trainset) - sum(lengths))
-        datasets = random_split(trainset, lengths, torch.Generator().manual_seed(42))
+        datasets = random_split(trainset, lengths, torch.Generator().manual_seed(seed))
 
         # Split each partition into train/val and create DataLoader
-        trainloaders = []
-        valloaders = []
+        trainloaders, valloaders = [], []
+        lengths_train, lengths_val = [], []
         for ds in datasets:
-            len_val = len(ds) * VAL_FACTOR
-            len_train = len(ds) - len_val
+            len_val = int(len(ds) * VAL_FACTOR)
+            len_train = int(len(ds) - len_val)
+            lengths_train.append(len_train)
+            lengths_val.append(len_val)
             lengths = [len_train, len_val]
-            ds_train, ds_val = random_split(ds, lengths, torch.Generator().manual_seed(42))
+            ds_train, ds_val = random_split(ds, lengths, torch.Generator().manual_seed(seed))
             trainloaders.append(DataLoader(ds_train, batch_size=self.batch_size, shuffle=True))
             valloaders.append(DataLoader(ds_val, batch_size=self.batch_size))
         testloader = DataLoader(testset, batch_size=self.batch_size)
+
+        """report to tensor board"""
+        save_dataset_tb_plot(self.tb_path, lengths_train, "training", seed)
+        save_dataset_tb_plot(self.tb_path, lengths_val, "validation", seed)
+
         return trainloaders, valloaders, testloader
 
 

@@ -48,5 +48,6 @@ dependencies:
   - tqdm
   - numba
   - networkx
+  - tensorboard
   
   

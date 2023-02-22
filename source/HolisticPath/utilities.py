@@ -4,12 +4,16 @@ from models import *
 
 def train(net, trainloader, valloader,
           epochs: int, contin_val=True, plot=True,
-          client_cid=None, verbose=0, model_name=""):
+          client_cid=None, verbose=0, model_name="",
+          tb_subpath=None, tb_writer=None, server_round=1):
     """Train the network on the training set."""
     print(
         f'⇉ Started transfer learning of model {model_name}' if net.is_pretrained else f'Started normal learning of model {model_name}')
     num_batches = len(trainloader)
     print_every = (num_batches // 3) if (num_batches // 3) != 0 else 1
+
+    """tensor board publish"""
+    running_batch_index = 1 + (server_round - 1) * len(trainloader)
 
     criterion = torch.nn.CrossEntropyLoss() if ML_TASK == TASK.CLASSIFICATION else torch.nn.MSELoss()
     optimizer = torch.optim.Adam(net.model_parameters())
@@ -34,6 +38,14 @@ def train(net, trainloader, valloader,
             epoch_loss.append(loss.item())
             total += labels.size(0)
 
+            if tb_writer is not None:
+                tb_writer.add_scalars(
+                    tb_subpath + "batch",
+                    {"train": loss.item()},
+                    running_batch_index,
+                )
+            running_batch_index += 1
+
             if (ML_TASK == TASK.CLASSIFICATION):
                 correct += (torch.max(outputs.data, 1)[1] == labels).sum().item()
 
@@ -43,8 +55,15 @@ def train(net, trainloader, valloader,
 
         epoch_loss = np.mean(epoch_loss)
         epoch_val_loss, epoch_val_accuracy = test(net, valloader)
-        losses.append(epoch_loss);
-        val_losses.append(epoch_val_loss);
+        losses.append(epoch_loss)
+        val_losses.append(epoch_val_loss)
+
+        if tb_writer is not None:
+            tb_writer.add_scalars(
+                tb_subpath + "epoch",
+                {"train": np.mean(epoch_loss), "validation": np.mean(epoch_val_loss)},
+                (server_round - 1) * epochs + epoch + 1,
+            )
 
         if (ML_TASK == TASK.CLASSIFICATION):
             epoch_acc = correct / total
@@ -189,3 +208,16 @@ def plot_client_losses(clients_data):
         fig, ax = plt.subplots(ncols=1, figsize=(8, 4))
         plot_metrics([ax], [[client.losses, client.val_losses]], ['RMSE Loss'], ['Number of epochs'],
                      [['Train', 'Val']])
+
+
+def save_dataset_tb_plot(tb_path, sample_distribution, subtitle, seed):
+    plt.bar(list(range(1, len(sample_distribution) + 1)), sample_distribution)
+    plt.xlabel("Partitions")
+    plt.ylabel("Samples")
+    plt.suptitle("Distribution of samples")
+    plt.title("%s, seed: %s" % (subtitle, seed)),
+
+    """report to tensor board"""
+    writer = SummaryWriter(tb_path)
+    writer.add_figure("sample_distribution/%s" % (subtitle), plt.gcf(), global_step=0)
+    writer.close()
