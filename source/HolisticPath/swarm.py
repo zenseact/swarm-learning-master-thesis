@@ -8,7 +8,7 @@ class SwarmClient:
         STARTED_GLOBAL_ROUND = 2
         BUZY = 3
 
-    def __init__(self, cid, net, trainloader, valloader):
+    def __init__(self, cid, net, trainloader, valloader, nr_local_epochs=NUM_LOCAL_EPOCHS):
         self.cid = cid
         self.net = net
         self.trainloader = trainloader
@@ -21,6 +21,7 @@ class SwarmClient:
         self.status = SwarmClient.Status.READY
         self.absance_thresould = 0
         self.check_interval = 5  # seconds
+        self.nr_local_epochs = nr_local_epochs
 
     def get_parameters(self):
         return self.net.state_dict()
@@ -31,7 +32,7 @@ class SwarmClient:
             self.net,
             self.trainloader,
             self.valloader,
-            epochs=NUM_LOCAL_EPOCHS,
+            epochs=self.nr_local_epochs,
             contin_val=True,
             plot=True,
             verbose=0,
@@ -46,7 +47,7 @@ class SwarmClient:
         """spawn a thread that run the client participation logic
         then aggregates asyncronously"""
         print(f"🚧🚧🚧[Client {self.cid}] {round_info} has started.🚧🚧🚧")
-        self.update_status(Client.Status.STARTED_GLOBAL_ROUND)
+        self.update_status(SwarmClient.Status.STARTED_GLOBAL_ROUND)
         t = threading.Thread(target=self.async_participate_in_global_round,
                              args=(clients_network, edges, round_info,))
         t.start()
@@ -168,7 +169,7 @@ class SwarmClient:
 
 
 class SwarmSimulator:
-    def __int__(self, device, trainloaders, valloaders, testloader, nr_local_epochs=NUM_LOCAL_EPOCHS):
+    def __init__(self, device, trainloaders, valloaders, testloader, nr_local_epochs=NUM_LOCAL_EPOCHS):
         self.trainloaders = trainloaders
         self.valloaders = valloaders
         self.testloader = testloader
@@ -179,7 +180,7 @@ class SwarmSimulator:
         net = net_instance(f"client {cid}")
         trainloader = self.trainloaders[int(cid)]
         valloader = self.valloaders[int(cid)]
-        client = SwarmClient(cid, net, trainloader, valloader)
+        client = SwarmClient(cid, net, trainloader, valloader, nr_local_epochs=self.nr_local_epochs)
         return client
 
     def perform_global_round(self, clients_network, edges, round_number, client_cid_subset=None):
