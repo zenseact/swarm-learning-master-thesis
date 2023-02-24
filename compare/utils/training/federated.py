@@ -3,31 +3,44 @@ import importlib
 import logging
 import numpy as np
 import flwr as fl
+import ray
 
 from torch.nn import Module
 from torch import Tensor, Size
 from torch.utils.tensorboard import SummaryWriter
 from typing import Dict, List, Optional, Tuple
 from torch.utils.data import DataLoader
+from pathlib import Path
+from datetime import datetime
 
-from utils import load_model, ZODHandler as Data
+from utils import load_model
 from utils.training import train, test
+
+logger = logging.getLogger(__name__)
 
 
 def run_federated(
     config: dict,
-    training_loaders: List[DataLoader],
-    validation_loaders: List[DataLoader],
-    test_loader: DataLoader,
+    data: object,
     log_dir: str,
 ) -> None:
+    logger.info("Initialising federated learning runtime")
+    # Start the timer for federated training duration
+    start_time = datetime.now()
+
     # Some parameters for federated learning
     n_clients = config["federated"]["global"]["n_clients"]
     global_rounds = config["federated"]["global"]["global_rounds"]
     client_resources = config["federated"]["global"]["client_resources"]
+    ray_init_args = config["federated"]["global"]["ray_init_args"]
+
+    # None-deep references to the dataloaders
+    train_loaders = data.train.dataloaders
+    val_loaders = data.val.dataloaders
+    test_loader = data.test.dataloader
 
     # Load the loss function
-    loss_method = config["central"]["loss"]
+    loss_method = config["model"]["loss"]
     module = importlib.import_module("torch.nn")
     loss_function = getattr(module, loss_method)
 
@@ -49,9 +62,9 @@ def run_federated(
 
         writer = SummaryWriter(log_dir)
 
-        writer.add_scalars(
-            "federated/loss",
-            {"global": np.mean(test_loss)},
+        writer.add_scalar(
+            "federated/loss/global",
+            np.mean(test_loss),
             server_round,
         )
 
@@ -75,13 +88,21 @@ def run_federated(
 
     # Define the client function
     def client_fn(cid: str) -> FlowerClient:
+        logger = logging.getLogger(__name__)
+        logging.basicConfig(
+            filename="{}.log".format(Path(log_dir, "federated_{}".format(cid))),
+            encoding="utf-8",
+            level=logging.DEBUG,
+            format="%(asctime)s %(levelname)s %(name)s %(message)s",
+        )
+        logger.debug("Creating client %s", cid)
         model = load_model(config)
         if config["federated"]["global"]["client_resources"]["num_gpus"] > 0:
             model.to("cuda")
         else:
             model.to("cpu")
-        trainloader = training_loaders[int(cid)]
-        valloader = validation_loaders[int(cid)]
+        trainloader = train_loaders[int(cid)]
+        valloader = val_loaders[int(cid)]
         client = FlowerClient(
             config,
             cid,
@@ -93,13 +114,24 @@ def run_federated(
         return client
 
     # Start the federated learning simulation
+    logger.debug("Starting federated learning simulation")
     fl.simulation.start_simulation(
         client_fn=client_fn,
         num_clients=n_clients,
         config=fl.server.ServerConfig(num_rounds=global_rounds),
+        ray_init_args=ray_init_args,
         client_resources=client_resources,
         strategy=strategy,
     )
+    # Shutdown the ray cluster
+    ray.shutdown()
+
+    # Calculate the training duration
+    end_time = datetime.now()
+    soft_duration = str(end_time - start_time).split(".")[0]
+
+    # Log that training is finished
+    logger.info("Finished federated training after: {}".format(soft_duration))
 
 
 # A method that fetches the model weights
@@ -132,19 +164,19 @@ class FlowerClient(fl.client.NumPyClient):
         self.writer = SummaryWriter(log_dir)
 
         # Load the loss function
-        loss_method = config["central"]["loss"]
+        loss_method = config["model"]["loss"]
         module = importlib.import_module("torch.nn")
         self.loss_function = getattr(module, loss_method)
 
     def get_parameters(self, config):
-        logging.debug("Get model parameters of client %s", self.cid)
+        logger.debug("Get model parameters of client %s", self.cid)
         return get_parameters(self.net)
 
     def fit(self, parameters, config):
-        logging.debug("Start training of client %s", self.cid)
+        logger.debug("Start training of client %s", self.cid)
         set_parameters(self.net, parameters)
-        print("SERVER ROUND", config["server_round"])
-        epoch_loss, batch_losses = train(
+        logger.info("SERVER ROUND: {}".format(config["server_round"]))
+        mean_epoch_loss, batch_losses, mean_validation_loss, network = train(
             network=self.net,
             trainloader=self.trainloader,
             valloader=self.valloader,
@@ -158,7 +190,7 @@ class FlowerClient(fl.client.NumPyClient):
         return new_parameters, len(self.trainloader), {}
 
     def evaluate(self, parameters, config):
-        logging.debug("Start evaluation of client %s", self.cid)
+        logger.debug("Start evaluation of client %s", self.cid)
         set_parameters(self.net, parameters)
         val_loss = test(
             network=self.net,
