@@ -3,7 +3,7 @@ from utilities import *
 
 class ZODImporter:
     def __init__(self, root=None, subset_factor=SUBSET_FACTOR, img_size=IMG_SIZE, batch_size=BATCH_SIZE, tb_path=None):
-        dataset_root = root if root else "/staging/dataset_donation/round_2"
+        dataset_root = root if root else "/mnt/ZOD"
         version = "full"  # "mini" or "full"
         self.zod_frames = ZodFrames(dataset_root=dataset_root, version=version)
 
@@ -14,7 +14,7 @@ class ZODImporter:
         self.validation_frames = validation_frames_all[:int(len(validation_frames_all) * subset_factor)]
 
         print('training_frames length:', len(self.training_frames))
-        print('validation_frames length:', len(self.validation_frames))
+        print('test_frames length:', len(self.validation_frames))
         self.img_size = img_size
         self.batch_size = batch_size
         self.tb_path = tb_path
@@ -44,13 +44,21 @@ class ZODImporter:
             ds_train, ds_val = random_split(ds, lengths, torch.Generator().manual_seed(seed))
             trainloaders.append(DataLoader(ds_train, batch_size=self.batch_size, shuffle=True))
             valloaders.append(DataLoader(ds_val, batch_size=self.batch_size))
+        
+        len_complete_val = int(len(trainset) * VAL_FACTOR)
+        len_complete_train = int(len(trainset) - len_complete_val)
+        train_split, val_split = random_split(trainset, [len_complete_train, len_complete_val], torch.Generator().manual_seed(seed))
+
+        completeTrainloader = DataLoader(train_split, batch_size=self.batch_size)
+        completeValloader = DataLoader(val_split, batch_size=self.batch_size)
+
         testloader = DataLoader(testset, batch_size=self.batch_size)
 
         """report to tensor board"""
         save_dataset_tb_plot(self.tb_path, lengths_train, "training", seed)
         save_dataset_tb_plot(self.tb_path, lengths_val, "validation", seed)
 
-        return trainloaders, valloaders, testloader
+        return trainloaders, valloaders, testloader, completeTrainloader, completeValloader 
 
 
 class ZodDataset(Dataset):
@@ -96,7 +104,7 @@ def main(
     zod = ZODImporter(subset_factor=subset_factor, img_size=img_size, batch_size=batch_size)
 
     # create pytorch loaders
-    trainloaders, valloaders, testloader = zod.load_datasets(nr_clients)
+    trainloaders, valloaders, testloader, completeTrainloader, completeValloader = zod.load_datasets(nr_clients)
 
     print('nr of training imgs:', len(trainloaders[0].dataset))
     print('nr of validation imgs:', len(valloaders[0].dataset))

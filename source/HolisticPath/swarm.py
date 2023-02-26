@@ -287,7 +287,7 @@ def main(
     zod = ZODImporter(subset_factor=subset_factor, img_size=img_size, batch_size=batch_size)
 
     # create pytorch loaders
-    trainloaders, valloaders, testloader = zod.load_datasets(nr_clients)
+    trainloaders, valloaders, testloader, completeTrainloader, completeValloader = zod.load_datasets(nr_clients)
 
     # create federated simulator
     swarm_sim = SwarmSimulator(device, trainloaders, valloaders, testloader, nr_local_epochs=nr_local_epochs)

@@ -23,13 +23,21 @@ def train(net, trainloader, valloader,
     accs = []
     val_losses = []
     val_accs = []
+    training_start_time = timer_start()
     for epoch in range(epochs):
-        correct, total, epoch_acc, epoch_val_accuracy = 0, 0, 0.0, 0.0;
+        correct, total, epoch_acc, epoch_val_accuracy = 0, 0, 0.0, 0.0
         epoch_loss = []
+        epoch_start_time = timer_start()
+        batch_start_time = timer_start()
         for batch_index, (images, labels) in enumerate(trainloader):
+
             images, labels = images.to(DEVICE), labels.to(DEVICE)
             optimizer.zero_grad()
             outputs = net(images)
+
+            outputs = outputs.unsqueeze(0) if outputs.shape[0] != 1 else outputs
+            labels = labels.unsqueeze(0) if labels.shape[0] != 1 else labels
+
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
@@ -50,8 +58,8 @@ def train(net, trainloader, valloader,
                 correct += (torch.max(outputs.data, 1)[1] == labels).sum().item()
 
             if batch_index % print_every == 0 and verbose > 0:
-                print(
-                    f"\tBatch {batch_index}/{num_batches}: Train loss: {sum(epoch_loss[-print_every:]) / print_every:.3f}, ")
+                print(f"\tBatch {batch_index}/{num_batches}: Train loss: {sum(epoch_loss[-print_every:]) / print_every:.3f}, {timer_end(batch_start_time)}")
+                batch_start_time = timer_start()
 
         epoch_loss = np.mean(epoch_loss)
         epoch_val_loss, epoch_val_accuracy = test(net, valloader)
@@ -73,7 +81,9 @@ def train(net, trainloader, valloader,
             print(
                 f" ↪ Client{client_cid} Epoch {epoch + 1}: train loss {epoch_loss}, accuracy {epoch_acc}, val loss {epoch_val_loss}, accuracy {epoch_val_accuracy}")
         else:
-            print(f" ↪ Client{client_cid} Epoch {epoch + 1}: train loss {epoch_loss},\t val loss {epoch_val_loss}")
+            print(f" ↪ Client{client_cid} Epoch {epoch + 1}: train loss {epoch_loss},\t val loss {epoch_val_loss},\t {timer_end(epoch_start_time)}")
+
+    print(f'Complete Training {timer_end(training_start_time)}')
 
     if (plot):
         if (ML_TASK == TASK.CLASSIFICATION):
@@ -221,3 +231,11 @@ def save_dataset_tb_plot(tb_path, sample_distribution, subtitle, seed):
     writer = SummaryWriter(tb_path)
     writer.add_figure("sample_distribution/%s" % (subtitle), plt.gcf(), global_step=0)
     writer.close()
+
+def timer_start():
+    start_time = time.time()
+    return start_time
+
+def timer_end(start_time):
+    end_time = time.time()
+    return f'exec time: {round((end_time - start_time),3)} seconds'

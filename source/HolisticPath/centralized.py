@@ -4,9 +4,9 @@ from datasets import *
 
 class CentralizedSimulator:
 
-    def __init__(self, trainloaders, valloaders, testloader, device=DEVICE, tb_path=None, centralized_subpath=None):
-        self.trainloaders = trainloaders
-        self.valloaders = valloaders
+    def __init__(self, trainloader, valloader, testloader, device=DEVICE, tb_path=None, centralized_subpath=None):
+        self.trainloader = trainloader
+        self.valloader = valloader
         self.testloader = testloader
         self.device = device
         self.tb_path = tb_path
@@ -16,31 +16,27 @@ class CentralizedSimulator:
         # create the net
         net = net_instance("Centralized")
 
-        # data
-        trainloader = self.trainloaders[0]
-        valloader = self.valloaders[0]
-
         # summery
-        print('nr of training imgs:', len(trainloader.dataset))
-        print('nr of validation imgs:', len(valloader.dataset))
+        print('nr of training imgs:', len(self.trainloader.dataset))
+        print('nr of validation imgs:', len(self.valloader.dataset))
         print('nr of test imgs:', len(self.testloader.dataset))
-        print('input shape:', trainloader.dataset[0][0].shape)
-        print('output shape:', trainloader.dataset[0][1].shape)
+        print('input shape:', self.trainloader.dataset[0][0].shape)
+        print('output shape:', self.trainloader.dataset[0][1].shape)
         print(f'training on {self.device}')
         if (print_summery):
-            print(summary(net, trainloader.dataset[0][0].shape))
+            print(summary(net, self.trainloader.dataset[0][0].shape))
 
         writer = SummaryWriter(self.tb_path)
 
         # train & val
         train(
             net,
-            trainloader,
-            valloader,
+            self.trainloader,
+            self.valloader,
             epochs=nr_local_epochs,
             contin_val=True,
             plot=True,
-            verbose=0,
+            verbose=1,
             model_name=f"Centralized",
             tb_subpath=self.centralized_subpath,
             tb_writer=writer,
@@ -53,7 +49,7 @@ class CentralizedSimulator:
             print(f"►►► test RMSE {loss}")
 
         writer.close()
-        return float(loss), len(valloader), {"accuracy": float(accuracy) if accuracy else None}
+        return float(loss), len(self.valloader), {"accuracy": float(accuracy) if accuracy else None}
 
 
 def main(
@@ -70,10 +66,10 @@ def main(
     zod = ZODImporter(subset_factor=subset_factor, img_size=img_size, batch_size=batch_size, tb_path=tb_path)
 
     # create pytorch loaders
-    trainloaders, valloaders, testloader = zod.load_datasets(nr_clients)
+    trainloaders, valloaders, testloader, completeTrainloader, completeValloader = zod.load_datasets(nr_clients)
 
     # create federated simulator
-    cen_sim = CentralizedSimulator(trainloaders, valloaders, testloader, device, tb_path, centralized_subpath)
+    cen_sim = CentralizedSimulator(completeTrainloader, completeValloader, testloader, device, tb_path, centralized_subpath)
 
     # simulate federated learning
     cen_sim.sim_cen(print_summery=False, nr_local_epochs=nr_local_epochs)
