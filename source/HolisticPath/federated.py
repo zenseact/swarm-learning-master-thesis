@@ -138,10 +138,10 @@ class FederatedSimulator:
 
 
 def main(
-        nr_clients=2,
-        nr_local_epochs=2,
-        nr_global_rounds=2,
-        subset_factor=SUBSET_FACTOR,
+        nr_clients=10,
+        nr_local_epochs=10,
+        nr_global_rounds=10,
+        subset_factor=1,
         img_size=IMG_SIZE,
         batch_size=BATCH_SIZE,
         device=DEVICE,

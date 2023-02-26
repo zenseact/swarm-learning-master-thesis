@@ -56,17 +56,17 @@ class ZODImporter:
             lengths_val.append(len_val)
             lengths = [len_train, len_val]
             ds_train, ds_val = random_split(ds, lengths, torch.Generator().manual_seed(seed))
-            trainloaders.append(DataLoader(ds_train, batch_size=self.batch_size, shuffle=True))
-            valloaders.append(DataLoader(ds_val, batch_size=self.batch_size))
+            trainloaders.append(DataLoader(ds_train, batch_size=self.batch_size, shuffle=True, num_workers=10))
+            valloaders.append(DataLoader(ds_val, batch_size=self.batch_size, num_workers=10))
         
         len_complete_val = int(len(trainset) * VAL_FACTOR)
         len_complete_train = int(len(trainset) - len_complete_val)
         train_split, val_split = random_split(trainset, [len_complete_train, len_complete_val], torch.Generator().manual_seed(seed))
 
-        completeTrainloader = DataLoader(train_split, batch_size=self.batch_size)
-        completeValloader = DataLoader(val_split, batch_size=self.batch_size)
+        completeTrainloader = DataLoader(train_split, batch_size=self.batch_size, num_workers=10)
+        completeValloader = DataLoader(val_split, batch_size=self.batch_size, num_workers=10)
 
-        testloader = DataLoader(testset, batch_size=self.batch_size)
+        testloader = DataLoader(testset, batch_size=self.batch_size, num_workers=10)
 
         """report to tensor board"""
         save_dataset_tb_plot(self.tb_path, lengths_train, "training", seed)
