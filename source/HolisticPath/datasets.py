@@ -10,6 +10,9 @@ class ZODImporter:
         training_frames_all = self.zod_frames.get_split(constants.TRAIN)
         validation_frames_all = self.zod_frames.get_split(constants.VAL)
 
+        training_frames_all = [idx for idx in training_frames_all if self.is_valid_frame(idx)]
+        validation_frames_all = [idx for idx in validation_frames_all if self.is_valid_frame(idx)]
+
         self.training_frames = training_frames_all[:int(len(training_frames_all) * subset_factor)]
         self.validation_frames = validation_frames_all[:int(len(validation_frames_all) * subset_factor)]
 
@@ -18,6 +21,17 @@ class ZODImporter:
         self.img_size = img_size
         self.batch_size = batch_size
         self.tb_path = tb_path
+
+    def is_valid_frame(self, frame_id):
+        frame = self.zod_frames[frame_id]
+        poses = frame.ego_motion.poses
+        x = poses[:, 0:1, 3]
+        y = poses[:, 1:2, 3]
+        z = poses[:, 2:3, 3]
+        coordinates = np.append(x, y)
+        coordinates = np.append(coordinates, z)
+        label = coordinates.astype('float32')
+        return label.shape[0] == NUM_OUTPUT
 
     def load_datasets(self, num_clients: int):
         seed = 42

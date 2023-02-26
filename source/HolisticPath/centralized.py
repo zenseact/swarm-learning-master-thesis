@@ -40,7 +40,8 @@ class CentralizedSimulator:
             model_name=f"Centralized",
             tb_subpath=self.centralized_subpath,
             tb_writer=writer,
-            server_round=1
+            server_round=1,
+            client_cid="Centralized"
         )
         loss, accuracy = test(net, self.testloader)
         if (ML_TASK == TASK.CLASSIFICATION):
@@ -54,8 +55,8 @@ class CentralizedSimulator:
 
 def main(
         nr_clients=2,
-        nr_local_epochs=2,
-        subset_factor=SUBSET_FACTOR,
+        nr_local_epochs=10,
+        subset_factor=1,
         img_size=IMG_SIZE,
         batch_size=BATCH_SIZE,
         device=DEVICE,
