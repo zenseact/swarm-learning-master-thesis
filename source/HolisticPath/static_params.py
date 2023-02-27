@@ -34,3 +34,4 @@ now = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
 TB_PATH = f"runs{now}"
 TB_CENTRALIZED_SUB_PATH = "Centralized/loss"
 TB_FEDERATED_SUB_PATH = "Federated/loss"
+TB_SWARM_SUB_PATH = "Swarm/loss"

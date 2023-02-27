@@ -8,7 +8,7 @@ class SwarmClient:
         STARTED_GLOBAL_ROUND = 2
         BUZY = 3
 
-    def __init__(self, cid, net, trainloader, valloader, nr_local_epochs=NUM_LOCAL_EPOCHS):
+    def __init__(self, cid, net, trainloader, valloader, nr_local_epochs=NUM_LOCAL_EPOCHS, tb_path=None, swarm_subpath=None):
         self.cid = cid
         self.net = net
         self.trainloader = trainloader
@@ -22,6 +22,9 @@ class SwarmClient:
         self.absance_thresould = 0
         self.check_interval = 5  # seconds
         self.nr_local_epochs = nr_local_epochs
+        self.tb_path = tb_path
+        self.swarm_subpath = swarm_subpath
+        self.tb_writer = SummaryWriter(self.tb_path)
 
     def get_parameters(self):
         return self.net.state_dict()
@@ -37,7 +40,10 @@ class SwarmClient:
             plot=True,
             verbose=0,
             client_cid=self.cid,
-            model_name=f"client {self.cid} - {round_info}"
+            model_name=f"client {self.cid} - {round_info}",
+            server_round=round_info,
+            tb_writer=self.tb_writer,
+            tb_subpath=f'{self.swarm_subpath}/{self.cid}/'
         )
 
         self.losses.append(losses)
@@ -83,18 +89,6 @@ class SwarmClient:
             self.FedAvg()
         print(f"<- [Client {self.cid}] validating After aggregating:")
         self.validate()
-
-    def FedAvg_(self):
-        averaged_weights = OrderedDict()
-        self_params = self.get_parameters()
-
-        for key in self_params.keys():
-            averaged_weights[key] = (self_params[key] + self.neighbours_agg_model[key]) / (len(self.recieved_from) + 1)
-
-        self.net.load_state_dict(averaged_weights)
-        del averaged_weights
-        self.recieved_from = set([])
-        self.neighbours_agg_model = OrderedDict()
 
     def FedAvg(self):
         averaged_weights = self.get_parameters()
@@ -169,18 +163,27 @@ class SwarmClient:
 
 
 class SwarmSimulator:
-    def __init__(self, device, trainloaders, valloaders, testloader, nr_local_epochs=NUM_LOCAL_EPOCHS):
+    def __init__(self, device, trainloaders, valloaders, testloader, nr_local_epochs=NUM_LOCAL_EPOCHS, tb_path=None, swarm_subpath=None):
         self.trainloaders = trainloaders
         self.valloaders = valloaders
         self.testloader = testloader
         self.device = device
         self.nr_local_epochs = nr_local_epochs
+        self.tb_path = tb_path
+        self.swarm_subpath = swarm_subpath
 
     def create_client(self, cid):
         net = net_instance(f"client {cid}")
         trainloader = self.trainloaders[int(cid)]
         valloader = self.valloaders[int(cid)]
-        client = SwarmClient(cid, net, trainloader, valloader, nr_local_epochs=self.nr_local_epochs)
+        client = SwarmClient(
+            cid, 
+            net,
+            trainloader, 
+            valloader, 
+            nr_local_epochs=self.nr_local_epochs, 
+            tb_path=self.tb_path, 
+            swarm_subpath=self.swarm_subpath)
         return client
 
     def perform_global_round(self, clients_network, edges, round_number, client_cid_subset=None):
@@ -191,12 +194,12 @@ class SwarmSimulator:
             for c_idx in client_cid_subset:
                 client_edges = [e for e in edges if e[0] == c_idx or e[1] == c_idx]
                 clients_network[c_idx].participate_in_global_round(
-                    clients_network, client_edges, round_info=f"global round {round_number}")
+                    clients_network, client_edges, round_info=round_number)
         else:
             for c in clients_network:
                 client_edges = [e for e in edges if e[0] == c.cid or e[1] == c.cid]
                 clients_network[c.cid].participate_in_global_round(
-                    clients_network, client_edges, round_info=f"global round {round_number}")
+                    clients_network, client_edges, round_info=round_number)
 
     def create_fully_connected_graph(self, clients_network):
         nodes = []
@@ -275,25 +278,27 @@ class SwarmSimulator:
 
 
 def main(
-        nr_clients=2,
-        nr_local_epochs=2,
-        nr_global_rounds=2,
-        subset_factor=SUBSET_FACTOR,
+        nr_clients=5,
+        nr_local_epochs=10,
+        nr_global_rounds=3,
+        subset_factor=0.1,
         img_size=IMG_SIZE,
         batch_size=BATCH_SIZE,
-        device=DEVICE):
+        device=DEVICE,
+        tb_path=TB_PATH,
+        tb_swarm=TB_SWARM_SUB_PATH):
 
     # import Zod data into memory
-    zod = ZODImporter(subset_factor=subset_factor, img_size=img_size, batch_size=batch_size, stored_gt_path=STORED_GROUND_TRUTH_PATH)
+    zod = ZODImporter(subset_factor=subset_factor, img_size=img_size, batch_size=batch_size, tb_path=tb_path, stored_gt_path=STORED_GROUND_TRUTH_PATH)
 
     # create pytorch loaders
     trainloaders, valloaders, testloader, completeTrainloader, completeValloader = zod.load_datasets(nr_clients)
 
     # create federated simulator
-    swarm_sim = SwarmSimulator(device, trainloaders, valloaders, testloader, nr_local_epochs=nr_local_epochs)
+    swarm_sim = SwarmSimulator(device, trainloaders, valloaders, testloader, nr_local_epochs=nr_local_epochs, tb_path=tb_path, swarm_subpath=tb_swarm)
 
     # simulate swarm learning with static fully connected graph typology
-    swarm_sim.simulate_fully_connected_graph(nr_clients=2, nr_global_rounds=nr_global_rounds)
+    swarm_sim.simulate_fully_connected_graph(nr_clients=nr_clients, nr_global_rounds=nr_global_rounds)
 
     # simulate swarm learning with dynamic random growing graph typology
     # swarm_sim.simulate_random_dynamic_graph(nr_clients=2, nr_global_rounds=nr_global_rounds)

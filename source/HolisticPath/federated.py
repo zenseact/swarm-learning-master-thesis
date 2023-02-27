@@ -63,7 +63,7 @@ class FederatedSimulator:
         # Specify client resources if you need GPU (defaults to 1 CPU and 0 GPU)
         self.client_resources = None
         if device.type == "cuda":
-            self.client_resources = {"num_gpus": 1}
+            self.client_resources = {"num_gpus": 0.2}
         self.device = device
         self.nr_local_epochs = nr_local_epochs
         self.tb_path = tb_path
@@ -74,7 +74,7 @@ class FederatedSimulator:
                  server_round: int, parameters: fl.common.NDArrays, config: Dict[str, fl.common.Scalar]
                  ) -> Optional[Tuple[float, Dict[str, fl.common.Scalar]]]:
         net = net_instance(f"server")
-        valloader = self.valloaders[0]
+        valloader = self.testloader
         set_parameters(net, parameters)  # Update model with the latest parameters
         loss, accuracy = test(net, valloader)
         save_model(net, "server")
@@ -120,12 +120,15 @@ class FederatedSimulator:
 
     def sim_fed(self, nr_clients=NUM_CLIENTS, nr_global_rounds=NUM_GLOBAL_ROUNDS):
         # start federated learning simulation
+        ram_memory = 10000 * 1024 * 1024
+
         fl.simulation.start_simulation(
             client_fn=self.client_fn,
             num_clients=nr_clients,
             config=fl.server.ServerConfig(num_rounds=nr_global_rounds),
             client_resources=self.client_resources,
             strategy=self.create_server_strategy(),
+            ray_init_args = {"object_store_memory": ram_memory}
         )
 
     def client_fn(self, cid) -> FlowerClient:
@@ -137,9 +140,9 @@ class FederatedSimulator:
 
 
 def main(
-        nr_clients=10,
+        nr_clients=5,
         nr_local_epochs=10,
-        nr_global_rounds=10,
+        nr_global_rounds=3,
         subset_factor=0.1,
         img_size=IMG_SIZE,
         batch_size=BATCH_SIZE,
@@ -154,7 +157,7 @@ def main(
     trainloaders, valloaders, testloader, completeTrainloader, completeValloader = zod.load_datasets(nr_clients)
 
     # create federated simulator
-    fed_sim = FederatedSimulator(device, trainloaders, valloaders, testloader, nr_local_epochs=nr_local_epochs, tb_path=tb_path, federated_subpath=tb_federated)
+    fed_sim = FederatedSimulator(device, trainloaders, valloaders, completeValloader, nr_local_epochs=nr_local_epochs, tb_path=tb_path, federated_subpath=tb_federated)
 
     # simulate federated learning
     fed_sim.sim_fed(nr_clients=nr_clients, nr_global_rounds=nr_global_rounds)

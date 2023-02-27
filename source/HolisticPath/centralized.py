@@ -55,7 +55,7 @@ class CentralizedSimulator:
 
 def main(
         nr_clients=2,
-        nr_local_epochs=10,
+        nr_local_epochs=30,
         subset_factor=0.1,
         img_size=IMG_SIZE,
         batch_size=BATCH_SIZE,
