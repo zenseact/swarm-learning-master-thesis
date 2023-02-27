@@ -1,7 +1,6 @@
 from utilities import *
 from datasets import *
 
-
 class FlowerClient(fl.client.NumPyClient):
     def __init__(self, cid, net, trainloader, valloader, nr_local_epochs, tb_path=None, federated_subpath=None):
         self.cid = cid
@@ -141,7 +140,7 @@ def main(
         nr_clients=10,
         nr_local_epochs=10,
         nr_global_rounds=10,
-        subset_factor=1,
+        subset_factor=0.1,
         img_size=IMG_SIZE,
         batch_size=BATCH_SIZE,
         device=DEVICE,
@@ -158,7 +157,7 @@ def main(
     fed_sim = FederatedSimulator(device, trainloaders, valloaders, testloader, nr_local_epochs=nr_local_epochs, tb_path=tb_path, federated_subpath=tb_federated)
 
     # simulate federated learning
-    fed_sim.sim_fed(nr_clients=2, nr_global_rounds=nr_global_rounds)
+    fed_sim.sim_fed(nr_clients=nr_clients, nr_global_rounds=nr_global_rounds)
 
 
 if __name__ == "__main__":

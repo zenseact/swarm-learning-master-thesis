@@ -1,14 +1,19 @@
 from static_params import *
 from utilities import *
+from groundtruth_utils import * 
 
 class ZODImporter:
-    def __init__(self, root=None, subset_factor=SUBSET_FACTOR, img_size=IMG_SIZE, batch_size=BATCH_SIZE, tb_path=None):
-        dataset_root = root if root else "/mnt/ZOD"
+    def __init__(self, root=DATASET_ROOT, subset_factor=SUBSET_FACTOR, img_size=IMG_SIZE, batch_size=BATCH_SIZE, tb_path=None, stored_gt_path=None):
         version = "full"  # "mini" or "full"
-        self.zod_frames = ZodFrames(dataset_root=dataset_root, version=version)
+        self.zod_frames = ZodFrames(dataset_root=root, version=version)
 
         training_frames_all = self.zod_frames.get_split(constants.TRAIN)
         validation_frames_all = self.zod_frames.get_split(constants.VAL)
+
+        self.ground_truth = None
+        if(stored_gt_path):
+            self.ground_truth = load_ground_truth(stored_gt_path)
+            print('loaded stored ground truth')
 
         training_frames_all = [idx for idx in training_frames_all if self.is_valid_frame(idx)]
         validation_frames_all = [idx for idx in validation_frames_all if self.is_valid_frame(idx)]
@@ -23,22 +28,17 @@ class ZODImporter:
         self.tb_path = tb_path
 
     def is_valid_frame(self, frame_id):
-        frame = self.zod_frames[frame_id]
-        poses = frame.ego_motion.poses
-        x = poses[:, 0:1, 3]
-        y = poses[:, 1:2, 3]
-        z = poses[:, 2:3, 3]
-        coordinates = np.append(x, y)
-        coordinates = np.append(coordinates, z)
-        label = coordinates.astype('float32')
-        return label.shape[0] == NUM_OUTPUT
+        if(self.ground_truth):
+            return frame_id in self.ground_truth
+        else:
+            return get_ground_truth(self.zod_frames, frame_id).shape[0] == OUTPUT_SIZE*3
 
     def load_datasets(self, num_clients: int):
         seed = 42
         transform = transforms.Compose([transforms.ToTensor(), transforms.Resize((self.img_size, self.img_size))])
 
-        trainset = ZodDataset(zod_frames=self.zod_frames, frames_id_set=self.training_frames, transform=transform)
-        testset = ZodDataset(zod_frames=self.zod_frames, frames_id_set=self.validation_frames, transform=transform)
+        trainset = ZodDataset(zod_frames=self.zod_frames, frames_id_set=self.training_frames, stored_ground_truth=self.ground_truth, transform=transform)
+        testset = ZodDataset(zod_frames=self.zod_frames, frames_id_set=self.validation_frames, stored_ground_truth=self.ground_truth, transform=transform)
 
         # Split training set into `num_clients` partitions to simulate different local datasets
         partition_size = len(trainset) // num_clients
@@ -76,11 +76,12 @@ class ZODImporter:
 
 
 class ZodDataset(Dataset):
-    def __init__(self, zod_frames, frames_id_set, transform=None, target_transform=None):
+    def __init__(self, zod_frames, frames_id_set, stored_ground_truth=None, transform=None, target_transform=None):
         self.zod_frames = zod_frames
         self.frames_id_set = frames_id_set
         self.transform = transform
         self.target_transform = target_transform
+        self.stored_ground_truth = stored_ground_truth
 
     def __len__(self):
         return len(self.frames_id_set)
@@ -90,14 +91,14 @@ class ZodDataset(Dataset):
         frame = self.zod_frames[frame_idx]
 
         image = frame.get_image(Anonymization.DNAT)
-        poses = frame.ego_motion.poses
-        x = poses[:, 0:1, 3]
-        y = poses[:, 1:2, 3]
-        z = poses[:, 2:3, 3]
-        coordinates = np.append(x, y)
-        coordinates = np.append(coordinates, z)
+        label = None
 
-        label = coordinates.astype('float32')
+        if(self.stored_ground_truth):
+            label = self.stored_ground_truth[frame_idx]
+        else: 
+            label = get_ground_truth(self.zod_frames, frame_idx)
+        
+        label = label.astype('float32')
         image = image.astype('float32')
 
         if self.transform:
