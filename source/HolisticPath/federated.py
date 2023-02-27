@@ -148,7 +148,7 @@ def main(
         tb_federated=TB_FEDERATED_SUB_PATH):
 
     # import Zod data into memory
-    zod = ZODImporter(subset_factor=subset_factor, img_size=img_size, batch_size=batch_size, tb_path=tb_path)
+    zod = ZODImporter(subset_factor=subset_factor, img_size=img_size, batch_size=batch_size, tb_path=tb_path, stored_gt_path=STORED_GROUND_TRUTH_PATH)
 
     # create pytorch loaders
     trainloaders, valloaders, testloader, completeTrainloader, completeValloader = zod.load_datasets(nr_clients)

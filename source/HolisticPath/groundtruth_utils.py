@@ -4,7 +4,7 @@ from utilities import *
 
 def get_ground_truth(zod_frames, frame_id):
     # get frame
-    zod_frame = zod_frames[idx]
+    zod_frame = zod_frames[frame_id]
     
     # extract oxts
     oxts = zod_frame.oxts
@@ -105,10 +105,10 @@ def create_ground_truth(training_frames, validation_frames, path):
             print('detected invalid frame: ', frame_id)
             continue
         else:
-            ground_truth[frame_id] = gt
+            ground_truth[frame_id] = gt.tolist()
         
     # Serializing json
-    json_object = json.dumps(dictionary, indent=4)
+    json_object = json.dumps(ground_truth, indent=4)
 
     # Writing to sample.json
     with open(path, "w") as outfile:
@@ -116,7 +116,10 @@ def create_ground_truth(training_frames, validation_frames, path):
 
 def load_ground_truth(path):
     with open(path) as json_file:
-        return json.load(json_file)
+        gt = json.load(json_file)
+        for f in gt.keys():
+            gt[f] = np.array(gt[f])
+        return gt
 
 
 
@@ -124,10 +127,10 @@ def load_ground_truth(path):
 def main():
     from datasets import ZODImporter
     
-    zod = ZODImporter(subset_factor=SUBSET_FACTOR, img_size=IMG_SIZE, batch_size=BATCH_SIZE)
+    zod = ZODImporter(subset_factor=SUBSET_FACTOR, img_size=IMG_SIZE, batch_size=BATCH_SIZE, stored_gt_path=STORED_GROUND_TRUTH_PATH)
 
     idx = "081294"
-    image = visualize_HP_on_image(zod_frames, idx)
+    image = visualize_HP_on_image(zod.zod_frames, idx)
 
 
 if __name__ == "__main__":

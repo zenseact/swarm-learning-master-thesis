@@ -284,7 +284,7 @@ def main(
         device=DEVICE):
 
     # import Zod data into memory
-    zod = ZODImporter(subset_factor=subset_factor, img_size=img_size, batch_size=batch_size)
+    zod = ZODImporter(subset_factor=subset_factor, img_size=img_size, batch_size=batch_size, stored_gt_path=STORED_GROUND_TRUTH_PATH)
 
     # create pytorch loaders
     trainloaders, valloaders, testloader, completeTrainloader, completeValloader = zod.load_datasets(nr_clients)
