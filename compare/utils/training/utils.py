@@ -84,8 +84,8 @@ def train(
         # Calculate the mean losses
         mean_validation_loss = np.mean(validation_losses)
         mean_epoch_loss = np.mean(batch_losses)
-        logger.debug("Validation loss: {:.2f}".format(mean_validation_loss))
-        logger.debug("Training loss: {:.2f}".format(mean_epoch_loss))
+        logger.info("Validation loss: {:.2f}".format(mean_validation_loss))
+        logger.info("Training loss: {:.2f}".format(mean_epoch_loss))
         
         # Write the mean losses to tensorboard
         if writer is not None:
@@ -120,7 +120,7 @@ def test(network: Module, dataloader: DataLoader, loss_function: type):
             loss.append(criterion(outputs, labels).item())
     end_time = datetime.now()
     soft_duration = str(end_time - start_time).split(".")[0]
-    logger.info("Finished evaluation after: {}".format(soft_duration))
+    logger.debug("Finished evaluation after: {}".format(soft_duration))
     return loss
 
 

@@ -7,7 +7,7 @@ from datetime import datetime
 from torch.utils.tensorboard import SummaryWriter
 from datetime import datetime
 
-from utils import load_model
+from utils.models.model_manager import load_model
 from utils.training import train, test, save_model
 
 logger = logging.getLogger(__name__)

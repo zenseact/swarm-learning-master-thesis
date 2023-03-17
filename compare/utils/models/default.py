@@ -12,9 +12,15 @@ class Net(nn.Module):
         stride = 1
         nr_cv = 2
         # get the dimentions correct
+        if type(img_size) is list:
+            size_before_fc = [img_size, img_size]
+        else:
+            size_before_fc = img_size
+            
         size_before_fc = img_size
         for i in range(0, nr_cv):
-            size_before_fc = (size_before_fc - 2 * stride) // 2
+            size_before_fc[0] = (size_before_fc[0] - 2 * stride) // 2
+            size_before_fc[1] = (size_before_fc[1] - 2 * stride) // 2
 
         self.conv = nn.Sequential(
             nn.Conv2d(
@@ -30,7 +36,7 @@ class Net(nn.Module):
             nn.MaxPool2d(kernel_size=2),
             nn.Dropout(p=0.2),
             nn.Flatten(),
-            nn.Linear(size_before_fc * size_before_fc * 64, 100),
+            nn.Linear(size_before_fc[0] * size_before_fc[1] * 64, 100),
             nn.ReLU(inplace=True),
             nn.Linear(100, num_output),
         )

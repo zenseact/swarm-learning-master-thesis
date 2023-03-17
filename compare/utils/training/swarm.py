@@ -19,9 +19,11 @@ from torch import Tensor
 from pathlib import Path
 from ray.actor import ActorHandle
 
-from utils import load_model
+from utils.models.model_manager import load_model
 from utils.training import train, test
 from utils.data.data_handler import DataObject
+from utils.training.topologies import fully_connected_centralised
+from utils.training.aggregators import average
 
 logger = logging.getLogger(__name__)
 
@@ -29,24 +31,28 @@ def run_swarm(
     config: dict,
     data: DataObject,
     log_dir: str,
+    baseline: bool = False,
 ) -> None:
     try:
         logger.info("Initialising swarm learning runtime")
+        if baseline:
+            logger.info("Initialising swarm learning with baseline parameters")
         sim = SimulationRunner(
             config=config, 
             log_dir=log_dir,
             data=data,
-            topology_generator=fully_connected_centralised, 
             aggregation_function=average,
+            baseline=baseline,
         )
         logger.info("Swarm learning runtime initialised")
     except Exception as e:
         logger.error("Error initialising swarm learning runtime: {}".format(e))
-        logger.exception(e)
         raise e
     
     sim.spawn_clients()
     sim.start()
+    
+    logger.info("END OF SWARM LEARNING")
 
 class TemporalModel:
     # A class which saves the parameters of a model and the time it was created
@@ -74,6 +80,7 @@ class Client:
         loss_function,
         torch_model: Module,
         log_dir: str,
+        method_string: str,
     ) -> None:
         self.cid = cid
         self.icid = icid
@@ -86,6 +93,7 @@ class Client:
         self.aggregation_queue = []
         self.log_dir = log_dir
         self.round = 0
+        self.method_string = method_string
         
         if torch.cuda.is_available:
             logger.debug("Moving model to CUDA device")
@@ -93,7 +101,7 @@ class Client:
         
         # Logging
         logging.basicConfig(
-            filename="{}_{}.log".format(Path(self.log_dir, "swarm"), self.cid),
+            filename="{}_{}.log".format(Path(self.log_dir, self.method_string), self.cid),
             encoding="utf-8",
             level=logging.DEBUG,
             format="%(asctime)s %(levelname)s %(name)s %(message)s",
@@ -142,8 +150,6 @@ class Client:
         self.model = TemporalModel(self.cid, new_model_mid, model)
         
     def fit(self) -> None:
-        if self.round is None:
-            print("IT IS NONE")
         self.round += 1
         logger.info("{} Starting training process on model {}".format(
             self.cid[:7],
@@ -155,7 +161,7 @@ class Client:
             epochs=self.epochs,
             loss_function=self.loss_function,
             writer=SummaryWriter(self.log_dir),
-            writer_path="swarm/loss/clients/{}/".format(self.icid),
+            writer_path="{}/loss/clients/{}/".format(self.method_string, self.icid),
             server_round=self.round,
         )
         logger.info("{} Training finished".format(self.cid[:7]))
@@ -167,8 +173,8 @@ class SimulationRunner:
         config: dict, 
         data: DataObject,
         log_dir: str,
-        topology_generator: callable, 
         aggregation_function: callable,
+        baseline: bool = False,
     ) -> None:
         
         self.config = config
@@ -182,8 +188,8 @@ class SimulationRunner:
             train_loaders=data.train.dataloaders,
             val_loaders=data.val.dataloaders,
             test_loader=data.test.dataloader,
-            topology_generator=topology_generator,
-            aggregation_function=aggregation_function,)
+            aggregation_function=aggregation_function,
+            baseline=baseline,)
         logger.debug("Simulator instance created")
         
     def spawn_clients(self) -> None:
@@ -195,10 +201,9 @@ class SimulationRunner:
             logger.debug("Clients spawned")
         except Exception as e:
             logger.error("Error spawning clients: {}".format(e))
-            logger.exception(e)
             raise e
         
-    def set_topology(self) -> None:
+    def set_topology(self, topology_generator: callable) -> None:
         # Increment the topology number
         logging.debug("Topology round: {}".format(self.topology_round))
         self.topology_round += 1
@@ -207,11 +212,10 @@ class SimulationRunner:
         try:
             logger.info("Setting topology in ray workers...")
             logger.info("More information in the ray logs [swarm.log]")
-            ray.get(self.sim.set_topology.remote())
+            ray.get(self.sim.set_topology.remote(topology_generator))
             logger.debug("Topology set")
         except Exception as e:
             logger.error("Error setting topology: {}".format(e))
-            logger.exception(e)
             raise e
     
     def propagate_topology(self) -> None:
@@ -224,14 +228,12 @@ class SimulationRunner:
             logger.debug("Topology propagated")
         except Exception as e:
             logger.error("Error propagating topology: {}".format(e))
-            logger.exception(e)
             raise e
         
         try:
             self.sim.plot_network.remote(self.topology_round)
         except Exception as e:
             logger.error("Error plotting network: {}".format(e))
-            logger.exception(e)
             raise e
         
     def train(self) -> None:
@@ -243,7 +245,6 @@ class SimulationRunner:
             logger.debug("Clients trained")
         except Exception as e:
             logger.error("Error training clients: {}".format(e))
-            logger.exception(e)
             raise e
         
     def start_communication(self) -> None:
@@ -258,22 +259,24 @@ class SimulationRunner:
         logger.debug("Aggregation process finished")
         
     
-    # THINGS
+    # Strategy start callable
     def start(self) -> None:
         logger.info("Starting simulation loop")
-        for i in range(0, self.config["swarm"]["global"]["global_rounds"]):
-            logger.debug("Starting new round: {}".format(i + 1))
-            start_time = datetime.now()
-            
-            self.train()
-            self.set_topology()
-            self.propagate_topology()
-            self.start_communication()
-            
-            # Calculate the training duration
-            end_time = datetime.now()
-            soft_duration = str(end_time - start_time).split(".")[0]
-            logger.debug("Round finished after {}".format(soft_duration))
+        module = importlib.import_module("utils.training.strategies")
+        
+        # load swarm orchestrator
+        try:
+            name = self.config["swarm"]["global"]["orchestrator"]
+            strategy = getattr(module, name)
+        except KeyError:
+            logger.warning("No orchestrator specified, using default")
+            strategy = getattr(module, "fully_connected_centralised")
+        except AttributeError:
+            logger.error("Orchestrator '{}' not found".format(name))
+            raise AttributeError("Orchestrator '{}' not found".format(name))
+        
+        # run the strategy
+        strategy(self)
         
         
 @ray.remote
@@ -285,8 +288,8 @@ class Simulator:
         val_loaders: List[DataObject],
         test_loader: DataObject,
         log_dir: str,
-        topology_generator: callable, 
-        aggregation_function: callable
+        aggregation_function: callable,
+        baseline: bool = False,
     ) -> None:
         # Shared variables
         self.clients: Dict[str, ActorHandle[Client]] = {}
@@ -295,7 +298,6 @@ class Simulator:
         # Sim properties
         self._n_clients = config["swarm"]["global"]["n_clients"]
         self._topology: List[str] = []
-        self._topology_generator = topology_generator
         self._aggregation_function = aggregation_function
         self._config = config
         self._log_dir = log_dir
@@ -310,10 +312,13 @@ class Simulator:
         module = importlib.import_module("torch.nn")
         self._loss_function = getattr(module, loss_method)
         
+        # Swarm or baseline string variable
+        self._method_string = "baseline" if baseline else "swarm"
+        
         # Logging
         logger = logging.getLogger(__name__)
         logging.basicConfig(
-            filename="{}.log".format(Path(self._log_dir, "swarm")),
+            filename="{}.log".format(Path(self._log_dir, self._method_string)),
             encoding="utf-8",
             level=logging.DEBUG,
             format="%(asctime)s %(levelname)s %(name)s %(message)s",
@@ -326,8 +331,8 @@ class Simulator:
         return self.models
     def get_topology(self):
         return self._topology
-    def set_topology(self):
-        self._topology = self._topology_generator(list(self.clients.keys()))
+    def set_topology(self, topology_generator: callable):
+        self._topology = topology_generator(list(self.clients.keys()))
     
     # Support methods
     def create_client_actor(self, index: int) -> Tuple[str, Client]:
@@ -346,6 +351,7 @@ class Simulator:
             loss_function=self._loss_function,
             torch_model=model,
             log_dir=self._log_dir,
+            method_string=self._method_string,
         )
         return id, client_ref
     
@@ -356,7 +362,6 @@ class Simulator:
             logger.info("Client actors spawned")
         except Exception as e:
             logger.error("Error while spawning clients: {}".format(e))
-            logger.exception(e)
             raise e
         
     def send_intent(self) -> List[object]:
@@ -376,7 +381,6 @@ class Simulator:
 
         except Exception as e:
             logger.error("Error while sending intents: {}".format(e))
-            logger.exception(e)
             raise e
     
     def send_jobs(self, references: dict) -> None:
@@ -400,11 +404,11 @@ class Simulator:
             mid=client_model.mid[:7]))
     
     def train(self) -> None:
-        logger.info("Starting swarm training process...")
+        logger.info("Starting {} training process...".format(self._method_string))
         # Run the training process in parallel
         futures = [client.fit.remote() for client in self.clients.values()]
         ray.get(futures)
-        logger.debug("Swarm training process finished")
+        logger.debug("{} training process finished".format(self._method_string))
 
     # Plotting and logging methods
     def plot_network(self, round) -> None:
@@ -434,24 +438,3 @@ class Simulator:
         except Exception as e:
             logger.error("Error while plotting network: {}".format(e))
             logger.exception(e)
-        
-
-def fully_connected_centralised(clients: List[str]) -> None:
-    return list(itertools.permutations(clients, 2))
-
-def average(models: List[TemporalModel] = None) -> OrderedDict:
-    # Average factor k, and a deepcopy of the first model
-    k = 1/len(models)
-    new_model = deepcopy(models[0].get_parameters())
- 
-    # Sum the model weights
-    for target_model in models:
-        target_parameters = target_model.get_parameters()
-        for key in new_model.keys():
-            new_model[key] += target_parameters[key]
-
-    # Multiply by k to get the average
-    for key in new_model.keys():
-        new_model[key] *= k
-       
-    return new_model

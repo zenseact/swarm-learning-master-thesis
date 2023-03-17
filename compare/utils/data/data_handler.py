@@ -12,8 +12,9 @@ from zod.constants import *
 from zod import ZodFrames
 from torch.utils.tensorboard import SummaryWriter
 
-logger = logging.getLogger(__name__)
+from utils.data.extensions.custom_transforms import *
 
+logger = logging.getLogger(__name__)
 
 class DataObject:
     def __init__(self, **kwargs) -> None:
@@ -94,7 +95,7 @@ class DataHandler:
         # The default transforms and additional transforms from config
         try:
             img_size = self._config["img_size"]
-            transforms = [ToTensor(), Resize((img_size, img_size))]
+            transforms = [ToTensor()]
             transforms += eval(self._config["transforms"])
 
             logger.debug(
@@ -115,7 +116,7 @@ class DataHandler:
         # Define the default train and validation frame id generator
         # Creates two lists of frame ids, one for the train set and one for the validation set
         def default_id_generator():
-            logging.debug("Using default id generator")
+            logger.debug("Using default id generator")
             # Get the frame ids for the train and val sets
             self.__train_ids = self._zod_frames.get_split(TRAIN)
             self.__val_ids = self._zod_frames.get_split(VAL)
@@ -135,7 +136,7 @@ class DataHandler:
                 self.__val_ids = val_ids
                 
                 # Log that the custom train_val_id_generator is used
-                logging.info("Using custom train_val_id_generator: %s" % script_name)
+                logger.info("Using custom train_val_id_generator: %s" % script_name)
         except KeyError:
             logger.warning("No train_val_id_generator found, using default")
             default_id_generator()

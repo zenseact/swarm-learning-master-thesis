@@ -1,4 +1,6 @@
+from copy import deepcopy
 import logging
+from typing import Tuple
 import jsonschema
 import json
 import ray 
@@ -19,51 +21,72 @@ with open("utils/templates/config_schema.json") as f:
 
 
 class Platform:
-    def __init__(self, config) -> None:
-        # Save config
-        self.config = config
-        # Create run and relevant directories
-        self.top_log_dir = "runs"
-        self.create_if_not_exists(self.top_log_dir)
-        self.run_id = self.create_run()
-        self.run_dir = Path(self.top_log_dir, self.run_id)
-        self.create_if_not_exists(self.run_dir)
-        logger.info("New run created: {}".format(self.run_id))
+    def __init__(self, config: dict, data_only: bool = False) -> None:
+        try:
+            # Save config
+            self.config = deepcopy(config)
+            # Create run and relevant directories
+            self.top_log_dir = "runs"
+            self.create_if_not_exists(self.top_log_dir)
+            self.run_id = self.create_run()
+            self.run_dir = Path(self.top_log_dir, self.run_id)
+            self.create_if_not_exists(self.run_dir)
+            logger.info("New run created: {}".format(self.run_id))
+            
+            # Set up tensorboard writer
+            self.writer = SummaryWriter(self.run_dir)
+            
+            # Check if config is valid
+            self.validate_config()
+            
+            self.parse_config()
+            
+            self.announce_configuration()
+            
+            # Init ray if required
+            if "federated" in self.methods or "swarm" in self.methods and not data_only:
+                _start_ray(self.config)
+
+            # Set up logging to file and set format
+            logging.basicConfig(
+                filename="{}.log".format(Path(self.run_dir, "platform")),
+                encoding="utf-8",
+                level=logging.DEBUG,
+                format="%(asctime)s %(levelname)s %(name)s %(message)s",
+            )
+
+            # Run configuration
+            self.tb_log_config(config)
+            self.data = DataHandler(self.config, self.run_dir)
+            
+            # If data_only is set, stop here
+            if data_only:
+                return None
+
+            # Run training for each enabled method
+            if "central" in self.methods:
+                run_centralised(**self.training_args("central"))
+                self.unmount_dataloaders("central")
+
+            if "federated" in self.methods:
+                run_federated(**self.training_args("federated"))
+                self.unmount_dataloaders("federated")
+
+            if "swarm" in self.methods:
+                run_swarm(**self.training_args("swarm"))
+                self.unmount_dataloaders("swarm")
+                
+            if "baseline" in self.methods:
+                run_swarm(**self.training_args("baseline"), baseline=True)
+                self.unmount_dataloaders("baseline")
+            
+            logger.info("END OF PLATFORM ACTIVITIES - SHUTTING DOWN")
+        except Exception as e:
+            logger.exception(e)
+            logger.error("UNCAUGHT EXCEPTION - SHUTTING DOWN")
+            raise e
         
-        # Check if config is valid
-        self.validate_config()
-
-        # Set up tensorboard writer
-        self.writer = SummaryWriter(self.run_dir)
-        
-        # Init ray if required
-        if "federated" in self.methods or "swarm" in self.methods:
-            _start_ray(config)
-
-        # Set up logging to file and set format
-        logging.basicConfig(
-            filename="{}.log".format(Path(self.run_dir, "platform")),
-            encoding="utf-8",
-            level=logging.DEBUG,
-            format="%(asctime)s %(levelname)s %(name)s %(message)s",
-        )
-
-        # Run configuration
-        self.tb_log_config()
-        self.data = DataHandler(config, self.run_dir)
-
-        # Run training for each enabled method
-        if "central" in self.methods:
-            run_centralised(**self.training_args("central"))
-            self.unmount_dataloaders("central")
-
-        if "federated" in self.methods:
-            run_federated(**self.training_args("federated"))
-            self.unmount_dataloaders("federated")
-
-        if "swarm" in self.methods:
-            run_swarm(**self.training_args("swarm"))
-            self.unmount_dataloaders("swarm")
+        self.writer.close()
     
 
     def training_args(self, method: str) -> list:
@@ -93,32 +116,101 @@ class Platform:
         try:
             jsonschema.validate(instance=self.config, schema=CONFIG_SCHEMA)
             logger.info("Configuration is valid")
-            self.announce_configuration(self.config)
         except jsonschema.exceptions.ValidationError as e:
             logger.error("Invalid configuration")
             logger.exception(e)
             raise e
+        
+    def parse_config(self) -> None:
+        logger.debug("Parsing configuration")
+        # Get list of decentralised methods from shared decentralised config
+        decentralised_methods = self.config.get("decentralised")["train"]
+        
+        # Get list of specified decentralised methods from config
+        specific_decentralised_methods = [method for method in self.config.keys() if method in ["federated", "swarm", "baseline"]]
+        
+        # Create an empty list for all methods
+        methods = []
+                
+        # Check if centralised method is specified in config
+        if "central" in self.config and self.config["central"]["train"] == "true":
+            methods.append("central")
+            
+        # Add all enabled methods to the list
+        self.methods = methods + decentralised_methods + specific_decentralised_methods
+                
+        # Check for methods with ambiguous config
+        ambigious = set(specific_decentralised_methods).intersection(set(decentralised_methods))
+        if ambigious:
+            logger.warning("Ambiguous methods: {}".format(ambigious))
+            logger.warning("{} is provided in both decentralised and specific config".format(ambigious))
+            logger.warning("Using specific config for {}".format(ambigious))
+        
+        # Remove ambiguous methods from decentralised methods
+        decentralised_methods = list(set(decentralised_methods) - ambigious)
+        
+        # Expand the config
+        expansion_part = deepcopy(self.config["decentralised"])
+        expansion_part.pop("train")
+        
+        shortcuts = []
+        to_remove = []
+        
+        # Identify shortcut parameters
+        for key in expansion_part.keys():
+            for sub_key, value in expansion_part[key].items():
+                key_chunks = sub_key.split("_")
+                # Check if key is a shortcut
+                if key_chunks[0] in ["federated", "swarm", "baseline"]:
+                    shortcuts.append(([key_chunks[0], key, key_chunks[1]], value))
+                    to_remove.append((key, sub_key))
+                    
+        # Remove shortcut parameters from expansion part
+        for key, sub_key in to_remove:
+            expansion_part[key].pop(sub_key)
+            
+        # Add enabled train parameters to expansion part
+        expansion_part["train"] = "true"
+                    
+        # Make decentralised parameters into specific methods
+        for method in decentralised_methods:
+            self.config[method] = deepcopy(expansion_part)
+        
+        # For undefined methods, add and set train to false
+        for method in set(["central", "federated", "swarm", "baseline"]) - set(self.methods):
+            self.config[method] = {"train": "false"}
+            
+        # Expand shortcut parameters
+        for (method, top_key, sub_key), value in shortcuts:
+            if method in self.methods:
+                self.config[method][top_key][sub_key] = value
+            
+        # Add baseline orchestrator for swarm simulator
+        if "baseline" in self.methods:
+            self.config["baseline"]["orchestrator"] = "synchronous_fixed_rounds_edgeless"
+            
+        logger.debug("Expanded config: {}".format(self.config))
 
-    def announce_configuration(self, config: dict) -> None:
-        self.methods = [
-            x for x in config if "train" in config[x] and config[x]["train"] == "true"
-        ]
+    def announce_configuration(self) -> None:
         logger.info("[CONFIG] Enabled methods: {}".format(self.methods))
         logger.info(
             "[CONFIG] Data allowance: {:.2%} of available data".format(
-                config["data"]["ratio"]
+                self.config["data"]["ratio"]
             )
         )
         logger.info("[CONFIG] More information in tensorboard")
 
-    def tb_log_config(self) -> None:
+    def tb_log_config(self, original_config: dict) -> None:
         logger.debug("Logging configuration to tensorboard")
-        config = json.dumps(self.config, indent=4)
+        config = json.dumps(original_config, indent=4)
+        config_expanded = json.dumps(self.config, indent=4)
         with open("utils/templates/config_message.md", "r") as file:
             logger.debug("Reading configuration template")
             render = Template(file.read()).render(
                 config=config,
+                config_expanded=config_expanded,
                 runtime=self.run_id,
+                note=self.config["note"],
             )
         try:
             self.writer.add_text("configuration", render)

@@ -13,7 +13,7 @@ from torch.utils.data import DataLoader
 from pathlib import Path
 from datetime import datetime
 
-from utils import load_model
+from utils.models.model_manager import load_model
 from utils.training import train, test
 
 logger = logging.getLogger(__name__)
@@ -132,6 +132,8 @@ def run_federated(
 
     # Log that training is finished
     logger.info("Finished federated training after: {}".format(soft_duration))
+    logger.info("END OF FEDERATED LEARNING")
+
 
 
 # A method that fetches the model weights
