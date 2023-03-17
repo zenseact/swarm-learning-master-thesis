@@ -1,5 +1,5 @@
-from utilities import *
-from datasets import *
+from common.utilities import *
+from common.datasets import *
 
 class FlowerClient(fl.client.NumPyClient):
     def __init__(self, cid, net, trainloader, valloader, nr_local_epochs, tb_path=None, federated_subpath=None):

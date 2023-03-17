@@ -1,10 +1,12 @@
 from imports import *
 
-
 class TASK(Enum):
     CLASSIFICATION = 1
     REGRESSION = 2
 
+class PartitionStrategy(Enum):
+    RANDOM = 'random'
+    LOCATION = 'location'
 
 NUM_CLIENTS = 2
 NUM_OUTPUT = 66

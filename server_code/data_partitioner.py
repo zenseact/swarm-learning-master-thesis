@@ -1,4 +1,4 @@
-from common.enums import PartitionStrategy
+from common.static_params import PartitionStrategy
 from zod import ZodFrames
 from zod import ZodSequences
 import zod.constants as constants
