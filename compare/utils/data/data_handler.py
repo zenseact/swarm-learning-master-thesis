@@ -126,10 +126,11 @@ class DataHandler:
             if self._config["train_val_id_generator"]:
                 script_name = self._config["train_val_id_generator"]
                 # Get the train_val_id_generator from the config
-                script = importlib.import_module(f"utils.data.extensions.{script_name}")
+                generators = importlib.import_module(f"utils.data.extensions.custom_datasets")
                 
                 # Run the train_val_id_generator
-                train_ids, val_ids = script.run()
+                generator = getattr(generators, script_name)
+                train_ids, val_ids = generator()
                 
                 # Set the train and val ids
                 self.__train_ids = train_ids

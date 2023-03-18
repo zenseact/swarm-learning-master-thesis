@@ -1,7 +1,7 @@
 # Description: Balanced frames generator
 # Must be executed as a script and must return two list of frames, train and validation
 
-def run():
+def balanced_frames():
     with open("utils/data/extensions/balanced_frames.txt", "r") as f:
         content = f.read().splitlines()
         
@@ -20,8 +20,4 @@ def run():
     val_ids = ids["VAL_BALANCED"]
     
     return train_ids, val_ids
-
-if __name__ == '__main__':
-    # If executed as a script, run the generator
-    run()
 
