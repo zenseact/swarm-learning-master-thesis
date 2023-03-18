@@ -44,7 +44,7 @@ class Platform:
             self.announce_configuration()
             
             # Init ray if required
-            if "federated" in self.methods or "swarm" in self.methods and not data_only:
+            if ("federated" in self.methods or "swarm" in self.methods) and not data_only:
                 _start_ray(self.config)
 
             # Set up logging to file and set format
