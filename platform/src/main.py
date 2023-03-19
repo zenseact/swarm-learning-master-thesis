@@ -1,24 +1,32 @@
 from copy import deepcopy
 import logging
-from typing import Tuple
 import jsonschema
 import json
 import ray 
+import os
 
 from pathlib import Path
 from jinja2 import Template
 from datetime import datetime
 from torch.utils.tensorboard import SummaryWriter
-from multiprocessing import Process
 
-from utils.data import DataHandler
-from utils.training import run_centralised, run_federated, run_swarm
+from .utils.data import DataHandler
+from .utils.training import run_centralised, run_federated, run_swarm
 
 logger = logging.getLogger(__name__)
 
-with open("utils/templates/config_schema.json") as f:
-    CONFIG_SCHEMA = json.load(f)
+# get the absolute path to the directory where the current file resides
+current_dir = Path(os.path.dirname(os.path.abspath(__file__)))
+platform_dir = current_dir.parent.absolute()
+# build the path to the config file relative to the current file's directory
+templates_path = os.path.join(current_dir, "utils", "templates")
 
+# open the files using the absolute path
+with open(templates_path + "/config_schema.json") as file:
+    CONFIG_SCHEMA = json.load(file)
+    
+with open(templates_path + "/config_message.md", "r") as file:
+    TEMPLATE = Template(file.read())
 
 class Platform:
     def __init__(self, config: dict, data_only: bool = False) -> None:
@@ -26,7 +34,7 @@ class Platform:
             # Save config
             self.config = deepcopy(config)
             # Create run and relevant directories
-            self.top_log_dir = "runs"
+            self.top_log_dir = Path(platform_dir, "runs")
             self.create_if_not_exists(self.top_log_dir)
             self.run_id = self.create_run()
             self.run_dir = Path(self.top_log_dir, self.run_id)
@@ -204,13 +212,13 @@ class Platform:
         logger.debug("Logging configuration to tensorboard")
         config = json.dumps(original_config, indent=4)
         config_expanded = json.dumps(self.config, indent=4)
-        with open("utils/templates/config_message.md", "r") as file:
-            logger.debug("Reading configuration template")
-            render = Template(file.read()).render(
-                config=config,
-                config_expanded=config_expanded,
-                runtime=self.run_id,
-                note=self.config["note"],
+        note = "" if not "note" in self.config else self.config["note"]
+        logger.debug("Reading configuration template")
+        render = TEMPLATE.render(
+            config=config,
+            config_expanded=config_expanded,
+            runtime=self.run_id,
+            note=note,
             )
         try:
             self.writer.add_text("configuration", render)

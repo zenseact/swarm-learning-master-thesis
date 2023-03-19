@@ -13,8 +13,8 @@ from torch.utils.data import DataLoader
 from pathlib import Path
 from datetime import datetime
 
-from utils.models.model_manager import load_model
-from utils.training import train, test
+from ..models.model_manager import load_model
+from .utils import train, test
 
 logger = logging.getLogger(__name__)
 

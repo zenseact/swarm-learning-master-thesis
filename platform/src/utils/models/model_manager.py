@@ -10,7 +10,7 @@ def load_model(config, **kwargs) -> Module:
     name = config["model"]["name"]
     config_model_args = config["model"]["args"]
 
-    module = importlib.import_module(f"utils.models.{name}")
+    module = importlib.import_module(f"src.utils.models.{name}")
     model = module.metadata["model"]
 
     # create instance

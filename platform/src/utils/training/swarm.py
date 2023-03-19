@@ -19,11 +19,10 @@ from torch import Tensor
 from pathlib import Path
 from ray.actor import ActorHandle
 
-from utils.models.model_manager import load_model
-from utils.training import train, test
-from utils.data.data_handler import DataObject
-from utils.training.topologies import fully_connected_centralised
-from utils.training.aggregators import average
+from ..models.model_manager import load_model
+from .utils import train
+from ..data.data_handler import DataObject
+from .aggregators import average
 
 logger = logging.getLogger(__name__)
 
@@ -179,6 +178,7 @@ class SimulationRunner:
         
         self.config = config
         self.topology_round = 0
+        self.baseline = baseline
         
         # Init the simulator
         logger.debug("Creating simulator instance...")
@@ -205,7 +205,7 @@ class SimulationRunner:
         
     def set_topology(self, topology_generator: callable) -> None:
         # Increment the topology number
-        logging.debug("Topology round: {}".format(self.topology_round))
+        logger.debug("Topology round: {}".format(self.topology_round))
         self.topology_round += 1
         
         # Concurrently set the topology
@@ -262,18 +262,21 @@ class SimulationRunner:
     # Strategy start callable
     def start(self) -> None:
         logger.info("Starting simulation loop")
-        module = importlib.import_module("utils.training.strategies")
+        module = importlib.import_module("src.utils.training.strategies")
         
         # load swarm orchestrator
-        try:
-            name = self.config["swarm"]["global"]["orchestrator"]
-            strategy = getattr(module, name)
-        except KeyError:
-            logger.warning("No orchestrator specified, using default")
-            strategy = getattr(module, "fully_connected_centralised")
-        except AttributeError:
-            logger.error("Orchestrator '{}' not found".format(name))
-            raise AttributeError("Orchestrator '{}' not found".format(name))
+        if self.baseline:
+            strategy = getattr(module, "synchronous_fixed_rounds_edgeless")
+        else:
+            try:
+                name = self.config["swarm"]["global"]["orchestrator"]
+                strategy = getattr(module, name)
+            except KeyError:
+                logger.warning("No orchestrator specified, using default")
+                strategy = getattr(module, "synchronous_fixed_rounds_fc")
+            except AttributeError:
+                logger.error("Orchestrator '{}' not found".format(name))
+                raise AttributeError("Orchestrator '{}' not found".format(name))
         
         # run the strategy
         strategy(self)
@@ -295,8 +298,11 @@ class Simulator:
         self.clients: Dict[str, ActorHandle[Client]] = {}
         self.models: Dict[str, TemporalModel] = {}
         
+        # Swarm or baseline string variable
+        self._method_string = "baseline" if baseline else "swarm"
+        
         # Sim properties
-        self._n_clients = config["swarm"]["global"]["n_clients"]
+        self._n_clients = config[self._method_string]["global"]["n_clients"]
         self._topology: List[str] = []
         self._aggregation_function = aggregation_function
         self._config = config
@@ -305,15 +311,14 @@ class Simulator:
         self._val_loaders = val_loaders
         self._test_loader = test_loader
         self._writer = SummaryWriter(log_dir=self._log_dir)
-        self._client_resources = config["swarm"]["global"]["client_resources"]
+        self._client_resources = config[self._method_string]["global"]["client_resources"]
         
         # Load the loss function
         loss_method = self._config["model"]["loss"]
         module = importlib.import_module("torch.nn")
         self._loss_function = getattr(module, loss_method)
         
-        # Swarm or baseline string variable
-        self._method_string = "baseline" if baseline else "swarm"
+        
         
         # Logging
         logger = logging.getLogger(__name__)
@@ -346,7 +351,7 @@ class Simulator:
             icid=index,
             trainloader=self._train_loaders[index],
             valloader=self._val_loaders[index],
-            epochs=self._config["swarm"]["client"]["epochs"],
+            epochs=self._config[self._method_string]["client"]["epochs"],
             models=self.models[id], 
             loss_function=self._loss_function,
             torch_model=model,
@@ -393,7 +398,11 @@ class Simulator:
         cid = ray.get(client.get_cid.remote())
         client_model = ray.get(client.get_model.remote())
         client_aggregation_queue = ray.get(client.get_aggregation_queue.remote())
+        if len(client_aggregation_queue) == 0:
+            logger.info("{} No models to aggregate".format(cid[:7]))
+            return
         logger.info("{} Starting aggregation process".format(cid[:7]))
+        logger.debug("{} Aggregation queue: {}".format(cid[:7], client_aggregation_queue))
         # Aggregates the models in the aggregation queue
         # and sets the aggregated model as the current model
         aggregated_model = self._aggregation_function([client_model] + client_aggregation_queue)
@@ -433,7 +442,7 @@ class Simulator:
             plt.axis("off")
             plt.title("Network topology: {}".format(round))
             # Log the network to tensorboard
-            self._writer.add_figure("Network", plt.gcf())
+            self._writer.add_figure("Network", plt.gcf(), global_step=round)
             logger.info("[TENSORBOARD] Added network plot to tensorboard")
         except Exception as e:
             logger.error("Error while plotting network: {}".format(e))

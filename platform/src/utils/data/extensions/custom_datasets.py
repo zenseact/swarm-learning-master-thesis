@@ -1,8 +1,14 @@
 # Description: Balanced frames generator
 # Must be executed as a script and must return two list of frames, train and validation
 
+import os
+
+from pathlib import Path
+
+current_dir = Path(os.path.dirname(os.path.abspath(__file__)))
+
 def balanced_frames():
-    with open("utils/data/extensions/balanced_frames.txt", "r") as f:
+    with open(Path(current_dir, "balanced_frames.txt"), "r") as f:
         content = f.read().splitlines()
         
     keywords = ["TRAIN_BALANCED", "VAL_BALANCED"]

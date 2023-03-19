@@ -1,19 +1,22 @@
 from datetime import datetime
-import importlib 
 import logging
 
 
-from utils.training.swarm import SimulationRunner
-
-from utils.training.topologies import fully_connected_centralised, edgeless_graph
+from src.utils.training.swarm import SimulationRunner
+from src.utils.training.topologies import fully_connected_centralised, edgeless_graph
 
 logger = logging.getLogger(__name__)
 
 
 def synchronous_fixed_rounds(simulator: SimulationRunner, topology_generator: callable):
     """Synchronous training with fixed number of rounds."""
+    
+    if simulator.baseline:
+        method = "baseline"
+    else:
+        method = "swarm"
         
-    for i in range(0, simulator.config["swarm"]["global"]["global_rounds"]):
+    for i in range(0, simulator.config[method]["global"]["global_rounds"]):
         logger.debug("Starting new round: {}".format(i + 1))
         start_time = datetime.now()
         

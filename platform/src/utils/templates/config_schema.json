@@ -12,7 +12,10 @@
                     "type": "number"
                 },
                 "img_size": {
-                    "type": ["array", "number"]
+                    "type": [
+                        "array",
+                        "number"
+                    ]
                 },
                 "transforms": {
                     "type": "string"
@@ -88,6 +91,62 @@
                 "train",
                 "use_gpu",
                 "epochs"
+            ]
+        },
+        "decentralised": {
+            "type": "object",
+            "properties": {
+                "global": {
+                    "type": "object",
+                    "properties": {
+                        "n_clients": {
+                            "type": "number"
+                        },
+                        "global_rounds": {
+                            "type": "number"
+                        },
+                        "client_resources": {
+                            "type": "object",
+                            "properties": {
+                                "num_gpus": {
+                                    "type": "number"
+                                },
+                                "num_cpus": {
+                                    "type": "number"
+                                }
+                            },
+                            "required": [
+                                "num_gpus",
+                                "num_cpus"
+                            ]
+                        },
+                        "ray_init_args": {
+                            "type": "object"
+                        }
+                    },
+                    "required": [
+                        "n_clients",
+                        "global_rounds",
+                        "client_resources",
+                        "ray_init_args"
+                    ]
+                },
+                "client": {
+                    "type": "object",
+                    "properties": {
+                        "epochs": {
+                            "type": "number"
+                        }
+                    },
+                    "required": [
+                        "epochs"
+                    ]
+                }
+            },
+            "required": [
+                "train",
+                "global",
+                "client"
             ]
         },
         "federated": {

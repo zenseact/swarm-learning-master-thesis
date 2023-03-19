@@ -12,7 +12,7 @@ from zod.constants import *
 from zod import ZodFrames
 from torch.utils.tensorboard import SummaryWriter
 
-from utils.data.extensions.custom_transforms import *
+from .extensions.custom_transforms import *
 
 logger = logging.getLogger(__name__)
 
@@ -126,7 +126,7 @@ class DataHandler:
             if self._config["train_val_id_generator"]:
                 script_name = self._config["train_val_id_generator"]
                 # Get the train_val_id_generator from the config
-                generators = importlib.import_module(f"utils.data.extensions.custom_datasets")
+                generators = importlib.import_module(f"src.utils.data.extensions.custom_datasets")
                 
                 # Run the train_val_id_generator
                 generator = getattr(generators, script_name)
@@ -214,6 +214,8 @@ class DataHandler:
             self.create_decentralised_datasets(full_config, "federated")
         if full_config["swarm"]["train"] == "true":
             self.create_decentralised_datasets(full_config, "swarm")
+        if full_config["baseline"]["train"] == "true":
+            self.create_decentralised_datasets(full_config, "baseline")
 
         logger.info("DataHandler initialisation complete")
 

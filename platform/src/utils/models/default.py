@@ -12,13 +12,10 @@ class Net(nn.Module):
         stride = 1
         nr_cv = 2
         # get the dimentions correct
-        if type(img_size) is list:
+        if type(img_size) is int:
             size_before_fc = [img_size, img_size]
-        else:
-            size_before_fc = img_size
             
-        size_before_fc = img_size
-        for i in range(0, nr_cv):
+        for _ in range(0, nr_cv):
             size_before_fc[0] = (size_before_fc[0] - 2 * stride) // 2
             size_before_fc[1] = (size_before_fc[1] - 2 * stride) // 2
 
