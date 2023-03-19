@@ -2,7 +2,7 @@ from copy import deepcopy
 import logging
 import jsonschema
 import json
-import ray 
+import ray
 import os
 
 from pathlib import Path
@@ -24,9 +24,10 @@ templates_path = os.path.join(current_dir, "utils", "templates")
 # open the files using the absolute path
 with open(templates_path + "/config_schema.json") as file:
     CONFIG_SCHEMA = json.load(file)
-    
+
 with open(templates_path + "/config_message.md", "r") as file:
     TEMPLATE = Template(file.read())
+
 
 class Platform:
     def __init__(self, config: dict, data_only: bool = False) -> None:
@@ -40,19 +41,21 @@ class Platform:
             self.run_dir = Path(self.top_log_dir, self.run_id)
             self.create_if_not_exists(self.run_dir)
             logger.info("New run created: {}".format(self.run_id))
-            
+
             # Set up tensorboard writer
             self.writer = SummaryWriter(self.run_dir)
-            
+
             # Check if config is valid
             self.validate_config()
-            
+
             self.parse_config()
-            
+
             self.announce_configuration()
-            
+
             # Init ray if required
-            if ("federated" in self.methods or "swarm" in self.methods) and not data_only:
+            if (
+                "federated" in self.methods or "swarm" in self.methods
+            ) and not data_only:
                 _start_ray(self.config)
 
             # Set up logging to file and set format
@@ -66,7 +69,7 @@ class Platform:
             # Run configuration
             self.tb_log_config(config)
             self.data = DataHandler(self.config, self.run_dir)
-            
+
             # If data_only is set, stop here
             if data_only:
                 return None
@@ -83,19 +86,18 @@ class Platform:
             if "swarm" in self.methods:
                 run_swarm(**self.training_args("swarm"))
                 self.unmount_dataloaders("swarm")
-                
+
             if "baseline" in self.methods:
                 run_swarm(**self.training_args("baseline"), baseline=True)
                 self.unmount_dataloaders("baseline")
-            
+
             logger.info("END OF PLATFORM ACTIVITIES - SHUTTING DOWN")
         except Exception as e:
             logger.exception(e)
             logger.error("UNCAUGHT EXCEPTION - SHUTTING DOWN")
             raise e
-        
+
         self.writer.close()
-    
 
     def training_args(self, method: str) -> list:
         # Dynamically create arguments for training functions
@@ -128,42 +130,52 @@ class Platform:
             logger.error("Invalid configuration")
             logger.exception(e)
             raise e
-        
+
     def parse_config(self) -> None:
         logger.debug("Parsing configuration")
         # Get list of decentralised methods from shared decentralised config
         decentralised_methods = self.config.get("decentralised")["train"]
-        
+
         # Get list of specified decentralised methods from config
-        specific_decentralised_methods = [method for method in self.config.keys() if method in ["federated", "swarm", "baseline"]]
-        
+        specific_decentralised_methods = [
+            method
+            for method in self.config.keys()
+            if method in ["federated", "swarm", "baseline"]
+        ]
+
         # Create an empty list for all methods
         methods = []
-                
+
         # Check if centralised method is specified in config
         if "central" in self.config and self.config["central"]["train"] == "true":
             methods.append("central")
-            
+
         # Add all enabled methods to the list
         self.methods = methods + decentralised_methods + specific_decentralised_methods
-                
+
         # Check for methods with ambiguous config
-        ambigious = set(specific_decentralised_methods).intersection(set(decentralised_methods))
+        ambigious = set(specific_decentralised_methods).intersection(
+            set(decentralised_methods)
+        )
         if ambigious:
             logger.warning("Ambiguous methods: {}".format(ambigious))
-            logger.warning("{} is provided in both decentralised and specific config".format(ambigious))
+            logger.warning(
+                "{} is provided in both decentralised and specific config".format(
+                    ambigious
+                )
+            )
             logger.warning("Using specific config for {}".format(ambigious))
-        
+
         # Remove ambiguous methods from decentralised methods
         decentralised_methods = list(set(decentralised_methods) - ambigious)
-        
+
         # Expand the config
         expansion_part = deepcopy(self.config["decentralised"])
         expansion_part.pop("train")
-        
+
         shortcuts = []
         to_remove = []
-        
+
         # Identify shortcut parameters
         for key in expansion_part.keys():
             for sub_key, value in expansion_part[key].items():
@@ -172,31 +184,35 @@ class Platform:
                 if key_chunks[0] in ["federated", "swarm", "baseline"]:
                     shortcuts.append(([key_chunks[0], key, key_chunks[1]], value))
                     to_remove.append((key, sub_key))
-                    
+
         # Remove shortcut parameters from expansion part
         for key, sub_key in to_remove:
             expansion_part[key].pop(sub_key)
-            
+
         # Add enabled train parameters to expansion part
         expansion_part["train"] = "true"
-                    
+
         # Make decentralised parameters into specific methods
         for method in decentralised_methods:
             self.config[method] = deepcopy(expansion_part)
-        
+
         # For undefined methods, add and set train to false
-        for method in set(["central", "federated", "swarm", "baseline"]) - set(self.methods):
+        for method in set(["central", "federated", "swarm", "baseline"]) - set(
+            self.methods
+        ):
             self.config[method] = {"train": "false"}
-            
+
         # Expand shortcut parameters
         for (method, top_key, sub_key), value in shortcuts:
             if method in self.methods:
                 self.config[method][top_key][sub_key] = value
-            
+
         # Add baseline orchestrator for swarm simulator
         if "baseline" in self.methods:
-            self.config["baseline"]["orchestrator"] = "synchronous_fixed_rounds_edgeless"
-            
+            self.config["baseline"][
+                "orchestrator"
+            ] = "synchronous_fixed_rounds_edgeless"
+
         logger.debug("Expanded config: {}".format(self.config))
 
     def announce_configuration(self) -> None:
@@ -219,7 +235,7 @@ class Platform:
             config_expanded=config_expanded,
             runtime=self.run_id,
             note=note,
-            )
+        )
         try:
             self.writer.add_text("configuration", render)
             logger.info("[TENSORBOARD] Configuration logged to tensorboard")
@@ -239,7 +255,7 @@ class Platform:
                 logger.warning(
                     "No dataloader to unmount for {} in {} set".format(method, set_type)
                 )
-                
+
 
 def _start_ray(config: dict) -> None:
     try:

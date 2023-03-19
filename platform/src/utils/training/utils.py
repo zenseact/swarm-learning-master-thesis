@@ -20,14 +20,14 @@ def train(
     writer: SummaryWriter = None,
     writer_path: str = "loss/undefined/",
     server_round: int = None,
-    cid:str = None,
+    cid: str = None,
 ) -> None:
     # Set up the loss function and optimizer
     criterion = loss_function()
     optimizer = Adam(network.model_parameters())
     device = next(network.parameters()).device
     logger.debug("Using device: {}".format(device))
-    
+
     # Adjust and offset the epoch and batch counters if we are resuming training
     if server_round:
         running_batch_index = 1 + (server_round - 1) * len(trainloader) * epochs
@@ -74,7 +74,7 @@ def train(
                     )
                     logger.exception(e)
             running_batch_index += 1
-        
+
         # Test the model on the validation set
         validation_losses = test(
             network=network,
@@ -86,7 +86,7 @@ def train(
         mean_epoch_loss = np.mean(batch_losses)
         logger.info("Validation loss: {:.2f}".format(mean_validation_loss))
         logger.info("Training loss: {:.2f}".format(mean_epoch_loss))
-        
+
         # Write the mean losses to tensorboard
         if writer is not None:
             try:

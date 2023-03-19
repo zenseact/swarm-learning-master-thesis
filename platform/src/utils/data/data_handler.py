@@ -16,6 +16,7 @@ from .extensions.custom_transforms import *
 
 logger = logging.getLogger(__name__)
 
+
 class DataObject:
     def __init__(self, **kwargs) -> None:
         self.__dict__.update(kwargs)
@@ -111,8 +112,7 @@ class DataHandler:
             )
             logger.exception(e)
             transforms = [ToTensor()]
-            
-        
+
         # Define the default train and validation frame id generator
         # Creates two lists of frame ids, one for the train set and one for the validation set
         def default_id_generator():
@@ -120,22 +120,24 @@ class DataHandler:
             # Get the frame ids for the train and val sets
             self.__train_ids = self._zod_frames.get_split(TRAIN)
             self.__val_ids = self._zod_frames.get_split(VAL)
-            
+
         # Check if a custom train_val_id_generator is defined in the config
         try:
             if self._config["train_val_id_generator"]:
                 script_name = self._config["train_val_id_generator"]
                 # Get the train_val_id_generator from the config
-                generators = importlib.import_module(f"src.utils.data.extensions.custom_datasets")
-                
+                generators = importlib.import_module(
+                    f"src.utils.data.extensions.custom_datasets"
+                )
+
                 # Run the train_val_id_generator
                 generator = getattr(generators, script_name)
                 train_ids, val_ids = generator()
-                
+
                 # Set the train and val ids
                 self.__train_ids = train_ids
                 self.__val_ids = val_ids
-                
+
                 # Log that the custom train_val_id_generator is used
                 logger.info("Using custom train_val_id_generator: %s" % script_name)
         except KeyError:
@@ -146,21 +148,17 @@ class DataHandler:
             logger.exception(e)
             logger.warning("Using default train_val_id_generator")
             default_id_generator()
-            
+
         # Reduce the number of ids if specified in the config
-        self.__train_ids = self._ratio(
-            self._config["ratio"], self.__train_ids
-        )
-        self.__val_ids = self._ratio(
-            self._config["ratio"], self.__val_ids
-        )
-            
+        self.__train_ids = self._ratio(self._config["ratio"], self.__train_ids)
+        self.__val_ids = self._ratio(self._config["ratio"], self.__val_ids)
+
         # Shuffle the ids
         try:
             random.seed(self._config["shuffle_seed"])
-            random.shuffle(self.__train_ids)    
+            random.shuffle(self.__train_ids)
             random.shuffle(self.__val_ids)
-            
+
             logger.info("Shuffled ids with seed %s" % self._config["shuffle_seed"])
         except KeyError:
             logger.warning("No shuffle seed found, not shuffling ids")

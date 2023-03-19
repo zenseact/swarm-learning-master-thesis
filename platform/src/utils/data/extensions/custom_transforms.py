@@ -17,7 +17,8 @@ https://pytorch.org/tutorials/beginner/data_loading_tutorial.html
 
 from torchvision.transforms.functional import crop
 
-class CustomCrop():
+
+class CustomCrop:
     def __init__(self, top, left, height, width):
         self.top = top
         self.left = left

@@ -135,7 +135,6 @@ def run_federated(
     logger.info("END OF FEDERATED LEARNING")
 
 
-
 # A method that fetches the model weights
 def get_parameters(net) -> List[np.ndarray]:
     return [val.cpu().numpy() for _, val in net.state_dict().items()]

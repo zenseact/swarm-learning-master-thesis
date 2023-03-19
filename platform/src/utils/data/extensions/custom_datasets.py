@@ -7,10 +7,11 @@ from pathlib import Path
 
 current_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
+
 def balanced_frames():
     with open(Path(current_dir, "balanced_frames.txt"), "r") as f:
         content = f.read().splitlines()
-        
+
     keywords = ["TRAIN_BALANCED", "VAL_BALANCED"]
 
     ids = {keyword: [] for keyword in keywords}
@@ -21,9 +22,8 @@ def balanced_frames():
             current_keyword = row[1:]
         else:
             ids[current_keyword].append(row)
-    
+
     train_ids = ids["TRAIN_BALANCED"]
     val_ids = ids["VAL_BALANCED"]
-    
-    return train_ids, val_ids
 
+    return train_ids, val_ids

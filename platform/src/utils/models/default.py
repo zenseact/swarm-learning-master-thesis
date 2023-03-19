@@ -14,7 +14,7 @@ class Net(nn.Module):
         # get the dimentions correct
         if type(img_size) is int:
             size_before_fc = [img_size, img_size]
-            
+
         for _ in range(0, nr_cv):
             size_before_fc[0] = (size_before_fc[0] - 2 * stride) // 2
             size_before_fc[1] = (size_before_fc[1] - 2 * stride) // 2
