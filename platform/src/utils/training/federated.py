@@ -14,7 +14,7 @@ from pathlib import Path
 from datetime import datetime
 
 from ..models.model_manager import load_model
-from .utils import train, test
+from .utils import save_model, train, test
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +67,10 @@ def run_federated(
             np.mean(test_loss),
             server_round,
         )
+        
+        # save the modellog_dir
+        model_name = Path(log_dir, f"federated_{config['model']['name']}_{server_round}")
+        save_model(model, model_name)
 
         writer.close()
 
@@ -142,7 +146,7 @@ def get_parameters(net) -> List[np.ndarray]:
 
 def set_parameters(net, parameters: List[np.ndarray]):
     params_dict = zip(net.state_dict().keys(), parameters)
-    state_dict = OrderedDict({k: Tensor(v) for k, v in params_dict})
+    state_dict = OrderedDict({k: Tensor(v) if v.shape != Size([]) else Tensor([0]) for k, v in params_dict})
     net.load_state_dict(state_dict, strict=True)
 
 

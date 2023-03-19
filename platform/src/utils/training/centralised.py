@@ -1,6 +1,7 @@
 import importlib
 import importlib
 import logging
+from pathlib import Path
 import numpy as np
 
 from datetime import datetime
@@ -8,7 +9,7 @@ from torch.utils.tensorboard import SummaryWriter
 from datetime import datetime
 
 from ..models.model_manager import load_model
-from .utils import train, test
+from .utils import save_model, train, test
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +51,11 @@ def run_centralised(config: dict, data: object, log_dir=str) -> None:
         writer=writer,
         writer_path="centralised/loss/",
     )
+    # save the modellog_dir
+    model_name = Path(log_dir, f"centralised_{config['model']['name']}")
+    save_model(model, model_name)
+    
+    
     # Calculate the training duration
     end_time = datetime.now()
     soft_duration = str(end_time - start_time).split(".")[0]

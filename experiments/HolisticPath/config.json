@@ -27,7 +27,7 @@
     "central": {
         "train": "true",
         "use_gpu": "true",
-        "epochs": 50
+        "epochs": 15
     },
     "decentralised": {
         "train": [
@@ -37,7 +37,7 @@
         ],
         "global": {
             "n_clients": 5,
-            "global_rounds": 5,
+            "global_rounds": 3,
             "client_resources": {
                 "num_cpus": 2,
                 "num_gpus": 0.2
@@ -50,7 +50,7 @@
             "swarm_orchestrator": "synchronous_fixed_rounds_fc"
         },
         "client": {
-            "epochs": 10
+            "epochs": 5
         }
     },
     "note": "Balanced frames, ROI, 50 epochs, 5 clients with pretrained model"
