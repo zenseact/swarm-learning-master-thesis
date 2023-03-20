@@ -1,17 +1,17 @@
 import paramiko
 
 class SSHClient:
-    def __init__(self, hostname, username, password):
+    def __init__(self, hostname, private_key_path):
         self.hostname = hostname
-        self.username = username
-        self.password = password
+        self.private_key_path = private_key_path
         self.ssh = None
         self.sftp = None
 
     def __enter__(self):
         self.ssh = paramiko.SSHClient()
         self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        self.ssh.connect(hostname=self.hostname, username=self.username, password=self.password)
+        private_key = paramiko.RSAKey.from_private_key_file(self.private_key_path)
+        self.ssh.connect(hostname=self.hostname, username='', pkey=private_key)
         self.sftp = self.ssh.open_sftp()
         return self
 
