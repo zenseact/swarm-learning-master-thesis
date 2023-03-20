@@ -4,7 +4,7 @@ from paramiko_ssh import SSHClient
 import os, stat
 import sys
 from edge_code.data_loader import load_train_data
-from edge_code.edge_trainer import train
+from common.utilities import train
 
 if __name__ == '__main__':
     # Get the command-line arguments
