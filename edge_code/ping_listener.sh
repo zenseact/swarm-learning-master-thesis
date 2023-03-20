@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Set the repository URL and local directory for cloning the repository
-REPO_URL="https://github.com/your_username/your_repository.git"
-LOCAL_DIR="/path/to/local/directory"
+REPO_URL="https://github.com/aidotse/fleet-learning.git"
+LOCAL_DIR="~/Fleet/fleet-learning"
 
 # Function to check for and pull updates from the repository
 check_for_updates() {
@@ -35,6 +35,6 @@ do
         strategy=$(echo "$message" | awk '{print $2}')
 
         # Execute the Python script after checking for updates
-        python3 ~/Fleet/train.py "$cid" "$strategy" &
+        python3 ~/Fleet/fleet-learning/edge_code/edge_main.py "$cid" "$strategy" &  
     fi
 done
