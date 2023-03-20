@@ -20,8 +20,9 @@ PRINT_DEBUG_DATA = True
 ML_TASK = TASK.REGRESSION
 OUTPUT_SIZE = 66
 DEVICE = torch.device('cuda' if USE_GPU else 'cpu')
-STORED_GROUND_TRUTH_PATH = "/mnt/ZOD/swarm_gt/ground_truth.json"
+STORED_GROUND_TRUTH_PATH = "ground_truth.json"
 DATASET_ROOT = "/mnt/ZOD"
+ZENSEACT_DATASET_ROOT = "/staging/dataset_donation/round_2"
 
 available_device = 'cuda' if torch.cuda.is_available() else 'only cpu'
 print(f"🚩{available_device} is available in this machine using PyTorch {torch.__version__} and Flower {fl.__version__}")
