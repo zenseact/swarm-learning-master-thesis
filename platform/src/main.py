@@ -52,12 +52,6 @@ class Platform:
 
             self.announce_configuration()
 
-            # Init ray if required
-            if (
-                "federated" in self.methods or "swarm" in self.methods
-            ) and not data_only:
-                _start_ray(self.config)
-
             # Set up logging to file and set format
             logging.basicConfig(
                 filename="{}.log".format(Path(self.run_dir, "platform")),
@@ -255,13 +249,3 @@ class Platform:
                 logger.warning(
                     "No dataloader to unmount for {} in {} set".format(method, set_type)
                 )
-
-
-def _start_ray(config: dict) -> None:
-    try:
-        logger.info("Initialising Ray runtime")
-        ray.init(**config["swarm"]["global"]["ray_init_args"])
-    except Exception as e:
-        logger.error("Error initialising Ray runtime: {}".format(e))
-        logger.exception(e)
-        raise e

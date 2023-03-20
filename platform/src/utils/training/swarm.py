@@ -34,6 +34,13 @@ def run_swarm(
     baseline: bool = False,
 ) -> None:
     try:
+        logger.info("Initialising Ray runtime")
+        ray.init(**config["swarm"]["global"]["ray_init_args"])
+    except Exception as e:
+        logger.error("Error initialising Ray runtime: {}".format(e))
+        logger.exception(e)
+        raise e
+    try:
         logger.info("Initialising swarm learning runtime")
         if baseline:
             logger.info("Initialising swarm learning with baseline parameters")

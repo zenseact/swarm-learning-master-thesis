@@ -101,10 +101,13 @@ def run_federated(
         )
         logger.debug("Creating client %s", cid)
         model = load_model(config)
+        
+        # Move the model to the correct device if needed
         if config["federated"]["global"]["client_resources"]["num_gpus"] > 0:
             model.to("cuda")
         else:
             model.to("cpu")
+
         trainloader = train_loaders[int(cid)]
         valloader = val_loaders[int(cid)]
         client = FlowerClient(
@@ -161,7 +164,7 @@ class FlowerClient(fl.client.NumPyClient):
         valloader: DataLoader,
         log_dir: str,
     ) -> None:
-        self.config = config["federated"]["client"]
+        self.config = config["federated"]
         self.cid = cid
         self.net = model
         self.trainloader = trainloader
@@ -185,7 +188,7 @@ class FlowerClient(fl.client.NumPyClient):
             network=self.net,
             trainloader=self.trainloader,
             valloader=self.valloader,
-            epochs=self.config["epochs"],
+            epochs=self.config["client"]["epochs"],
             loss_function=self.loss_function,
             writer=self.writer,
             writer_path="federated/loss/clients/{}/".format(self.cid),
