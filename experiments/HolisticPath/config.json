@@ -1,0 +1,52 @@
+{
+    "data": {
+        "path": "/mnt/ZOD",
+        "version": "full",
+        "ratio": 0.4,
+        "img_size": [
+            400,
+            1420
+        ],
+        "transforms": "[CustomCrop(800, 500, 800, 2840), Resize((400, 1420))]",
+        "shuffle_seed": 42,
+        "decentralised_shuffle_seed": 42,
+        "dataloader_args": {
+            "batch_size": 32
+        },
+        "train_val_id_generator": "balanced_frames"
+    },
+    "model": {
+        "name": "ptnet",
+        "args": {
+            "num_output": 66
+        },
+        "loss": "MSELoss"
+    },
+    "central": {
+        "train": "false",
+        "use_gpu": "true",
+        "epochs": 15
+    },
+    "decentralised": {
+        "train": [
+            "federated"
+        ],
+        "global": {
+            "n_clients": 5,
+            "global_rounds": 3,
+            "client_resources": {
+                "num_cpus": 1,
+                "num_gpus": 0.3
+            },
+            "ray_init_args": {
+                "include_dashboard": true,
+                "num_cpus": 6,
+                "num_gpus": 2
+            }
+        },
+        "client": {
+            "epochs": 3
+        }
+    },
+    "note": "Balanced frames, ROI, 50 epochs, 5 clients with pretrained model"
+}
