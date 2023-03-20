@@ -1,9 +1,11 @@
 from static_params import *
 from utilities import *
-from groundtruth_utils import * 
+from groundtruth_utils import *
+
 
 class ZODImporter:
-    def __init__(self, root=DATASET_ROOT, subset_factor=SUBSET_FACTOR, img_size=IMG_SIZE, batch_size=BATCH_SIZE, tb_path=None, stored_gt_path=None):
+    def __init__(self, root=DATASET_ROOT, subset_factor=SUBSET_FACTOR, img_size=IMG_SIZE, batch_size=BATCH_SIZE,
+                 tb_path=None, stored_gt_path=None):
         version = "full"  # "mini" or "full"
         self.zod_frames = ZodFrames(dataset_root=root, version=version)
 
@@ -11,7 +13,7 @@ class ZODImporter:
         validation_frames_all = self.zod_frames.get_split(constants.VAL)
 
         self.ground_truth = None
-        if(stored_gt_path):
+        if (stored_gt_path):
             self.ground_truth = load_ground_truth(stored_gt_path)
             print('loaded stored ground truth')
 
@@ -28,17 +30,19 @@ class ZODImporter:
         self.tb_path = tb_path
 
     def is_valid_frame(self, frame_id):
-        if(self.ground_truth):
+        if (self.ground_truth):
             return frame_id in self.ground_truth
         else:
-            return get_ground_truth(self.zod_frames, frame_id).shape[0] == OUTPUT_SIZE*3
+            return get_ground_truth(self.zod_frames, frame_id).shape[0] == OUTPUT_SIZE * 3
 
     def load_datasets(self, num_clients: int):
         seed = 42
         transform = transforms.Compose([transforms.ToTensor(), transforms.Resize((self.img_size, self.img_size))])
 
-        trainset = ZodDataset(zod_frames=self.zod_frames, frames_id_set=self.training_frames, stored_ground_truth=self.ground_truth, transform=transform)
-        testset = ZodDataset(zod_frames=self.zod_frames, frames_id_set=self.validation_frames, stored_ground_truth=self.ground_truth, transform=transform)
+        trainset = ZodDataset(zod_frames=self.zod_frames, frames_id_set=self.training_frames,
+                              stored_ground_truth=self.ground_truth, transform=transform)
+        testset = ZodDataset(zod_frames=self.zod_frames, frames_id_set=self.validation_frames,
+                             stored_ground_truth=self.ground_truth, transform=transform)
 
         # Split training set into `num_clients` partitions to simulate different local datasets
         partition_size = len(trainset) // num_clients
@@ -58,10 +62,11 @@ class ZODImporter:
             ds_train, ds_val = random_split(ds, lengths, torch.Generator().manual_seed(seed))
             trainloaders.append(DataLoader(ds_train, batch_size=self.batch_size, shuffle=True, num_workers=10))
             valloaders.append(DataLoader(ds_val, batch_size=self.batch_size, num_workers=10))
-        
+
         len_complete_val = int(len(trainset) * VAL_FACTOR)
         len_complete_train = int(len(trainset) - len_complete_val)
-        train_split, val_split = random_split(trainset, [len_complete_train, len_complete_val], torch.Generator().manual_seed(seed))
+        train_split, val_split = random_split(trainset, [len_complete_train, len_complete_val],
+                                              torch.Generator().manual_seed(seed))
 
         completeTrainloader = DataLoader(train_split, batch_size=self.batch_size, num_workers=10)
         completeValloader = DataLoader(val_split, batch_size=self.batch_size, num_workers=10)
@@ -72,7 +77,7 @@ class ZODImporter:
         save_dataset_tb_plot(self.tb_path, lengths_train, "training", seed)
         save_dataset_tb_plot(self.tb_path, lengths_val, "validation", seed)
 
-        return trainloaders, valloaders, testloader, completeTrainloader, completeValloader 
+        return trainloaders, valloaders, testloader, completeTrainloader, completeValloader
 
 
 class ZodDataset(Dataset):
@@ -93,11 +98,11 @@ class ZodDataset(Dataset):
         image = frame.get_image(Anonymization.DNAT)
         label = None
 
-        if(self.stored_ground_truth):
+        if (self.stored_ground_truth):
             label = self.stored_ground_truth[frame_idx]
-        else: 
+        else:
             label = get_ground_truth(self.zod_frames, frame_idx)
-        
+
         label = label.astype('float32')
         image = image.astype('float32')
 
@@ -114,9 +119,9 @@ def main(
         subset_factor=SUBSET_FACTOR,
         img_size=IMG_SIZE,
         batch_size=BATCH_SIZE):
-
     # import Zod data into memory
-    zod = ZODImporter(subset_factor=subset_factor, img_size=img_size, batch_size=batch_size, stored_gt_path=STORED_GROUND_TRUTH_PATH)
+    zod = ZODImporter(subset_factor=subset_factor, img_size=img_size, batch_size=batch_size,
+                      stored_gt_path=STORED_GROUND_TRUTH_PATH)
 
     # create pytorch loaders
     trainloaders, valloaders, testloader, completeTrainloader, completeValloader = zod.load_datasets(nr_clients)

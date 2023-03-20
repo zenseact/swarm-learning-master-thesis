@@ -94,13 +94,13 @@ def flatten_ground_truth(label):
 def reshape_ground_truth(label, output_size=OUTPUT_SIZE):
     return label.reshape((output_size,3))
 
-def create_ground_truth(training_frames, validation_frames, path):
+def create_ground_truth(zod_frames, training_frames, validation_frames, path):
     all_frames = validation_frames.copy()
     all_frames.extend(training_frames)
     
     ground_truth = {}
     for frame_id in tqdm(all_frames):
-        gt = get_gt(frame_id)
+        gt = visualize_HP_on_image(zod_frames, frame_id)
         if(gt.shape[0] != OUTPUT_SIZE*3):
             print('detected invalid frame: ', frame_id)
             continue
@@ -135,5 +135,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-

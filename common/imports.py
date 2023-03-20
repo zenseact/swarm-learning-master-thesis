@@ -36,6 +36,8 @@ import json
 import requests
 import cv2
 from flask import Flask, request, jsonify
+import multiprocessing
+
 from zod.visualization.oxts_on_image import visualize_oxts_on_image
 from zod.constants import Camera
 from zod.data_classes.calibration import Calibration
