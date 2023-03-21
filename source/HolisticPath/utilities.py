@@ -75,8 +75,8 @@ def train(net, trainloader, valloader,
 
         if (ML_TASK == TASK.CLASSIFICATION):
             epoch_acc = correct / total
-            accs.append(epoch_acc);
-            val_accs.append(epoch_val_accuracy);
+            accs.append(epoch_acc)
+            val_accs.append(epoch_val_accuracy)
 
             print(
                 f" ↪ Client{client_cid} Epoch {epoch + 1}: train loss {epoch_loss}, accuracy {epoch_acc}, val loss {epoch_val_loss}, accuracy {epoch_val_accuracy}")

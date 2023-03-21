@@ -5,12 +5,15 @@ from groundtruth_utils import *
 
 class ZODImporter:
     def __init__(self, root=DATASET_ROOT, subset_factor=SUBSET_FACTOR, img_size=IMG_SIZE, batch_size=BATCH_SIZE,
-                 tb_path=None, stored_gt_path=None):
+                 tb_path=None, stored_gt_path=None, stored_balanced_ds_path=None):
         version = "full"  # "mini" or "full"
         self.zod_frames = ZodFrames(dataset_root=root, version=version)
 
-        training_frames_all = self.zod_frames.get_split(constants.TRAIN)
-        validation_frames_all = self.zod_frames.get_split(constants.VAL)
+        if(stored_balanced_ds_path):
+            training_frames_all, validation_frames_all = self.balanced_frames(stored_balanced_ds_path)
+        else: 
+            training_frames_all = self.zod_frames.get_split(constants.TRAIN)
+            validation_frames_all = self.zod_frames.get_split(constants.VAL)
 
         self.ground_truth = None
         if (stored_gt_path):
@@ -29,11 +32,35 @@ class ZODImporter:
         self.batch_size = batch_size
         self.tb_path = tb_path
 
+    def balanced_frames(self, stored_balanced_ds_path):
+        print('Reading balanced dataset ids cached file..')
+
+        with open(stored_balanced_ds_path, "r") as f:
+            content = f.read().splitlines()
+
+        keywords = ["TRAIN_BALANCED", "VAL_BALANCED"]
+
+        ids = {keyword: [] for keyword in keywords}
+        current_keyword = None
+
+        for row in content:
+            if row[0] == "%" and row[1:] in keywords:
+                current_keyword = row[1:]
+            else:
+                ids[current_keyword].append(row)
+
+        train_ids = ids["TRAIN_BALANCED"]
+        val_ids = ids["VAL_BALANCED"]
+
+        print('loaded balanced datasets ids.')
+        return train_ids, val_ids
+
     def is_valid_frame(self, frame_id):
         if (self.ground_truth):
-            return frame_id in self.ground_truth
+            return frame_id in self.ground_truth and frame_id not in CORRUPTED_FRAMES
         else:
-            return get_ground_truth(self.zod_frames, frame_id).shape[0] == OUTPUT_SIZE * 3
+            #return get_ground_truth(self.zod_frames, frame_id).shape[0] == NUM_OUTPUT and frame_id not in CORRUPTED_FRAMES
+            return frame_id not in CORRUPTED_FRAMES
 
     def load_datasets(self, num_clients: int):
         seed = 42
@@ -60,18 +87,18 @@ class ZODImporter:
             lengths_val.append(len_val)
             lengths = [len_train, len_val]
             ds_train, ds_val = random_split(ds, lengths, torch.Generator().manual_seed(seed))
-            trainloaders.append(DataLoader(ds_train, batch_size=self.batch_size, shuffle=True, num_workers=10))
-            valloaders.append(DataLoader(ds_val, batch_size=self.batch_size, num_workers=10))
+            trainloaders.append(DataLoader(ds_train, batch_size=self.batch_size, shuffle=True, num_workers=NUM_WORKERS))
+            valloaders.append(DataLoader(ds_val, batch_size=self.batch_size, num_workers=NUM_WORKERS))
 
         len_complete_val = int(len(trainset) * VAL_FACTOR)
         len_complete_train = int(len(trainset) - len_complete_val)
         train_split, val_split = random_split(trainset, [len_complete_train, len_complete_val],
                                               torch.Generator().manual_seed(seed))
 
-        completeTrainloader = DataLoader(train_split, batch_size=self.batch_size, num_workers=10)
-        completeValloader = DataLoader(val_split, batch_size=self.batch_size, num_workers=10)
+        completeTrainloader = DataLoader(train_split, batch_size=self.batch_size, num_workers=NUM_WORKERS)
+        completeValloader = DataLoader(val_split, batch_size=self.batch_size, num_workers=NUM_WORKERS)
 
-        testloader = DataLoader(testset, batch_size=self.batch_size, num_workers=10)
+        testloader = DataLoader(testset, batch_size=self.batch_size, num_workers=NUM_WORKERS)
 
         """report to tensor board"""
         save_dataset_tb_plot(self.tb_path, lengths_train, "training", seed)

@@ -13,19 +13,37 @@ def get_ground_truth(zod_frames, frame_id):
     key_timestamp = zod_frame.info.keyframe_time.timestamp()
     
     # get posses associated with frame timestamp
-    current_pose = oxts.get_poses(key_timestamp)
+    try:
+        current_pose = oxts.get_poses(key_timestamp)
+    except:
+        print('detected invalid frame: ', frame_id)
+        return np.array([])
     
     # transform poses
     all_poses = oxts.poses
+    
     transformed_poses = np.linalg.pinv(current_pose) @ all_poses
     points = transformed_poses[:, :3, -1]
     points = points[points[:, 0] > 0]    
+    nr_points = points.shape[0] 
+    nr_samples = NUM_OUTPUT//3
     
-    # get equally distributed points 
-    nr_points = points.shape[0] // 2
-    points = np.array([points[i] for i in range(0,nr_points,nr_points//OUTPUT_SIZE)][:OUTPUT_SIZE])
-    return flatten_ground_truth(points)
+    if(nr_points >= nr_samples):
+        points = np.array([points[i] for i in range(0,nr_points,nr_points//nr_samples)][:nr_samples])
+        return flatten_ground_truth(points)
+    else:
+        print('detected invalid frame: ', frame_id, nr_points)
+        return np.array([])
     
+
+def transform_pred(zod_frames, frame_id, pred):
+    zod_frame = zod_frames[frame_id]
+    key_timestamp = zod_frame.info.keyframe_time.timestamp()
+    current_pose = oxts.get_poses(key_timestamp)
+    pred = reshape_ground_truth(pred)
+    return np.linalg.pinv(current_pose) @ pred
+
+
 def visualize_HP_on_image(zod_frames, frame_id, preds=None):
     """Visualize oxts track on image plane."""
     camera=Camera.FRONT
@@ -91,18 +109,19 @@ def visualize_HP_on_image(zod_frames, frame_id, preds=None):
 def flatten_ground_truth(label):
     return label.flatten()
 
-def reshape_ground_truth(label, output_size=OUTPUT_SIZE):
-    return label.reshape((output_size,3))
+def reshape_ground_truth(label, output_size=NUM_OUTPUT):
+    return label.reshape(((NUM_OUTPUT//3),3))
 
 def create_ground_truth(zod_frames, training_frames, validation_frames, path):
     all_frames = validation_frames.copy()
     all_frames.extend(training_frames)
     
+    corrupted_frames = []
     ground_truth = {}
     for frame_id in tqdm(all_frames):
-        gt = visualize_HP_on_image(zod_frames, frame_id)
-        if(gt.shape[0] != OUTPUT_SIZE*3):
-            print('detected invalid frame: ', frame_id)
+        gt = get_ground_truth(zod_frames, frame_id)
+        if(gt.shape[0] != NUM_OUTPUT):
+            corrupted_frames.append(frame_id)
             continue
         else:
             ground_truth[frame_id] = gt.tolist()
@@ -113,6 +132,8 @@ def create_ground_truth(zod_frames, training_frames, validation_frames, path):
     # Writing to sample.json
     with open(path, "w") as outfile:
         outfile.write(json_object)
+    
+    print(corrupted_frames)
 
 def load_ground_truth(path):
     with open(path) as json_file:
@@ -125,13 +146,14 @@ def load_ground_truth(path):
 
 
 def main():
-    from datasets import ZODImporter
-    
-    zod = ZODImporter(subset_factor=SUBSET_FACTOR, img_size=IMG_SIZE, batch_size=BATCH_SIZE, stored_gt_path=STORED_GROUND_TRUTH_PATH)
+    zod_frames = ZodFrames(dataset_root=DATASET_ROOT, version='full')
+    training_frames_all = zod_frames.get_split(constants.TRAIN)
+    validation_frames_all = zod_frames.get_split(constants.VAL)
 
-    idx = "081294"
-    image = visualize_HP_on_image(zod.zod_frames, idx)
+    #idx = "081294"
+    #image = visualize_HP_on_image(zod.zod_frames, idx)
 
+    create_ground_truth(zod_frames, training_frames_all, validation_frames_all, 'hp_gt.json')
 
 if __name__ == "__main__":
     main()

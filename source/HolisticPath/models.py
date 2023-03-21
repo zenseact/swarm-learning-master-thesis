@@ -60,11 +60,13 @@ class PTNet(nn.Module):
     def change_head_net(self):
         num_ftrs = self.model.fc.in_features
         head_net = nn.Sequential(
-            nn.Linear(num_ftrs, 100, bias=True),
+            nn.Linear(num_ftrs, 1024, bias=True),
             nn.ReLU(inplace=True),
-            nn.Linear(100, 100, bias=True),
+            nn.Linear(1024, 1024, bias=True),
             nn.ReLU(inplace=True),
-            nn.Linear(100, NUM_OUTPUT, bias=True),
+            nn.Linear(1024, 512, bias=True),
+            nn.ReLU(inplace=True),
+            nn.Linear(512, NUM_OUTPUT, bias=True),
         )
         self.model.fc = head_net
 
