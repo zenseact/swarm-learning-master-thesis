@@ -11,7 +11,7 @@ class SSHClient:
         self.ssh = paramiko.SSHClient()
         self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         private_key = paramiko.RSAKey.from_private_key_file(self.private_key_path)
-        self.ssh.connect(hostname=self.hostname, username='', pkey=private_key)
+        self.ssh.connect(hostname=self.hostname, username='root', pkey=private_key)
         self.sftp = self.ssh.open_sftp()
         return self
 

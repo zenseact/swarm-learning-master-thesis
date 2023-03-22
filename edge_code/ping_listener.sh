@@ -17,15 +17,14 @@ check_for_updates() {
 
 while true
 do
-    # Check for updates before executing the Python script
-    check_for_updates
-
     # Listen for incoming ping requests
     ping_request=$(sudo tcpdump -i eth0 -c 1 icmp and icmp[icmptype]=icmp-echo)
 
     # If a ping request was received, extract the message and execute your Python script
     if [[ ! -z "$ping_request" ]]
     then
+        # Check for updates before executing the Python script
+        check_for_updates
         # Extract the IP header and message from the ping request
         ip_header=$(echo "$ping_request" | awk -F ' IP ' '{print $2}')
         message=$(echo "$ip_header" | awk -F ':' '{print $1,$2}')

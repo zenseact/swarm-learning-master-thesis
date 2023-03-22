@@ -9,7 +9,7 @@ class EdgeCom:
     
     def update_model(self, cid: str, strategy: str):
         # find available edge node and tell it to train
-        self.__ping_train(cid)
+        self.__ping_train(cid, strategy)
         # wait for edge node to finish and fetch new model
         model = self.__recieve(cid)
         # remove the model after fetch
@@ -29,7 +29,7 @@ class EdgeCom:
         model = np.load("../tmp/res"+cid+".npz")
         return model
 
-    def __remove(self, cid):
+    def __remove(self, cid: str):
         self.edge_handler.job_done(self.node)
         self.node = None
         os.remove("../tmp/res"+cid+".npz")
