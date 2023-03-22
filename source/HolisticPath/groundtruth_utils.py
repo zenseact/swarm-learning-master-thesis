@@ -2,7 +2,7 @@ from static_params import *
 from utilities import * 
 
 
-def get_ground_truth(zod_frames, frame_id):
+def get_ground_truth(zod_frames, frame_id):   
     # get frame
     zod_frame = zod_frames[frame_id]
     
@@ -15,25 +15,28 @@ def get_ground_truth(zod_frames, frame_id):
     # get posses associated with frame timestamp
     try:
         current_pose = oxts.get_poses(key_timestamp)
+        # transform poses
+        all_poses = oxts.poses
+        transformed_poses = np.linalg.pinv(current_pose) @ all_poses
+
+        def travelled_distance(poses) -> np.ndarray:
+            translations = poses[:, :3, 3]
+            distances = np.linalg.norm(np.diff(translations, axis=0), axis=1)
+            accumulated_distances = np.cumsum(distances).astype(int).tolist()
+
+            pose_idx = [accumulated_distances.index(i) for i in TARGET_DISTANCES] 
+            return poses[pose_idx]
+
+        used_poses = travelled_distance(transformed_poses)
+    
     except:
         print('detected invalid frame: ', frame_id)
         return np.array([])
     
-    # transform poses
-    all_poses = oxts.poses
-    
-    transformed_poses = np.linalg.pinv(current_pose) @ all_poses
-    points = transformed_poses[:, :3, -1]
-    points = points[points[:, 0] > 0]    
-    nr_points = points.shape[0] 
-    nr_samples = NUM_OUTPUT//3
-    
-    if(nr_points >= nr_samples):
-        points = np.array([points[i] for i in range(0,nr_points,nr_points//nr_samples)][:nr_samples])
-        return flatten_ground_truth(points)
-    else:
-        print('detected invalid frame: ', frame_id, nr_points)
-        return np.array([])
+    print(used_poses.shape)
+    points = used_poses[:, :3, -1]
+    return flatten_ground_truth(points)
+
     
 
 def transform_pred(zod_frames, frame_id, pred):

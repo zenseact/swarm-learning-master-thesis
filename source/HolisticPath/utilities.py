@@ -15,7 +15,7 @@ def train(net, trainloader, valloader,
     """tensor board publish"""
     running_batch_index = 1 + (server_round - 1) * len(trainloader)
 
-    criterion = torch.nn.CrossEntropyLoss() if ML_TASK == TASK.CLASSIFICATION else torch.nn.MSELoss()
+    criterion = torch.nn.CrossEntropyLoss() if ML_TASK == TASK.CLASSIFICATION else torch.nn.L1Loss()
     optimizer = torch.optim.Adam(net.model_parameters())
     net.train()
 
@@ -107,7 +107,7 @@ def train(net, trainloader, valloader,
 
 def test(net, testloader):
     """Evaluate the network on the entire test set."""
-    criterion = torch.nn.CrossEntropyLoss() if ML_TASK == TASK.CLASSIFICATION else torch.nn.MSELoss()
+    criterion = torch.nn.CrossEntropyLoss() if ML_TASK == TASK.CLASSIFICATION else torch.nn.L1Loss()
     correct, total = 0, 0
     net.eval()
     loss = []

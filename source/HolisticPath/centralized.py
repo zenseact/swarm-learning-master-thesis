@@ -55,8 +55,8 @@ class CentralizedSimulator:
 
 def main(
         nr_clients=2,
-        nr_local_epochs=10,
-        subset_factor=0.1,
+        nr_local_epochs=4,
+        subset_factor=0.05,
         img_size=IMG_SIZE,
         batch_size=BATCH_SIZE,
         device=DEVICE,
@@ -64,7 +64,7 @@ def main(
         centralized_subpath=TB_CENTRALIZED_SUB_PATH):
 
     # import Zod data into memory
-    zod = ZODImporter(subset_factor=subset_factor, img_size=img_size, batch_size=batch_size, tb_path=tb_path, stored_gt_path=None, stored_balanced_ds_path=None)#STORED_GROUND_TRUTH_PATH, STORED_BALANCED_DS_PATH
+    zod = ZODImporter(subset_factor=subset_factor, img_size=img_size, batch_size=batch_size, tb_path=tb_path, stored_gt_path=STORED_GROUND_TRUTH_PATH, stored_balanced_ds_path=None)#STORED_GROUND_TRUTH_PATH, STORED_BALANCED_DS_PATH
 
     # create pytorch loaders
     trainloaders, valloaders, testloader, completeTrainloader, completeValloader = zod.load_datasets(nr_clients)
