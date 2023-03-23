@@ -1,4 +1,4 @@
-name: zen
+name: fleet
 channels:
 - defaults
 - pytorch
@@ -47,5 +47,5 @@ dependencies:
   - tqdm
   - numba
   - networkx
-  - torch summary
+  - torchsummary
   - Flask 

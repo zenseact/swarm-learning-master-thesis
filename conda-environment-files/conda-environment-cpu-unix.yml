@@ -1,4 +1,4 @@
-name: zen
+name: fleet
 channels:
 - defaults
 - pytorch
