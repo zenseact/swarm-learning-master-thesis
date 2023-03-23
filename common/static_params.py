@@ -22,7 +22,7 @@ PRINT_DEBUG_DATA = True
 ML_TASK = TASK.REGRESSION
 OUTPUT_SIZE = 66
 DEVICE = torch.device('cuda' if USE_GPU else 'cpu')
-STORED_GROUND_TRUTH_PATH = "ground_truth.json"
+STORED_GROUND_TRUTH_PATH = "/mnt/ZOD/ground_truth.json"
 DATASET_ROOT = "/mnt/ZOD"
 ZENSEACT_DATASET_ROOT = "/staging/dataset_donation/round_2"
 

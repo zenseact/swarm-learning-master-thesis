@@ -128,9 +128,10 @@ def main():
     from datasets import ZODImporter
     
     zod = ZODImporter(subset_factor=SUBSET_FACTOR, img_size=IMG_SIZE, batch_size=BATCH_SIZE, stored_gt_path=STORED_GROUND_TRUTH_PATH)
-
-    idx = "081294"
-    image = visualize_HP_on_image(zod.zod_frames, idx)
+    zod.zod_frames
+    create_ground_truth(zod.zod_frames, zod.zod_frames._train_frames, zod.zod_frames._val_frames,STORED_GROUND_TRUTH_PATH)
+    #idx = "081294"
+    #image = visualize_HP_on_image(zod.zod_frames, idx)
 
 
 if __name__ == "__main__":
