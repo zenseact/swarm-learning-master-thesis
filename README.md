@@ -1,8 +1,11 @@
 # Quick installation for command line tools including pytorch and ZOD sdk
 
 * Download Anaconda Python from https://www.anaconda.com/distribution/ if you don't have it locally.
+
 OR:
+
 curl -O https://repo.anaconda.com/archive/Anaconda3-2021.11-Linux-x86_64.sh
+
 bash Anaconda3-2021.11-Linux-x86_64.sh 
 
 * After installation, run the command `conda init`
