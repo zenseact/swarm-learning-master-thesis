@@ -7,6 +7,7 @@ from edge_code.data_loader import load_train_data
 from common.utilities import train
 
 if __name__ == '__main__':
+    print('test pull worked')
     # Get the command-line arguments
     cid = sys.argv[1]
     strategy = sys.argv[2]
