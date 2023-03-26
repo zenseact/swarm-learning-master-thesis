@@ -2,10 +2,13 @@ from collections import OrderedDict
 from copy import deepcopy
 from typing import List
 
+import torch
+
 
 def average(models: List["TemporalModel"] = None) -> OrderedDict:
     # Average factor k, and a deepcopy of the first model
     k = 1 / len(models)
+    
     new_model = deepcopy(models[0].get_parameters())
 
     # Sum the model weights
@@ -17,6 +20,9 @@ def average(models: List["TemporalModel"] = None) -> OrderedDict:
 
         # Multiply by k to get the average
         for key in new_model.keys():
-            new_model[key] *= k
+            if new_model[key].dtype == torch.int64:
+                new_model[key] = torch.round((new_model[key] * k)).type(torch.int64)
+            else:
+                new_model[key] *= k
 
     return new_model
