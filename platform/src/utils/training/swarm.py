@@ -430,7 +430,7 @@ class Simulator:
             return
         logger.info("{} Starting aggregation process".format(cid[:7]))
         logger.debug(
-            "{} Aggregation queue: {}".format(cid[:7], client_aggregation_queue)
+            "{} Aggregation queue: {}".format(cid[:7], [m.mid for m in client_aggregation_queue])
         )
         # Aggregates the models in the aggregation queue
         # and sets the aggregated model as the current model

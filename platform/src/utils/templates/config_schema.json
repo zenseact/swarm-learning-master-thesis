@@ -36,6 +36,9 @@
                     "required": [
                         "batch_size"
                     ]
+                },
+                "dataset_getitem": {
+                    "type": "string"
                 }
             },
             "required": [
@@ -44,7 +47,8 @@
                 "img_size",
                 "transforms",
                 "shuffle_seed",
-                "dataloader_args"
+                "dataloader_args",
+                "dataset_getitem"
             ]
         },
         "model": {

@@ -169,10 +169,13 @@ class DataHandler:
 
         # Creating the data objects for central training
         logger.info("Creating central datasets")
+        
+        output_size = full_config["model"]["args"]["num_output"]
+        
         self._test = DataObject(
             _ids=self.__test_ids,
             _dataset=ZodDataset(
-                self._zod_frames, self.__test_ids, transforms=transforms
+                self._zod_frames, self.__test_ids, transforms=transforms, output_size=output_size, config=full_config
             ),
             _loader_args=self._config["dataloader_args"],
         )
@@ -180,7 +183,7 @@ class DataHandler:
         self._train = DataObject(
             _ids=self.__train_ids,
             _dataset=ZodDataset(
-                self._zod_frames, self.__train_ids, transforms=transforms
+                self._zod_frames, self.__train_ids, transforms=transforms, output_size=output_size, config=full_config
             ),
             _loader_args=self._config["dataloader_args"],
         )
@@ -188,7 +191,7 @@ class DataHandler:
         self._val = DataObject(
             _ids=self.__val_ids,
             _dataset=ZodDataset(
-                self._zod_frames, self.__val_ids, transforms=transforms
+                self._zod_frames, self.__val_ids, transforms=transforms, output_size=output_size, config=full_config
             ),
             _loader_args=self._config["dataloader_args"],
         )
@@ -295,38 +298,62 @@ class DataHandler:
 
 class ZodDataset(Dataset):
     def __init__(
-        self, zod_frames, frames_id_set, transforms=None, target_transform=None
+        self, zod_frames, frames_id_set, output_size, config, transforms=None, target_transform=None,
     ) -> None:
         self.zod_frames = zod_frames
         self.frames_id_set = frames_id_set
         self.transforms = Compose(transforms)
         self.target_transform = target_transform
+        self.output_size = output_size 
+        self.config = config
+        
+         # Check if a custom get_method is defined in the config
+        try:
+            if self.config["data"]["dataset_getitem"]:
+                # get the method name from the config
+                dataset_getitem_method_name = self.config["data"]["dataset_getitem"]
+                # get the dataset get method from the custom_dataset.py file
+                custom_methods = importlib.import_module(
+                    f"src.utils.data.extensions.custom_datasets"
+                )
+                dataset_getitem_method = getattr(custom_methods, dataset_getitem_method_name)
+                self.get_method = dataset_getitem_method
+                # Log that the custom train_val_id_generator is used
+                logger.info("Using custom dataset get method: %s" % dataset_getitem_method_name)
+        except KeyError as e:
+            logger.warning("No dataset_getitem method found")
+            raise e
+        except Exception as e:
+            logger.error("Could not use dataset_getitem method")
+            raise e
 
     def __len__(self) -> int:
         return len(self.frames_id_set)
 
-    def __getitem__(self, idx):
-        frame_idx = self.frames_id_set[idx]
-        frame = self.zod_frames[frame_idx]
-
-        image = frame.get_image(Anonymization.DNAT)
-        poses = frame.ego_motion.poses
-        x = poses[:, 0:1, 3]
-        y = poses[:, 1:2, 3]
-        z = poses[:, 2:3, 3]
-        coordinates = np.append(x, y)
-        coordinates = np.append(coordinates, z)
-
-        label = coordinates.astype("float32")
-        image = image.astype("float32")
-
+    def __getitem__(self, idx: int):
+        label, image = self.get_method(self, idx)
         if self.transforms:
             image = self.transforms(image)
         if self.target_transform:
             label = self.target_transform(label)
 
         return image, label
-
+    
+    def id_to_car_points(self, idx):
+        frame = self.zod_frames[self.frames_id_set[idx]]
+        # get image
+        image = frame.get_image()
+        # extract oxts
+        oxts = frame.oxts
+        # get timestamp
+        key_timestamp = frame.info.keyframe_time.timestamp()
+        # get posses associated with frame timestamp
+        current_pose = oxts.get_poses(key_timestamp)
+        # transform the points to the car coordinate system
+        transformed_poses = np.linalg.pinv(current_pose) @ oxts.poses
+        points = transformed_poses[:, :3, -1]
+        points = points[points[:, 0] > 0]
+        return image, points
 
 def split_dataset(
     data: Dataset,
@@ -336,7 +363,7 @@ def split_dataset(
     writer: SummaryWriter = None,
     subtitle: str = None,
 ) -> List[Dataset]:
-    """ "
+    """
     Split dataset into `num_clients` partitions
     """
     if seed is None:
