@@ -8,6 +8,8 @@ class PartitionStrategy(Enum):
     RANDOM = 'random'
     LOCATION = 'location'
 
+
+TARGET_DISTANCES = [5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 70, 80, 95, 110, 125, 145, 165]
 NUM_CLIENTS = 2
 NUM_OUTPUT = 66
 IMG_SIZE = 224
