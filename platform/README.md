@@ -38,8 +38,12 @@ We suggest that you use Anaconda and the provided environments. If you have not 
 
 I have not provided any conda env file yet. So I urge anyone using this to try to replicate or build their own.
 
+```
+pip install -e ../../platform/src
+```
 
-# Code submission
+
+## Code submission
 
 When committing to this repository, ensure that you have run black to properly format your code.
 

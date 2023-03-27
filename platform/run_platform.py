@@ -1,7 +1,7 @@
 import argparse
 import json
 
-from src import Platform
+from fedswarm import Platform
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Description of your program")
