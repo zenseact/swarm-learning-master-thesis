@@ -2,7 +2,7 @@
     "data": {
         "path": "/mnt/ZOD",
         "version": "full",
-        "ratio": 0.5,
+        "ratio": 1,
         "img_size": [
             400,
             1420
@@ -11,44 +11,21 @@
         "shuffle_seed": 42,
         "decentralised_shuffle_seed": 42,
         "dataloader_args": {
-            "prefetch_factor": 3,
-            "num_workers": 8,
-            "batch_size": 64
+            "batch_size": 32
         },
-        "train_val_id_generator": "balanced_frames",
+        "train_val_id_generator": "overfit_turn",
         "dataset_getitem": "interpolated_target_distances"
     },
     "model": {
         "name": "ptnet",
         "args": {
-            "num_output": 66
+            "num_output": 51
         },
-        "loss": "MSELoss"
+        "loss": "L1Loss"
     },
     "central": {
         "train": "true",
         "use_gpu": "true",
-        "epochs": 15
-    },
-    "decentralised": {
-        "train": [],
-        "global": {
-            "n_clients": 5,
-            "global_rounds": 3,
-            "client_resources": {
-                "num_cpus": 2,
-                "num_gpus": 0.3
-            },
-            "ray_init_args": {
-                "include_dashboard": true,
-                "num_cpus": 2,
-                "num_gpus": 2
-            },
-            "swarm_orchestrator": "synchronous_fixed_rounds_fc"
-        },
-        "client": {
-            "epochs": 5
-        }
-    },
-    "note": "Balanced frames, ROI, 50 epochs, 5 clients with pretrained model"
+        "epochs": 300
+    }
 }

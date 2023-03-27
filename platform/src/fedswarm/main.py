@@ -10,7 +10,7 @@ from jinja2 import Template
 from datetime import datetime
 from torch.utils.tensorboard import SummaryWriter
 
-from .utils.data import DataHandler
+from .utils.data.data_handler import DataHandler
 from .utils.training import run_centralised, run_federated, run_swarm
 
 logger = logging.getLogger(__name__)
@@ -30,7 +30,7 @@ with open(templates_path + "/config_message.md", "r") as file:
 
 
 class Platform:
-    def __init__(self, config: dict, data_only: bool = False) -> None:
+    def __init__(self, config: dict, data_only: bool = False, write=True) -> None:
         try:
             # Save config
             self.config = deepcopy(config)
@@ -39,11 +39,32 @@ class Platform:
             self.create_if_not_exists(self.top_log_dir)
             self.run_id = self.create_run()
             self.run_dir = Path(self.top_log_dir, self.run_id)
-            self.create_if_not_exists(self.run_dir)
-            logger.info("New run created: {}".format(self.run_id))
-
-            # Set up tensorboard writer
-            self.writer = SummaryWriter(self.run_dir)
+            self.write = write
+            self.skip = False
+            
+            skip, same_dir = self.check_for_same_run(config)
+            if skip:
+                print("Same run already exists, skipping run but creates platform")
+                print("Run found in {}".format(same_dir))
+                self.skip = True
+                self.write = False
+            else:
+                print("No same run found, creating new run")
+            if self.write:
+                self.create_if_not_exists(self.run_dir)
+                # Save config to file
+                with open("{}.json".format(Path(self.run_dir, "config")), "w") as f:
+                    json.dump(self.config, f, indent=4)
+                logger.info("New run created: {}".format(self.run_id))
+                # Set up tensorboard writer
+                self.writer = SummaryWriter(self.run_dir)
+                # Set up logging to file and set format
+                logging.basicConfig(
+                    filename="{}.log".format(Path(self.run_dir, "platform")),
+                    encoding="utf-8",
+                    level=logging.DEBUG,
+                    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+                )
 
             # Check if config is valid
             self.validate_config()
@@ -52,21 +73,15 @@ class Platform:
 
             self.announce_configuration()
 
-            # Set up logging to file and set format
-            logging.basicConfig(
-                filename="{}.log".format(Path(self.run_dir, "platform")),
-                encoding="utf-8",
-                level=logging.DEBUG,
-                format="%(asctime)s %(levelname)s %(name)s %(message)s",
-            )
+            
 
             # Run configuration
             self.tb_log_config(config)
             self.data = DataHandler(self.config, self.run_dir)
 
             # If data_only is set, stop here
-            if data_only:
-                return None
+            if data_only or self.skip:
+                return 
 
             # Run training for each enabled method
             if "central" in self.methods:
@@ -90,8 +105,8 @@ class Platform:
             logger.exception(e)
             logger.error("UNCAUGHT EXCEPTION - SHUTTING DOWN")
             raise e
-
-        self.writer.close()
+        if self.write:
+            self.writer.close()
 
     def training_args(self, method: str) -> list:
         # Dynamically create arguments for training functions
@@ -239,8 +254,9 @@ class Platform:
             note=note,
         )
         try:
-            self.writer.add_text("configuration", render)
-            logger.info("[TENSORBOARD] Configuration logged to tensorboard")
+            if self.write:
+                self.writer.add_text("configuration", render)
+                logger.info("[TENSORBOARD] Configuration logged to tensorboard")
         except Exception as e:
             logger.error("[TENSORBOARD] Error when logging configuration")
             logger.exception(e)
@@ -257,3 +273,22 @@ class Platform:
                 logger.warning(
                     "No dataloader to unmount for {} in {} set".format(method, set_type)
                 )
+                
+    def check_for_same_run(self, input_config) -> None:
+        # Get a list of all the directories in the runs directory
+        run_dirs = os.listdir(self.top_log_dir)
+
+        # Loop through each run directory
+        for run_dir in run_dirs:
+            # Construct the path to the config file for this run
+            config_path = os.path.join(self.top_log_dir, run_dir, "config.json")
+            # Check if the config file exists
+            if os.path.exists(config_path):
+                # Load the config file
+                with open(config_path, "r") as f:
+                    config = json.load(f)
+                # Compare the input_config to the config for this run
+                if input_config == config:
+                    # If there is a match, print a message and return True
+                    return True, run_dir
+        return False, None

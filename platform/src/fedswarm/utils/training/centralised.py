@@ -53,7 +53,7 @@ def run_centralised(config: dict, data: object, log_dir=str) -> None:
     )
     # save the modellog_dir
     model_name = Path(log_dir, f"centralised_{config['model']['name']}")
-    save_model(model, model_name)
+    save_model(network, model_name)
     
     
     # Calculate the training duration
