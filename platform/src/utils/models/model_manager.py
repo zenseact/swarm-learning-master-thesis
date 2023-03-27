@@ -6,12 +6,18 @@ from torch.nn import Module
 logger = logging.getLogger(__name__)
 
 
+def load_model_from_name(name, **kwargs) -> Module:
+    module = importlib.import_module(f"src.utils.models.{name}")
+    model = module.metadata["model"]
+    return model(**kwargs)
+
 def load_model(config, **kwargs) -> Module:
     name = config["model"]["name"]
     config_model_args = config["model"]["args"]
 
     module = importlib.import_module(f"src.utils.models.{name}")
     model = module.metadata["model"]
+    
 
     # create instance
     try:
