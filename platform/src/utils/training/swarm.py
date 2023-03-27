@@ -58,7 +58,7 @@ def run_swarm(
 
     sim.spawn_clients()
     sim.start()
-
+    ray.shutdown()
     logger.info("END OF SWARM LEARNING")
 
 

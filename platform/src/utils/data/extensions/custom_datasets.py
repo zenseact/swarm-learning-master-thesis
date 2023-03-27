@@ -8,6 +8,8 @@ from pathlib import Path
 
 current_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
+def overfit_turn():
+    return ["012589"], ["012589"]
 
 def balanced_frames():
     with open(Path(current_dir, "resources/balanced_train_ids.txt"), "r") as f:
