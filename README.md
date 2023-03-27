@@ -23,7 +23,7 @@ bash Anaconda3-2021.11-Linux-x86_64.sh
 
 * Run
 
-`conda activate zen`
+`conda activate fleet`
 
 Now you have a virtual environment from which you can use all functionalities in the ZOD sdk and you have pytorch installed also!
 

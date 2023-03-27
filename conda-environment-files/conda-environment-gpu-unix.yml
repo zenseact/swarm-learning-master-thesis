@@ -19,6 +19,7 @@ dependencies:
 - h5py
 - spacy                            
 - unidecode
+- python3-pyqt5
 - pip:
   - future
   - tb-nightly
