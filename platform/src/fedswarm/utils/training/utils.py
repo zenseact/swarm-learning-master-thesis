@@ -17,6 +17,8 @@ def train(
     valloader: DataLoader,
     epochs: int,
     loss_function,
+    optimiser: object,
+    optimiser_args: dict = None,
     writer: SummaryWriter = None,
     writer_path: str = "loss/undefined/",
     server_round: int = None,
@@ -24,7 +26,7 @@ def train(
 ) -> None:
     # Set up the loss function and optimizer
     criterion = loss_function()
-    optimizer = Adam(network.model_parameters())
+    optimizer = optimiser(network.model_parameters(), **optimiser_args)
     device = next(network.parameters()).device
     logger.debug("Using device: {}".format(device))
 

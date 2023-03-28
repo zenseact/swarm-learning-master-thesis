@@ -93,26 +93,6 @@ class DataHandler:
         # Log directory for tensorboard
         self.log_dir = log_dir
 
-        # The default transforms and additional transforms from config
-        try:
-            img_size = self._config["img_size"]
-            transforms = [ToTensor()]
-            transforms += eval(self._config["transforms"])
-
-            logger.debug(
-                "Added transforms from config: %s" % self._config["transforms"]
-            )
-            logger.debug("Transforms: %s" % transforms)
-
-            # TODO: Add support via kwargs
-            # TODO: Import transforms modules similar to how it is done in training_handler.py
-        except Exception as e:
-            logger.error(
-                "Could not create transforms, using default [ToTensor()]. Consider aborting!"
-            )
-            logger.exception(e)
-            transforms = [ToTensor()]
-
         # Define the default train and validation frame id generator
         # Creates two lists of frame ids, one for the train set and one for the validation set
         def default_id_generator():
@@ -166,6 +146,26 @@ class DataHandler:
         # Create a test set from the val set
         self.__test_ids = self.__val_ids[: len(self.__val_ids) // 2]
         self.__val_ids = self.__val_ids[len(self.__val_ids) // 2 :]
+        
+        # The default transforms and additional transforms from config
+        try:
+            img_size = self._config["img_size"]
+            transforms = [ToTensor()]
+            transforms += eval(self._config["transforms"])
+
+            logger.debug(
+                "Added transforms from config: %s" % self._config["transforms"]
+            )
+            logger.debug("Transforms: %s" % transforms)
+
+            # TODO: Add support via kwargs
+            # TODO: Import transforms modules similar to how it is done in training_handler.py
+        except Exception as e:
+            logger.error(
+                "Could not create transforms, using default [ToTensor()]. Consider aborting!"
+            )
+            logger.exception(e)
+            transforms = [ToTensor()]
 
         # Creating the data objects for central training
         logger.info("Creating central datasets")
@@ -339,22 +339,6 @@ class ZodDataset(Dataset):
 
         return image, label
     
-    def id_to_car_points(self, idx):
-        frame = self.zod_frames[self.frames_id_set[idx]]
-        # get image
-        image = frame.get_image()
-        # extract oxts
-        oxts = frame.oxts
-        # get timestamp
-        key_timestamp = frame.info.keyframe_time.timestamp()
-        # get posses associated with frame timestamp
-        current_pose = oxts.get_poses(key_timestamp)
-        # transform the points to the car coordinate system
-        transformed_poses = np.linalg.pinv(current_pose) @ oxts.poses
-        points = transformed_poses[:, :3, -1]
-        points = points[points[:, 0] > 0]
-        return image, points
-
 def split_dataset(
     data: Dataset,
     n: int,

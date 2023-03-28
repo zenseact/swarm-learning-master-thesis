@@ -8,12 +8,15 @@
             1420
         ],
         "transforms": "[CustomCrop(800, 500, 800, 2840), Resize((400, 1420))]",
-        "shuffle_seed": 42,
-        "decentralised_shuffle_seed": 42,
+        "shuffle_seed": 101,
+        "decentralised_shuffle_seed": 101,
         "dataloader_args": {
-            "batch_size": 32
+            "num_workers": 2,
+            "prefetch_factor": 2,
+            "batch_size": 128,
+            "pin_memory": true
         },
-        "train_val_id_generator": "overfit_turn",
+        "train_val_id_generator": "balanced_frames",
         "dataset_getitem": "interpolated_target_distances"
     },
     "model": {
@@ -21,11 +24,16 @@
         "args": {
             "num_output": 51
         },
-        "loss": "L1Loss"
+        "loss": "L1Loss",
+        "optimiser": "Adam",
+        "optimiser_args": {
+            "lr": 0.0001
+        }
     },
     "central": {
         "train": "true",
         "use_gpu": "true",
-        "epochs": 300
-    }
+        "epochs": 15
+    },
+    "note": "Balanced frames, ROI, 15 epochs, Full dataset"
 }

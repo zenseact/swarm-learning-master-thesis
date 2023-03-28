@@ -5,6 +5,7 @@ import os
 import numpy as np
 
 from pathlib import Path
+from fedswarm.utils.data.utils.oxts import get_points_at_distance, id_to_car_points
 
 current_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
@@ -20,50 +21,36 @@ def balanced_frames():
 
     return content_train, content_val
 
+def balanced_frames_borrowed(train=0.9):
+    with open(Path(current_dir, "resources/balanced_train_ids.txt"), "r") as f:
+        content_train = f.read().splitlines()
+
+    with open(Path(current_dir, "resources/balanced_val_ids.txt"), "r") as f:
+        content_val = f.read().splitlines()
+    
+    all_samples =content_train + content_val
+    # We assume here that the train and val sets are shuffled already to avoid bias
+    index_threshold = int(len(all_samples) * train)
+    
+    return all_samples[:index_threshold], all_samples[index_threshold:]
+
+def turns(direction: str = "right"):
+    assert direction in ["right", "left"]
+    with open(Path(current_dir, f"resources/train_turns_{direction}.txt"), "r") as f:
+        content_train = f.read().splitlines()
+
+    with open(Path(current_dir, f"resources/val_turns_{direction}.txt"), "r") as f:
+        content_val = f.read().splitlines()
+
+    return content_train, content_val
+
 def interpolated_target_distances(dataset_class: "ZodDataset", idx: int):
     
-    def euclidean_distance(coords):
-        """
-        Calculate the Euclidean distance between successive rows of a given array of coordinates.
-        """
-        diffs = np.diff(coords, axis=0)
-        dists = np.sqrt(np.sum(diffs**2, axis=1))
-        return dists
-    
-    def get_points_at_distance(points, target_distances):
-        dists = euclidean_distance(points)
-        dists = np.insert(dists, 0, 0) # so that there is a dist for all points in points.
-        accumulated_distances = np.cumsum(dists)
-        
-        interpolated_points = np.empty((len(target_distances), points.shape[1]))
-        
-        if max(target_distances) > accumulated_distances[-1]:
-            raise ValueError("Target distance is larger than the accumulated distance")
-        
-        index = 0
-        inter_idx = 0
-        for target_distance in target_distances:
-            # Increment index until we have passed the target distance
-            while accumulated_distances[index] < target_distance:
-                index += 1
-            # If we reach this state, then index - 1 is the closest index before going over.
-            # Check if the target distance is exactly at a point in the list
-            if accumulated_distances[index - 1] == target_distance:
-                interpolated_points[inter_idx] = points[index - 1]
-                inter_idx += 1 
-            else:
-                # Interpolate between the two nearest points
-                p1 = points[index - 1]
-                p2 = points[index]
-                d1 = accumulated_distances[index - 1]
-                d2 = accumulated_distances[index]
-                t = (target_distance - d1) / (d2 - d1)
-                interpolated_points[inter_idx] = p1 + t * (p2 - p1)
-                inter_idx += 1
-        return interpolated_points
+    zod_frames = dataset_class.zod_frames
+    frame_id = dataset_class.frames_id_set[idx]
     
     # get the oxts points for the frame
-    image, car_relative_points = dataset_class.id_to_car_points(idx)
+    image, car_relative_points = id_to_car_points(zod_frames, frame_id)
     
     # Multimodal Trajectory Prediction for Self-driving Vehicles using a Single Monocular Camera
     # Hlib Kilichenko (2023)

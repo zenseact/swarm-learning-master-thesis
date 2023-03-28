@@ -89,7 +89,9 @@ class Client:
         torch_model: Module,
         log_dir: str,
         method_string: str,
+        config: dict,
     ) -> None:
+        self.full_config = config
         self.cid = cid
         self.icid = icid
         self.trainloader = trainloader
@@ -171,12 +173,22 @@ class Client:
                 self.cid[:7], self.model.mid[:7]
             )
         )
+        
+        # Optimiser args
+        try:
+            optimiser_args = self.full_config["model"]["optimiser_args"]
+        except KeyError:
+            optimiser_args = {}
+
+        
         mean_epoch_loss, batch_losses, mean_validation_loss, network = train(
             network=self.model.model,
             trainloader=self.trainloader,
             valloader=self.valloader,
             epochs=self.epochs,
             loss_function=self.loss_function,
+            optimiser=self.optimiser_function,
+            optimiser_args=optimiser_args,
             writer=SummaryWriter(self.log_dir),
             writer_path="{}/loss/clients/{}/".format(self.method_string, self.icid),
             server_round=self.round,
@@ -336,6 +348,20 @@ class Simulator:
         loss_method = self._config["model"]["loss"]
         module = importlib.import_module("torch.nn")
         self._loss_function = getattr(module, loss_method)
+        
+        # Load the optimiser function
+        try:
+            opt_method = config["model"]["optimiser"]
+            module = importlib.import_module("torch.optim")
+            self.optimiser_function = getattr(module, opt_method)
+            logger.debug("Using optimiser function: {}".format(self.optimiser_function))
+        except KeyError:
+            logger.debug("No optimiser specified, using Adam")
+            self.optimiser_function = torch.optim.Adam
+        except Exception as e:
+            logger.error("Error loading loss function: {}".format(e))
+            logger.exception(e)
+            raise e
 
         # Logging
         logger = logging.getLogger(__name__)
@@ -367,6 +393,7 @@ class Simulator:
 
         logger.info("Created client with short id: {}".format(id[:7]))
         client_ref = Client.options(**self._client_resources).remote(
+            config=self._config,
             cid=id,
             icid=index,
             trainloader=self._train_loaders[index],

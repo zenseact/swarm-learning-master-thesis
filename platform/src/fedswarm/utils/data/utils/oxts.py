@@ -6,6 +6,25 @@ from cv2 import circle
 from zod.constants import Camera
 from zod.utils.geometry import get_points_in_camera_fov, project_3d_to_2d_kannala, transform_points
 
+def id_to_car_points(zod_frames, frame_id, return_image=True):
+        frame = zod_frames[frame_id]
+        # get image
+        if return_image:
+            image = frame.get_image()
+        else:
+            image = None
+        # extract oxts
+        oxts = frame.oxts
+        # get timestamp
+        key_timestamp = frame.info.keyframe_time.timestamp()
+        # get posses associated with frame timestamp
+        current_pose = oxts.get_poses(key_timestamp)
+        # transform the points to the car coordinate system
+        transformed_poses = np.linalg.pinv(current_pose) @ oxts.poses
+        points = transformed_poses[:, :3, -1]
+        points = points[points[:, 0] > 0]
+        return image, points
+
 def car_points_to_camera(zod_frames, frame_id, car_points):
     camera=Camera.FRONT
     frame = zod_frames[frame_id]
@@ -94,3 +113,44 @@ def present_predictions(img, loss, ground_truth, output, frame_id):
     plt.title('Birds-eye view')
 
     plt.suptitle("{} | Prediction vs Ground Truth | loss: {}".format(frame_id, loss))
+
+
+def euclidean_distance(coords):
+        """
+        Calculate the Euclidean distance between successive rows of a given array of coordinates.
+        """
+        diffs = np.diff(coords, axis=0)
+        dists = np.sqrt(np.sum(diffs**2, axis=1))
+        return dists
+
+def get_points_at_distance(points, target_distances):
+    dists = euclidean_distance(points)
+    dists = np.insert(dists, 0, 0) # so that there is a dist for all points in points.
+    accumulated_distances = np.cumsum(dists)
+    
+    interpolated_points = np.empty((len(target_distances), points.shape[1]))
+    
+    if max(target_distances) > accumulated_distances[-1]:
+        raise ValueError("Target distance is larger than the accumulated distance")
+    
+    index = 0
+    inter_idx = 0
+    for target_distance in target_distances:
+        # Increment index until we have passed the target distance
+        while accumulated_distances[index] < target_distance:
+            index += 1
+        # If we reach this state, then index - 1 is the closest index before going over.
+        # Check if the target distance is exactly at a point in the list
+        if accumulated_distances[index - 1] == target_distance:
+            interpolated_points[inter_idx] = points[index - 1]
+            inter_idx += 1 
+        else:
+            # Interpolate between the two nearest points
+            p1 = points[index - 1]
+            p2 = points[index]
+            d1 = accumulated_distances[index - 1]
+            d2 = accumulated_distances[index]
+            t = (target_distance - d1) / (d2 - d1)
+            interpolated_points[inter_idx] = p1 + t * (p2 - p1)
+            inter_idx += 1
+    return interpolated_points

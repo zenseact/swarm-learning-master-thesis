@@ -4,6 +4,7 @@ import logging
 import numpy as np
 import flwr as fl
 import ray
+import torch
 
 from torch.nn import Module
 from torch import Tensor, Size
@@ -43,6 +44,20 @@ def run_federated(
     loss_method = config["model"]["loss"]
     module = importlib.import_module("torch.nn")
     loss_function = getattr(module, loss_method)
+    
+    # Load the optimiser function
+    try:
+        opt_method = config["model"]["optimiser"]
+        module = importlib.import_module("torch.optim")
+        optimiser_function = getattr(module, opt_method)
+        logger.debug("Using optimiser function: {}".format(optimiser_function))
+    except KeyError:
+        logger.debug("No optimiser specified, using Adam")
+        optimiser_function = torch.optim.Adam
+    except Exception as e:
+        logger.error("Error loading loss function: {}".format(e))
+        logger.exception(e)
+        raise e
 
     # Evaluates the global model
     def global_evaluate(
@@ -164,6 +179,7 @@ class FlowerClient(fl.client.NumPyClient):
         valloader: DataLoader,
         log_dir: str,
     ) -> None:
+        self.full_config = config
         self.config = config["federated"]
         self.cid = cid
         self.net = model
@@ -175,12 +191,34 @@ class FlowerClient(fl.client.NumPyClient):
         loss_method = config["model"]["loss"]
         module = importlib.import_module("torch.nn")
         self.loss_function = getattr(module, loss_method)
+        
+        # Load the optimiser function
+        try:
+            opt_method = config["model"]["optimiser"]
+            module = importlib.import_module("torch.optim")
+            self.optimiser_function = getattr(module, opt_method)
+            logger.debug("Using optimiser function: {}".format(self.optimiser_function))
+        except KeyError:
+            logger.debug("No optimiser specified, using Adam")
+            self.optimiser_function = torch.optim.Adam
+        except Exception as e:
+            logger.error("Error loading loss function: {}".format(e))
+            logger.exception(e)
+            raise e
 
     def get_parameters(self, config):
         logger.debug("Get model parameters of client %s", self.cid)
         return get_parameters(self.net)
 
     def fit(self, parameters, config):
+        
+        # Optimiser args
+        try:
+            optimiser_args = self.full_config["model"]["optimiser_args"]
+        except KeyError:
+            optimiser_args = {}
+
+        
         logger.debug("Start training of client %s", self.cid)
         set_parameters(self.net, parameters)
         logger.info("SERVER ROUND: {}".format(config["server_round"]))
@@ -190,6 +228,8 @@ class FlowerClient(fl.client.NumPyClient):
             valloader=self.valloader,
             epochs=self.config["client"]["epochs"],
             loss_function=self.loss_function,
+            optimiser=self.optimiser_function,
+            optimiser_args=optimiser_args,
             writer=self.writer,
             writer_path="federated/loss/clients/{}/".format(self.cid),
             server_round=config["server_round"],

@@ -99,7 +99,7 @@ class Platform:
             if "baseline" in self.methods:
                 run_swarm(**self.training_args("baseline"), baseline=True)
                 self.unmount_dataloaders("baseline")
-
+            
             logger.info("END OF PLATFORM ACTIVITIES - SHUTTING DOWN")
         except Exception as e:
             logger.exception(e)
@@ -107,6 +107,7 @@ class Platform:
             raise e
         if self.write:
             self.writer.close()
+            logging.shutdown()
 
     def training_args(self, method: str) -> list:
         # Dynamically create arguments for training functions
