@@ -339,22 +339,6 @@ class ZodDataset(Dataset):
 
         return image, label
     
-    def id_to_car_points(self, idx):
-        frame = self.zod_frames[self.frames_id_set[idx]]
-        # get image
-        image = frame.get_image()
-        # extract oxts
-        oxts = frame.oxts
-        # get timestamp
-        key_timestamp = frame.info.keyframe_time.timestamp()
-        # get posses associated with frame timestamp
-        current_pose = oxts.get_poses(key_timestamp)
-        # transform the points to the car coordinate system
-        transformed_poses = np.linalg.pinv(current_pose) @ oxts.poses
-        points = transformed_poses[:, :3, -1]
-        points = points[points[:, 0] > 0]
-        return image, points
-
 def split_dataset(
     data: Dataset,
     n: int,
