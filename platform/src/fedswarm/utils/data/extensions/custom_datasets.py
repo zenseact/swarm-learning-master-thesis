@@ -20,6 +20,19 @@ def balanced_frames():
 
     return content_train, content_val
 
+def balanced_frames_borrowed(train=0.9):
+    with open(Path(current_dir, "resources/balanced_train_ids.txt"), "r") as f:
+        content_train = f.read().splitlines()
+
+    with open(Path(current_dir, "resources/balanced_val_ids.txt"), "r") as f:
+        content_val = f.read().splitlines()
+    
+    all_samples =content_train + content_val
+    # We assume here that the train and val sets are shuffled already to avoid bias
+    index_threshold = int(len(all_samples) * train)
+    
+    return all_samples[:index_threshold], all_samples[index_threshold:]
+
 def interpolated_target_distances(dataset_class: "ZodDataset", idx: int):
     
     def euclidean_distance(coords):
