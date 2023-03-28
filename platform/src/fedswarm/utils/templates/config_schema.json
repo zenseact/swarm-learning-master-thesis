@@ -62,6 +62,12 @@
                 },
                 "loss": {
                     "type": "string"
+                },
+                "optimiser": {
+                    "type": "string"
+                },
+                "optimiser_args": {
+                    "type": "object"
                 }
             },
             "required": [

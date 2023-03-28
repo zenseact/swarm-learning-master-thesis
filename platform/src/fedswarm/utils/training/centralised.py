@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 
 from datetime import datetime
+import torch
 from torch.utils.tensorboard import SummaryWriter
 from datetime import datetime
 
@@ -34,12 +35,32 @@ def run_centralised(config: dict, data: object, log_dir=str) -> None:
         logger.error("Error loading loss function: {}".format(e))
         logger.exception(e)
         raise e
+    
+    # Load the optimiser function
+    try:
+        opt_method = config["model"]["optimiser"]
+        module = importlib.import_module("torch.optim")
+        optimiser_function = getattr(module, opt_method)
+        logger.debug("Using optimiser function: {}".format(optimiser_function))
+    except KeyError:
+        logger.debug("No optimiser specified, using Adam")
+        optimiser_function = torch.optim.Adam
+    except Exception as e:
+        logger.error("Error loading loss function: {}".format(e))
+        logger.exception(e)
+        raise e
 
     # Start the timer for training duration
     start_time = datetime.now()
 
     # Create a tensorboard writer
     writer = SummaryWriter(log_dir)
+    
+    # Optimiser args
+    try:
+        optimiser_args = config["model"]["optimiser_args"]
+    except KeyError:
+        optimiser_args = {}
 
     # Train the model
     mean_epoch_loss, batch_losses, mean_validation_loss, network = train(
@@ -48,6 +69,8 @@ def run_centralised(config: dict, data: object, log_dir=str) -> None:
         valloader=data.val.dataloader,
         epochs=config["central"]["epochs"],
         loss_function=loss_function,
+        optimiser=optimiser_function,
+        optimiser_args=optimiser_args,
         writer=writer,
         writer_path="centralised/loss/",
     )
