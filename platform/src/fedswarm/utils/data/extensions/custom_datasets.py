@@ -36,10 +36,10 @@ def balanced_frames_borrowed(train=0.9):
 
 def turns(direction: str = "right"):
     assert direction in ["right", "left"]
-    with open(Path(current_dir, f"resources/{direction}_turns_train_ids.txt"), "r") as f:
+    with open(Path(current_dir, f"resources/train_turns_{direction}.txt"), "r") as f:
         content_train = f.read().splitlines()
 
-    with open(Path(current_dir, f"resources/{direction}_turns_val_ids.txt"), "r") as f:
+    with open(Path(current_dir, f"resources/val_turns_{direction}.txt"), "r") as f:
         content_val = f.read().splitlines()
 
     return content_train, content_val
