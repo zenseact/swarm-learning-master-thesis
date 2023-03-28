@@ -59,6 +59,7 @@ def run_centralised(config: dict, data: object, log_dir=str) -> None:
     # Optimiser args
     try:
         optimiser_args = config["model"]["optimiser_args"]
+        logger.debug("Using optimiser args: {}".format(optimiser_args))
     except KeyError:
         optimiser_args = {}
 
