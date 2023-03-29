@@ -2,7 +2,7 @@ from static_params import *
 from utilities import * 
 
 
-def get_ground_truth(zod_frames, frame_id):   
+def get_ground_truth(zod_frames, frame_id):
     # get frame
     zod_frame = zod_frames[frame_id]
     
