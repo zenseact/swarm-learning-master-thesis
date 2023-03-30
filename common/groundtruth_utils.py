@@ -1,5 +1,5 @@
-from static_params import *
-from utilities import * 
+from common.static_params import *
+from common.utilities import * 
 
 
 def get_ground_truth(zod_frames, frame_id):

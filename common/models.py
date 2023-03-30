@@ -1,4 +1,4 @@
-from static_params import *
+from common.static_params import *
 
 
 class Net(nn.Module):

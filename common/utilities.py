@@ -1,5 +1,5 @@
-from static_params import *
-from models import *
+from common.static_params import *
+from common.models import *
 
 
 def train(net, trainloader, valloader,

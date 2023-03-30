@@ -1,6 +1,6 @@
-from static_params import *
-from utilities import *
-from groundtruth_utils import *
+from common.static_params import *
+from common.utilities import *
+from common.groundtruth_utils import *
 
 
 class ZODImporter:

@@ -35,9 +35,9 @@ def partition_train_data(strat: PartitionStrategy, no_clients: int):
         random.shuffle(training_frames_all)
         sublist_size = len(training_frames_all) // no_clients
         for i in range(no_clients):
-            cid_partitions[i] = training_frames_all[i*sublist_size:(i+1)*sublist_size]
+            cid_partitions[str(i)] = training_frames_all[i*sublist_size:(i+1)*sublist_size]
         # save partitions for clients to download
-        np.savez('../tmp/partitions.npz', **cid_partitions)
+        np.savez('tmp/partitions.npz', **cid_partitions)
         return cid_partitions
     if strat == PartitionStrategy.LOCATION:
         pass
