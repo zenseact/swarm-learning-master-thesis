@@ -34,6 +34,6 @@ do
         strategy=$(echo "$message" | awk '{print $2}')
 
         # Execute the Python script after checking for updates
-        python3 ~/Fleet/fleet-learning/edge_code/edge_main.py "$cid" "$strategy" &  
+        python3 ~/Fleet/fleet-learning/edge_main.py "$cid" "$strategy" &  
     fi
 done

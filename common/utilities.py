@@ -7,7 +7,7 @@ import torch
 import gc
 import time
 from matplotlib import pyplot as plt
-from torch.utils.tensorboard import SummaryWriter
+# from torch.utils.tensorboard import SummaryWriter
 
 def train(net, trainloader, valloader,
           epochs: int, contin_val=True, plot=True,
@@ -228,16 +228,17 @@ def plot_client_losses(clients_data):
 
 
 def save_dataset_tb_plot(tb_path, sample_distribution, subtitle, seed):
-    plt.bar(list(range(1, len(sample_distribution) + 1)), sample_distribution)
-    plt.xlabel("Partitions")
-    plt.ylabel("Samples")
-    plt.suptitle("Distribution of samples")
-    plt.title("%s, seed: %s" % (subtitle, seed)),
+    pass
+    # plt.bar(list(range(1, len(sample_distribution) + 1)), sample_distribution)
+    # plt.xlabel("Partitions")
+    # plt.ylabel("Samples")
+    # plt.suptitle("Distribution of samples")
+    # plt.title("%s, seed: %s" % (subtitle, seed)),
 
-    """report to tensor board"""
-    writer = SummaryWriter(tb_path)
-    writer.add_figure("sample_distribution/%s" % (subtitle), plt.gcf(), global_step=0)
-    writer.close()
+    # """report to tensor board"""
+    # writer = SummaryWriter(tb_path)
+    # writer.add_figure("sample_distribution/%s" % (subtitle), plt.gcf(), global_step=0)
+    # writer.close()
 
 def timer_start():
     start_time = time.time()

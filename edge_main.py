@@ -1,5 +1,5 @@
 import numpy as np
-from paramiko_ssh import SSHClient
+from edge_code.paramiko_ssh import SSHClient
 import os
 import sys
 from edge_code.data_loader import load_datasets

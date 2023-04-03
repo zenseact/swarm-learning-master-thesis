@@ -8,7 +8,7 @@ import flwr as fl
 from typing import List, Optional, Tuple, Union
 from flwr.common.logger import log
 from logging import WARNING
-from functools import reduce
+from flwr.server.strategy import FedAvg
 
 from flwr.common import (
     FitRes,
@@ -17,7 +17,7 @@ from flwr.common import (
 from flwr.server.client_proxy import ClientProxy
 
 
-class BaseStrategy(fl.server.strategy.FedAvg):
+class BaseStrategy(FedAvg):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
     
@@ -27,5 +27,6 @@ class BaseStrategy(fl.server.strategy.FedAvg):
         results: List[Tuple[fl.server.client_proxy.ClientProxy, fl.common.FitRes]],
         failures: List[Union[Tuple[ClientProxy, FitRes], BaseException]],
     ) -> Optional[fl.common.NDArrays]:
-        aggregated_weights = super().aggregate_fit(server_round, results, failures)
-        return aggregated_weights
+        parameters_aggregated, metrics_aggregated = super().aggregate_fit(server_round, results, failures)
+        # NP.SAVEZ
+        return parameters_aggregated, metrics_aggregated
