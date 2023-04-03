@@ -1,5 +1,17 @@
 from common.static_params import *
-from common.utilities import * 
+from common.utilities import *
+
+import numpy as np
+from tqdm import tqdm
+from matplotlib import pyplot as plt
+from zod import ZodFrames
+import zod.constants as constants
+from zod.constants import Camera, Anonymization
+import json
+import json
+from zod.constants import Camera
+from zod.utils.geometry import get_points_in_camera_fov, project_3d_to_2d_kannala, transform_points
+import cv2
 
 
 def get_ground_truth(zod_frames, frame_id):
@@ -41,6 +53,7 @@ def get_ground_truth(zod_frames, frame_id):
 
 def transform_pred(zod_frames, frame_id, pred):
     zod_frame = zod_frames[frame_id]
+    oxts = zod_frame.oxts
     key_timestamp = zod_frame.info.keyframe_time.timestamp()
     current_pose = oxts.get_poses(key_timestamp)
     pred = reshape_ground_truth(pred)

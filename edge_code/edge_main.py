@@ -1,9 +1,8 @@
 import numpy as np
-import time
 from paramiko_ssh import SSHClient
-import os, stat
+import os
 import sys
-from edge_code.data_loader import load_train_data
+from edge_code.data_loader import load_datasets
 from common.utilities import train
 
 if __name__ == '__main__':
@@ -22,7 +21,7 @@ if __name__ == '__main__':
     with SSHClient(hostname='172.25.16.67', private_key_path='/home/nvidia/.ssh/id_rsa') as ssh:
         ssh.download_file("/root/Fleet/tmp/partitions.npz", "partitions.npz")
     partition = np.load("partitions.npz")['0'][cid]
-    data = load_train_data(partition)
+    data = load_datasets(partition)
 
     # train the model
     # FILL FUNCTION

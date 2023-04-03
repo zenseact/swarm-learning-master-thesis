@@ -1,6 +1,13 @@
 from common.static_params import *
 from common.models import *
 
+from collections import OrderedDict
+import numpy as np
+import torch
+import gc
+import time
+from matplotlib import pyplot as plt
+from torch.utils.tensorboard import SummaryWriter
 
 def train(net, trainloader, valloader,
           epochs: int, contin_val=True, plot=True,
@@ -75,8 +82,8 @@ def train(net, trainloader, valloader,
 
         if (ML_TASK == TASK.CLASSIFICATION):
             epoch_acc = correct / total
-            accs.append(epoch_acc);
-            val_accs.append(epoch_val_accuracy);
+            accs.append(epoch_acc)
+            val_accs.append(epoch_val_accuracy)
 
             print(
                 f" ↪ Client{client_cid} Epoch {epoch + 1}: train loss {epoch_loss}, accuracy {epoch_acc}, val loss {epoch_val_loss}, accuracy {epoch_val_accuracy}")
@@ -128,12 +135,12 @@ def test(net, testloader):
     return loss, accuracy
 
 
-def get_parameters(net) -> List[np.ndarray]:
+def get_parameters(net) -> list[np.ndarray]:
     if (PRINT_DEBUG_DATA): print("⤺ Get model parameters")
     return [val.cpu().numpy() for _, val in net.state_dict().items()]
 
 
-def set_parameters(net, parameters: List[np.ndarray]):
+def set_parameters(net, parameters: list[np.ndarray]):
     if (PRINT_DEBUG_DATA): print("⤻ Set model parameters")
     params_dict = zip(net.state_dict().keys(), parameters)
     state_dict = OrderedDict(

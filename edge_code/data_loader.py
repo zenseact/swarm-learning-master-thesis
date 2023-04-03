@@ -1,9 +1,5 @@
-from common.static_params import PartitionStrategy
 from zod import ZodFrames
-from zod import ZodSequences
-import zod.constants as constants
-from zod.constants import Camera, Lidar, Anonymization, AnnotationProject
-import random
+from zod.constants import Anonymization
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader, random_split
 from torch import Generator
