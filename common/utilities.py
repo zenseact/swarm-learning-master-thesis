@@ -7,6 +7,7 @@ import torch
 import gc
 import time
 from matplotlib import pyplot as plt
+from typing import Dict, List, Optional, Tuple
 # from torch.utils.tensorboard import SummaryWriter
 
 def train(net, trainloader, valloader,
@@ -135,12 +136,12 @@ def test(net, testloader):
     return loss, accuracy
 
 
-def get_parameters(net) -> list[np.ndarray]:
+def get_parameters(net) -> List[np.ndarray]:
     if (PRINT_DEBUG_DATA): print("⤺ Get model parameters")
     return [val.cpu().numpy() for _, val in net.state_dict().items()]
 
 
-def set_parameters(net, parameters: list[np.ndarray]):
+def set_parameters(net, parameters: List[np.ndarray]):
     if (PRINT_DEBUG_DATA): print("⤻ Set model parameters")
     params_dict = zip(net.state_dict().keys(), parameters)
     state_dict = OrderedDict(

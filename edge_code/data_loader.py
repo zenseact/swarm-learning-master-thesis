@@ -6,6 +6,7 @@ from torch import Generator
 from common.groundtruth_utils import get_ground_truth
 from common.static_params import *
 from common.groundtruth_utils import load_ground_truth
+from torch.utils.data import Dataset
 
 
 def load_datasets(partitioned_frame_ids: list):
@@ -24,24 +25,16 @@ def load_datasets(partitioned_frame_ids: list):
 
         lengths = [len_train, len_val]
         ds_train, ds_val = random_split(trainset, lengths, Generator().manual_seed(seed))
-        trainloader = DataLoader(ds_train, batch_size=BATCH_SIZE, shuffle=True, num_workers=10)
-        valloader = DataLoader(ds_val, batch_size=BATCH_SIZE, num_workers=10)
+        trainloader = DataLoader(ds_train, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
+        valloader = DataLoader(ds_val, batch_size=BATCH_SIZE, num_workers=4)
 
-        len_complete_val = int(len(trainset) * VAL_FACTOR)
-        len_complete_train = int(len(trainset) - len_complete_val)
-        train_split, val_split = random_split(trainset, [len_complete_train, len_complete_val],
-                                              Generator().manual_seed(seed))
-
-        completeTrainloader = DataLoader(train_split, batch_size=BATCH_SIZE, num_workers=10)
-        completeValloader = DataLoader(val_split, batch_size=BATCH_SIZE, num_workers=10)
-
-        testloader = DataLoader(testset, batch_size=BATCH_SIZE, num_workers=10)
+        testloader = DataLoader(testset, batch_size=BATCH_SIZE, num_workers=4)
 
         # """report to tensor board"""
         # save_dataset_tb_plot(self.tb_path, lengths_train, "training", seed)
         # save_dataset_tb_plot(self.tb_path, lengths_val, "validation", seed)
 
-        return trainloader, valloader, testloader, completeTrainloader, completeValloader
+        return trainloader, valloader, testloader
 
 
 class ZodDataset(Dataset):

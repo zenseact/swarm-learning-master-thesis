@@ -6,7 +6,7 @@ class EdgeHandler():
         self.lock = ray.Lock()
         self.node_capacity : int = node_capacity
         self.nodes_running : dict = {
-            "agx4.nodes.edgelab.network" : 0,
+            #"agx4.nodes.edgelab.network" : 0, NOT WORKING ATM, fix it!! (flush and reinstall)
             "agx6.nodes.edgelab.network" : 0,
             "agx9.nodes.edgelab.network" : 0,
             "agx10.nodes.edgelab.network" : 0,
