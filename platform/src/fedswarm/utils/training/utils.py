@@ -58,7 +58,7 @@ def train(
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
-            
+
             batch_losses.append(loss.item())
 
             # Write the loss to tensorboard

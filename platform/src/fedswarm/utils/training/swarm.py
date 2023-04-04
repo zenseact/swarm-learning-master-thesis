@@ -173,14 +173,13 @@ class Client:
                 self.cid[:7], self.model.mid[:7]
             )
         )
-        
+
         # Optimiser args
         try:
             optimiser_args = self.full_config["model"]["optimiser_args"]
         except KeyError:
             optimiser_args = {}
 
-        
         mean_epoch_loss, batch_losses, mean_validation_loss, network = train(
             network=self.model.model,
             trainloader=self.trainloader,
@@ -348,7 +347,7 @@ class Simulator:
         loss_method = self._config["model"]["loss"]
         module = importlib.import_module("torch.nn")
         self._loss_function = getattr(module, loss_method)
-        
+
         # Load the optimiser function
         try:
             opt_method = config["model"]["optimiser"]
@@ -457,7 +456,9 @@ class Simulator:
             return
         logger.info("{} Starting aggregation process".format(cid[:7]))
         logger.debug(
-            "{} Aggregation queue: {}".format(cid[:7], [m.mid for m in client_aggregation_queue])
+            "{} Aggregation queue: {}".format(
+                cid[:7], [m.mid for m in client_aggregation_queue]
+            )
         )
         # Aggregates the models in the aggregation queue
         # and sets the aggregated model as the current model

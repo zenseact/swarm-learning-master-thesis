@@ -8,7 +8,7 @@ import torch
 def average(models: List["TemporalModel"] = None) -> OrderedDict:
     # Average factor k, and a deepcopy of the first model
     k = 1 / len(models)
-    
+
     new_model = deepcopy(models[0].get_parameters())
 
     # Sum the model weights

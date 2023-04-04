@@ -35,13 +35,13 @@ class Platform:
             # Save config
             self.config = deepcopy(config)
             # Create run and relevant directories
-            self.top_log_dir = Path( "runs")
+            self.top_log_dir = Path("runs")
             self.create_if_not_exists(self.top_log_dir)
             self.run_id = self.create_run()
             self.run_dir = Path(self.top_log_dir, self.run_id)
             self.write = write
             self.skip = False
-            
+
             skip, same_dir = self.check_for_same_run(config)
             if skip:
                 print("Same run already exists, skipping run but creates platform")
@@ -73,15 +73,13 @@ class Platform:
 
             self.announce_configuration()
 
-            
-
             # Run configuration
             self.tb_log_config(config)
             self.data = DataHandler(self.config, self.run_dir)
 
             # If data_only is set, stop here
             if data_only or self.skip:
-                return 
+                return
 
             # Run training for each enabled method
             if "central" in self.methods:
@@ -99,7 +97,7 @@ class Platform:
             if "baseline" in self.methods:
                 run_swarm(**self.training_args("baseline"), baseline=True)
                 self.unmount_dataloaders("baseline")
-            
+
             logger.info("END OF PLATFORM ACTIVITIES - SHUTTING DOWN")
         except Exception as e:
             logger.exception(e)
@@ -165,7 +163,7 @@ class Platform:
                 methods.append("central")
         except KeyError:
             pass
-        
+
         # Add all enabled methods to the list
         self.methods = methods + decentralised_methods + specific_decentralised_methods
 
@@ -274,7 +272,7 @@ class Platform:
                 logger.warning(
                     "No dataloader to unmount for {} in {} set".format(method, set_type)
                 )
-                
+
     def check_for_same_run(self, input_config) -> None:
         # Get a list of all the directories in the runs directory
         run_dirs = os.listdir(self.top_log_dir)

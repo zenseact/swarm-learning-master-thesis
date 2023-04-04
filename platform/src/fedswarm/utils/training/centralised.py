@@ -35,7 +35,7 @@ def run_centralised(config: dict, data: object, log_dir=str) -> None:
         logger.error("Error loading loss function: {}".format(e))
         logger.exception(e)
         raise e
-    
+
     # Load the optimiser function
     try:
         opt_method = config["model"]["optimiser"]
@@ -55,7 +55,7 @@ def run_centralised(config: dict, data: object, log_dir=str) -> None:
 
     # Create a tensorboard writer
     writer = SummaryWriter(log_dir)
-    
+
     # Optimiser args
     try:
         optimiser_args = config["model"]["optimiser_args"]
@@ -78,8 +78,7 @@ def run_centralised(config: dict, data: object, log_dir=str) -> None:
     # save the modellog_dir
     model_name = Path(log_dir, f"centralised_{config['model']['name']}")
     save_model(network, model_name)
-    
-    
+
     # Calculate the training duration
     end_time = datetime.now()
     soft_duration = str(end_time - start_time).split(".")[0]

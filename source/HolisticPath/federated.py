@@ -1,8 +1,18 @@
 from utilities import *
 from datasets import *
 
+
 class FlowerClient(fl.client.NumPyClient):
-    def __init__(self, cid, net, trainloader, valloader, nr_local_epochs, tb_path=None, federated_subpath=None):
+    def __init__(
+        self,
+        cid,
+        net,
+        trainloader,
+        valloader,
+        nr_local_epochs,
+        tb_path=None,
+        federated_subpath=None,
+    ):
         self.cid = cid
         self.net = net
         self.trainloader = trainloader
@@ -31,9 +41,9 @@ class FlowerClient(fl.client.NumPyClient):
             verbose=0,
             client_cid=self.cid,
             model_name=f"client {self.cid}",
-            server_round=config['server_round'],
+            server_round=config["server_round"],
             tb_writer=self.tb_writer,
-            tb_subpath=f'{self.federated_subpath}/{self.cid}/'
+            tb_subpath=f"{self.federated_subpath}/{self.cid}/",
         )
         self.losses.append(losses)
         self.val_losses.append(val_losses)
@@ -43,11 +53,11 @@ class FlowerClient(fl.client.NumPyClient):
 
     def evaluate(self, parameters, config):
         print(f"[Client {self.cid}] evaluate, config: {config}")
-        if (not self.net):
+        if not self.net:
             self.net = load_model(self.cid)
         set_parameters(self.net, parameters)
         loss, accuracy = test(self.net, self.valloader)
-        if (ML_TASK == TASK.CLASSIFICATION):
+        if ML_TASK == TASK.CLASSIFICATION:
             print(f"🌠 [Client {self.cid}] test loss {loss}, accuracy {accuracy}")
             return float(loss), len(self.valloader), {"accuracy": float(accuracy)}
         else:
@@ -56,7 +66,16 @@ class FlowerClient(fl.client.NumPyClient):
 
 
 class FederatedSimulator:
-    def __init__(self, device, trainloaders, valloaders, testloader, nr_local_epochs=NUM_LOCAL_EPOCHS, tb_path=None, federated_subpath=None):
+    def __init__(
+        self,
+        device,
+        trainloaders,
+        valloaders,
+        testloader,
+        nr_local_epochs=NUM_LOCAL_EPOCHS,
+        tb_path=None,
+        federated_subpath=None,
+    ):
         self.trainloaders = trainloaders
         self.valloaders = valloaders
         self.testloader = testloader
@@ -70,9 +89,12 @@ class FederatedSimulator:
         self.federated_subpath = federated_subpath
 
     # The `evaluate` function will be by Flower called after every round
-    def evaluate(self,
-                 server_round: int, parameters: fl.common.NDArrays, config: Dict[str, fl.common.Scalar]
-                 ) -> Optional[Tuple[float, Dict[str, fl.common.Scalar]]]:
+    def evaluate(
+        self,
+        server_round: int,
+        parameters: fl.common.NDArrays,
+        config: Dict[str, fl.common.Scalar],
+    ) -> Optional[Tuple[float, Dict[str, fl.common.Scalar]]]:
         net = net_instance(f"server")
         valloader = self.testloader
         set_parameters(net, parameters)  # Update model with the latest parameters
@@ -89,8 +111,10 @@ class FederatedSimulator:
 
         writer.close()
 
-        if (ML_TASK == TASK.CLASSIFICATION):
-            print(f"Server-side evaluation loss {float(loss)} / accuracy {float(accuracy)}")
+        if ML_TASK == TASK.CLASSIFICATION:
+            print(
+                f"Server-side evaluation loss {float(loss)} / accuracy {float(accuracy)}"
+            )
             return float(loss), {"accuracy": float(accuracy)}
         else:
             print(f"Server-side evaluation loss {float(loss)}")
@@ -99,9 +123,14 @@ class FederatedSimulator:
     def on_fit_config_fn(self, server_round: int):
         return dict(server_round=server_round)
 
-    def create_server_strategy(self,
-                               fraction_fit=1, fraction_evaluate=1, min_fit_clients=NUM_CLIENTS,
-                               min_evaluate_clients=NUM_CLIENTS, min_available_clients=NUM_CLIENTS):
+    def create_server_strategy(
+        self,
+        fraction_fit=1,
+        fraction_evaluate=1,
+        min_fit_clients=NUM_CLIENTS,
+        min_evaluate_clients=NUM_CLIENTS,
+        min_available_clients=NUM_CLIENTS,
+    ):
         # Pass parameters to the Strategy for server-side parameter initialization
         server_model = net_instance(f"server")
         server_params = get_parameters(server_model)
@@ -114,7 +143,7 @@ class FederatedSimulator:
             min_available_clients=min_available_clients,
             initial_parameters=fl.common.ndarrays_to_parameters(server_params),
             evaluate_fn=self.evaluate,
-            on_fit_config_fn=self.on_fit_config_fn
+            on_fit_config_fn=self.on_fit_config_fn,
         )
         return strategy
 
@@ -128,36 +157,64 @@ class FederatedSimulator:
             config=fl.server.ServerConfig(num_rounds=nr_global_rounds),
             client_resources=self.client_resources,
             strategy=self.create_server_strategy(),
-            ray_init_args = {"object_store_memory": ram_memory}
+            ray_init_args={"object_store_memory": ram_memory},
         )
 
     def client_fn(self, cid) -> FlowerClient:
         net = net_instance(f"client {cid}")
         trainloader = self.trainloaders[int(cid)]
         valloader = self.valloaders[int(cid)]
-        client = FlowerClient(cid, net, trainloader, valloader, self.nr_local_epochs, self.tb_path, self.federated_subpath)
+        client = FlowerClient(
+            cid,
+            net,
+            trainloader,
+            valloader,
+            self.nr_local_epochs,
+            self.tb_path,
+            self.federated_subpath,
+        )
         return client
 
 
 def main(
-        nr_clients=5,
-        nr_local_epochs=10,
-        nr_global_rounds=3,
-        subset_factor=0.1,
-        img_size=IMG_SIZE,
-        batch_size=BATCH_SIZE,
-        device=DEVICE,
-        tb_path=TB_PATH,
-        tb_federated=TB_FEDERATED_SUB_PATH):
-
+    nr_clients=5,
+    nr_local_epochs=10,
+    nr_global_rounds=3,
+    subset_factor=0.1,
+    img_size=IMG_SIZE,
+    batch_size=BATCH_SIZE,
+    device=DEVICE,
+    tb_path=TB_PATH,
+    tb_federated=TB_FEDERATED_SUB_PATH,
+):
     # import Zod data into memory
-    zod = ZODImporter(subset_factor=subset_factor, img_size=img_size, batch_size=batch_size, tb_path=tb_path, stored_gt_path=STORED_GROUND_TRUTH_PATH)
+    zod = ZODImporter(
+        subset_factor=subset_factor,
+        img_size=img_size,
+        batch_size=batch_size,
+        tb_path=tb_path,
+        stored_gt_path=STORED_GROUND_TRUTH_PATH,
+    )
 
     # create pytorch loaders
-    trainloaders, valloaders, testloader, completeTrainloader, completeValloader = zod.load_datasets(nr_clients)
+    (
+        trainloaders,
+        valloaders,
+        testloader,
+        completeTrainloader,
+        completeValloader,
+    ) = zod.load_datasets(nr_clients)
 
     # create federated simulator
-    fed_sim = FederatedSimulator(device, trainloaders, valloaders, completeValloader, nr_local_epochs=nr_local_epochs, tb_path=tb_path, federated_subpath=tb_federated)
+    fed_sim = FederatedSimulator(
+        device,
+        trainloaders,
+        valloaders,
+        completeValloader,
+        nr_local_epochs=nr_local_epochs,
+        tb_path=tb_path,
+        federated_subpath=tb_federated,
+    )
 
     # simulate federated learning
     fed_sim.sim_fed(nr_clients=nr_clients, nr_global_rounds=nr_global_rounds)

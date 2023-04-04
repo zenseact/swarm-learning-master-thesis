@@ -13,16 +13,18 @@ class Net(nn.Module):
             size_before_fc = (size_before_fc - 2 * stride) // 2
 
         self.conv = nn.Sequential(
-            nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, stride=stride, padding=0),
+            nn.Conv2d(
+                in_channels=3, out_channels=32, kernel_size=3, stride=stride, padding=0
+            ),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=2),
             nn.Dropout(p=0.2),
-
-            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=stride, padding=0),
+            nn.Conv2d(
+                in_channels=32, out_channels=64, kernel_size=3, stride=stride, padding=0
+            ),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=2),
             nn.Dropout(p=0.2),
-
             nn.Flatten(),
             nn.Linear(size_before_fc * size_before_fc * 64, 100),
             nn.ReLU(inplace=True),
