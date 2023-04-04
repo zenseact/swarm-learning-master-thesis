@@ -56,9 +56,11 @@ def train(
             optimizer.zero_grad()
             outputs = network(images).squeeze()
             loss = criterion(outputs, labels)
-            batch_losses.append(loss.item())
             loss.backward()
             optimizer.step()
+            
+            batch_losses.append(loss.item())
+
             # Write the loss to tensorboard
             if writer is not None:
                 try:

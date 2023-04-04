@@ -80,18 +80,10 @@
             "type": "object",
             "properties": {
                 "train": {
-                    "type": "string",
-                    "enum": [
-                        "true",
-                        "false"
-                    ]
+                    "type": "boolean"
                 },
                 "use_gpu": {
-                    "type": "string",
-                    "enum": [
-                        "true",
-                        "false"
-                    ]
+                    "type": "boolean"
                 },
                 "epochs": {
                     "type": "number"
@@ -163,11 +155,7 @@
             "type": "object",
             "properties": {
                 "train": {
-                    "type": "string",
-                    "enum": [
-                        "true",
-                        "false"
-                    ]
+                    "type": "boolean"
                 },
                 "global": {
                     "type": "object",
@@ -226,11 +214,7 @@
             "type": "object",
             "properties": {
                 "train": {
-                    "type": "string",
-                    "enum": [
-                        "true",
-                        "false"
-                    ]
+                    "type": "boolean"
                 },
                 "global": {
                     "type": "object",
@@ -289,11 +273,7 @@
             "type": "object",
             "properties": {
                 "train": {
-                    "type": "string",
-                    "enum": [
-                        "true",
-                        "false"
-                    ]
+                    "type": "boolean"
                 },
                 "global": {
                     "type": "object",

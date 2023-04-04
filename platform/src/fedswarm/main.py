@@ -161,7 +161,7 @@ class Platform:
 
         # Check if centralised method is specified in config
         try:
-            if "central" in self.config and self.config["central"]["train"] == "true":
+            if "central" in self.config and self.config["central"]["train"]:
                 methods.append("central")
         except KeyError:
             pass
@@ -207,7 +207,7 @@ class Platform:
                 expansion_part[key].pop(sub_key)
 
             # Add enabled train parameters to expansion part
-            expansion_part["train"] = "true"
+            expansion_part["train"] = True
 
             # Make decentralised parameters into specific methods
             for method in decentralised_methods:
@@ -217,7 +217,7 @@ class Platform:
         for method in set(["central", "federated", "swarm", "baseline"]) - set(
             self.methods
         ):
-            self.config[method] = {"train": "false"}
+            self.config[method] = {"train": False}
 
         # Expand shortcut parameters
         if decentralised_methods:

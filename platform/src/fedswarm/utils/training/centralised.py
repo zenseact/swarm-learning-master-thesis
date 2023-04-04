@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 def run_centralised(config: dict, data: object, log_dir=str) -> None:
     logger.info("Initialising centralised learning runtime")
     model = load_model(config)
-    if config["central"]["use_gpu"] == "true":
+    if config["central"]["use_gpu"]:
         model.to("cuda")
         logger.debug("Using GPU")
     else:

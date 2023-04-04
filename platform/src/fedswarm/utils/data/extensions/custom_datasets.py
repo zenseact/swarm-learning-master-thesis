@@ -28,7 +28,7 @@ def balanced_frames_borrowed(train=0.9):
     with open(Path(current_dir, "resources/balanced_val_ids.txt"), "r") as f:
         content_val = f.read().splitlines()
     
-    all_samples =content_train + content_val
+    all_samples = content_train + content_val
     # We assume here that the train and val sets are shuffled already to avoid bias
     index_threshold = int(len(all_samples) * train)
     
@@ -56,6 +56,27 @@ def interpolated_target_distances(dataset_class: "ZodDataset", idx: int):
     # Hlib Kilichenko (2023)
     # Subsection 3.1.1, Singular Trajectory Prediction
     target_distances = [5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 70, 80, 95, 110, 125, 145, 165]
+    
+    # Get the points at the target distances
+    interpolated_car_relative_points = get_points_at_distance(car_relative_points, target_distances)
+
+    label = interpolated_car_relative_points.flatten().astype("float32")
+    image = image.astype("float32")
+
+    return label, image
+
+def interpolated_target_distances_short(dataset_class: "ZodDataset", idx: int):
+    
+    zod_frames = dataset_class.zod_frames
+    frame_id = dataset_class.frames_id_set[idx]
+    
+    # get the oxts points for the frame
+    image, car_relative_points = id_to_car_points(zod_frames, frame_id)
+    
+    # Multimodal Trajectory Prediction for Self-driving Vehicles using a Single Monocular Camera
+    # Hlib Kilichenko (2023)
+    # Subsection 3.1.1, Singular Trajectory Prediction
+    target_distances = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85]
     
     # Get the points at the target distances
     interpolated_car_relative_points = get_points_at_distance(car_relative_points, target_distances)
