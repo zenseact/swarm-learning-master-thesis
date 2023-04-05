@@ -6,7 +6,7 @@ dependencies:
 - python=3.8
 - pytorch
 - torchvision
-#- cudatoolkit=11.7
+- cudatoolkit
 - pip
 - numpy
 - jupyter
@@ -19,8 +19,8 @@ dependencies:
 - h5py
 - spacy                            
 - unidecode
-- python3-pyqt5
 - pip:
+  - PyQt5
   - future
   - tb-nightly
   - gym

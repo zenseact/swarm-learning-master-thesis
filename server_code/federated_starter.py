@@ -8,7 +8,7 @@ from flwr.common.typing import Optional, Tuple, Dict
 
 class FederatedStarter:
     def __init__(self, testloader, nr_local_epochs=NUM_LOCAL_EPOCHS, tb_path=None, federated_subpath=None):
-        self.edge_handler = EdgeHandler()
+        self.edge_handler = EdgeHandler.remote(1)
         self.testloader = testloader
         self.client_resources = None
         self.nr_local_epochs = nr_local_epochs

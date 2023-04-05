@@ -3,10 +3,11 @@ from edge_code.paramiko_ssh import SSHClient
 import os
 import sys
 from edge_code.data_loader import load_datasets
-from common.utilities import train
+from common.utilities import train, use_gpu
 
 if __name__ == '__main__':
-    print('test pull worked')
+    # use gpu on edge devices
+    use_gpu()
     # Get the command-line arguments
     cid = sys.argv[1]
     strategy = sys.argv[2]

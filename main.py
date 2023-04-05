@@ -20,7 +20,7 @@ def main(
     _, _, testloader, _, _ = zod.load_datasets(nr_clients)
 
     # create federated simulator
-    fed_sim = FederatedStarter(device, testloader, nr_local_epochs=nr_local_epochs, tb_path=tb_path, federated_subpath=tb_federated)
+    fed_sim = FederatedStarter(testloader, nr_local_epochs=nr_local_epochs, tb_path=tb_path, federated_subpath=tb_federated)
 
     # simulate federated learning
     fed_sim.sim_fed(nr_clients=nr_clients, nr_global_rounds=nr_global_rounds)
