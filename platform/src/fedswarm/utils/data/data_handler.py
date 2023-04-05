@@ -79,6 +79,22 @@ class DataObject:
 
 
 class DataHandler:
+    """
+    The platform `DataHandler` object is a custom class that handles the dataloading and 
+    contains all the data required for training. The `DataHandler` is accesssed using the 
+    `data` attribute of the platform. The `DataHandler` always contains the following attributes: 
+    
+        - `train` - the training data
+        - `val` - the validation data
+        - `test` - the test data
+
+    The `train`, `val`, and `test` attributes are `utils.data.DataObject` objects. 
+    They are essentially just classes built from dictionaries so that they can be 
+    accessed using dot notation. 
+    
+    Read more about the `DataHandler` class here: `src/example-1-daa.ipynb`
+    
+    """
     def __init__(self, full_config: dict, log_dir: str) -> None:
         logger.debug("Creating instance of DataHandler")
         # Add data specific config as config attribute
@@ -146,7 +162,7 @@ class DataHandler:
         # Create a test set from the val set
         self.__test_ids = self.__val_ids[: len(self.__val_ids) // 2]
         self.__val_ids = self.__val_ids[len(self.__val_ids) // 2 :]
-        
+
         # The default transforms and additional transforms from config
         try:
             img_size = self._config["img_size"]
@@ -169,13 +185,17 @@ class DataHandler:
 
         # Creating the data objects for central training
         logger.info("Creating central datasets")
-        
+
         output_size = full_config["model"]["args"]["num_output"]
-        
+
         self._test = DataObject(
             _ids=self.__test_ids,
             _dataset=ZodDataset(
-                self._zod_frames, self.__test_ids, transforms=transforms, output_size=output_size, config=full_config
+                self._zod_frames,
+                self.__test_ids,
+                transforms=transforms,
+                output_size=output_size,
+                config=full_config,
             ),
             _loader_args=self._config["dataloader_args"],
         )
@@ -183,7 +203,11 @@ class DataHandler:
         self._train = DataObject(
             _ids=self.__train_ids,
             _dataset=ZodDataset(
-                self._zod_frames, self.__train_ids, transforms=transforms, output_size=output_size, config=full_config
+                self._zod_frames,
+                self.__train_ids,
+                transforms=transforms,
+                output_size=output_size,
+                config=full_config,
             ),
             _loader_args=self._config["dataloader_args"],
         )
@@ -191,7 +215,11 @@ class DataHandler:
         self._val = DataObject(
             _ids=self.__val_ids,
             _dataset=ZodDataset(
-                self._zod_frames, self.__val_ids, transforms=transforms, output_size=output_size, config=full_config
+                self._zod_frames,
+                self.__val_ids,
+                transforms=transforms,
+                output_size=output_size,
+                config=full_config,
             ),
             _loader_args=self._config["dataloader_args"],
         )
@@ -298,16 +326,22 @@ class DataHandler:
 
 class ZodDataset(Dataset):
     def __init__(
-        self, zod_frames, frames_id_set, output_size, config, transforms=None, target_transform=None,
+        self,
+        zod_frames,
+        frames_id_set,
+        output_size,
+        config,
+        transforms=None,
+        target_transform=None,
     ) -> None:
         self.zod_frames = zod_frames
         self.frames_id_set = frames_id_set
         self.transforms = Compose(transforms)
         self.target_transform = target_transform
-        self.output_size = output_size 
+        self.output_size = output_size
         self.config = config
-        
-         # Check if a custom get_method is defined in the config
+
+        # Check if a custom get_method is defined in the config
         try:
             if self.config["data"]["dataset_getitem"]:
                 # get the method name from the config
@@ -316,10 +350,14 @@ class ZodDataset(Dataset):
                 custom_methods = importlib.import_module(
                     f"fedswarm.utils.data.extensions.custom_datasets"
                 )
-                dataset_getitem_method = getattr(custom_methods, dataset_getitem_method_name)
+                dataset_getitem_method = getattr(
+                    custom_methods, dataset_getitem_method_name
+                )
                 self.get_method = dataset_getitem_method
                 # Log that the custom train_val_id_generator is used
-                logger.info("Using custom dataset get method: %s" % dataset_getitem_method_name)
+                logger.info(
+                    "Using custom dataset get method: %s" % dataset_getitem_method_name
+                )
         except KeyError as e:
             logger.warning("No dataset_getitem method found")
             raise e
@@ -338,7 +376,8 @@ class ZodDataset(Dataset):
             label = self.target_transform(label)
 
         return image, label
-    
+
+
 def split_dataset(
     data: Dataset,
     n: int,

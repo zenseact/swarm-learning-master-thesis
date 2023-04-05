@@ -16,8 +16,8 @@ def train(
     trainloader: DataLoader,
     valloader: DataLoader,
     epochs: int,
-    loss_function,
-    optimiser: object,
+    loss_class: object,
+    optimiser_class: object,
     optimiser_args: dict = None,
     writer: SummaryWriter = None,
     writer_path: str = "loss/undefined/",
@@ -25,12 +25,16 @@ def train(
     cid: str = None,
 ) -> None:
     # Set up the loss function and optimizer
-    criterion = loss_function()
-    optimizer = optimiser(network.model_parameters(), **optimiser_args)
+    criterion = loss_class()
+    optimizer = optimiser_class(network.model_parameters(), **optimiser_args)
+    
+    # Get the device that the model is on
     device = next(network.parameters()).device
     logger.debug("Using device: {}".format(device))
 
     # Adjust and offset the epoch and batch counters if we are resuming training
+    # This is used for correct epoch and batch logging. Primarily useful when doing decentralised training
+    # Example: global round 2 with 15 epochs per round. Then on the second global round, we say that we are on epoch 16
     if server_round:
         running_batch_index = 1 + (server_round - 1) * len(trainloader) * epochs
         epoch_start = (server_round - 1) * epochs
@@ -56,9 +60,11 @@ def train(
             optimizer.zero_grad()
             outputs = network(images).squeeze()
             loss = criterion(outputs, labels)
-            batch_losses.append(loss.item())
             loss.backward()
             optimizer.step()
+
+            batch_losses.append(loss.item())
+
             # Write the loss to tensorboard
             if writer is not None:
                 try:
@@ -81,7 +87,7 @@ def train(
         validation_losses = test(
             network=network,
             dataloader=valloader,
-            loss_function=loss_function,
+            loss_class=loss_class,
         )
         # Calculate the mean losses
         mean_validation_loss = np.mean(validation_losses)
@@ -106,9 +112,9 @@ def train(
     return mean_epoch_loss, batch_losses, mean_validation_loss, network
 
 
-def test(network: Module, dataloader: DataLoader, loss_function: type):
+def test(network: Module, dataloader: DataLoader, loss_class: object):
     # Evaluate the network on the full content of the dataloader
-    criterion = loss_function()
+    criterion = loss_class()
     device = next(network.parameters()).device
     network.eval()
 

@@ -5,6 +5,7 @@ from torchvision import models
 
 # Use variable img_size for auto import from data config
 
+
 class PTNet(nn.Module):
     def __init__(self, /, num_output, **kwargs) -> None:
         super(PTNet, self).__init__()

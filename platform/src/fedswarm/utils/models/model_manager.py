@@ -10,13 +10,13 @@ def load_model_from_name(name, **kwargs) -> torch.nn.Module:
     model = module.metadata["model"]
     return model(**kwargs)
 
+
 def load_model(config, **kwargs) -> torch.nn.Module:
     name = config["model"]["name"]
     config_model_args = config["model"]["args"]
 
     module = importlib.import_module(f"fedswarm.utils.models.{name}")
     model = module.metadata["model"]
-    
 
     # create instance
     try:
@@ -36,13 +36,14 @@ def load_model(config, **kwargs) -> torch.nn.Module:
         logger.exception(e)
         raise (e)
 
+
 def load_model_from_checkpoint(model_path, config):
     # Define the device to be used (GPU if available, else CPU)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Load the model checkpoint
     model_params = torch.load(model_path)
-    
+
     # Load the model name from config
     model_name = config["model"]["name"]
     model_args = config["model"]["args"]
@@ -56,6 +57,5 @@ def load_model_from_checkpoint(model_path, config):
 
     # Move the model to the specified device
     model.to(device)
-    
 
     return model

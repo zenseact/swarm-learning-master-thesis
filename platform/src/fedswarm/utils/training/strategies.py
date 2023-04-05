@@ -3,7 +3,10 @@ import logging
 
 
 from fedswarm.utils.training.swarm import SimulationRunner
-from fedswarm.utils.training.topologies import fully_connected_centralised, edgeless_graph
+from fedswarm.utils.training.topologies import (
+    fully_connected_centralised,
+    edgeless_graph,
+)
 
 logger = logging.getLogger(__name__)
 

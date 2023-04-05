@@ -1,6 +1,14 @@
 # Decentralised Learing & ZOD Benchmark platform
 This ML platform is a capable and customisable tool for building and training machine learning models. It takes a configuration object with various parameters, such as data location, image size, model type, and loss function, to simplify the process of building and training models. The platform can be used for central and decentralized training and allows access to data without running any training. The platform makes it easy to build and train machine learning models with minimal coding and configuration. The platform enables quick iteration, testing and benchmarking of tasks on ZOD in different learning environments.
 
+# Research project
+We've used this platform to conduct research on decentralised learning with focus on autonomous driving.
+
+## Holistic Path
+A Holistic Path discovery notebook can be found [here](/experiments/HolisticPath/HolisticPath-discovery.ipynb). This notebook uses the platform.
+
+## Stage 2
+TBD
 
 # Usage & Development
 The usage of the platform is very simple, although at this stage also very limited. There are introduction notebook that describe how the platform works and how to develop using it.

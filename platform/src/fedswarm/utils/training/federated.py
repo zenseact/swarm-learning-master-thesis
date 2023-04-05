@@ -44,7 +44,7 @@ def run_federated(
     loss_method = config["model"]["loss"]
     module = importlib.import_module("torch.nn")
     loss_function = getattr(module, loss_method)
-    
+
     # Load the optimiser function
     try:
         opt_method = config["model"]["optimiser"]
@@ -82,9 +82,11 @@ def run_federated(
             np.mean(test_loss),
             server_round,
         )
-        
+
         # save the modellog_dir
-        model_name = Path(log_dir, f"federated_{config['model']['name']}_{server_round}")
+        model_name = Path(
+            log_dir, f"federated_{config['model']['name']}_{server_round}"
+        )
         save_model(model, model_name)
 
         writer.close()
@@ -116,7 +118,7 @@ def run_federated(
         )
         logger.debug("Creating client %s", cid)
         model = load_model(config)
-        
+
         # Move the model to the correct device if needed
         if config["federated"]["global"]["client_resources"]["num_gpus"] > 0:
             model.to("cuda")
@@ -164,7 +166,9 @@ def get_parameters(net) -> List[np.ndarray]:
 
 def set_parameters(net, parameters: List[np.ndarray]):
     params_dict = zip(net.state_dict().keys(), parameters)
-    state_dict = OrderedDict({k: Tensor(v) if v.shape != Size([]) else Tensor([0]) for k, v in params_dict})
+    state_dict = OrderedDict(
+        {k: Tensor(v) if v.shape != Size([]) else Tensor([0]) for k, v in params_dict}
+    )
     net.load_state_dict(state_dict, strict=True)
 
 
@@ -191,7 +195,7 @@ class FlowerClient(fl.client.NumPyClient):
         loss_method = config["model"]["loss"]
         module = importlib.import_module("torch.nn")
         self.loss_function = getattr(module, loss_method)
-        
+
         # Load the optimiser function
         try:
             opt_method = config["model"]["optimiser"]
@@ -211,14 +215,12 @@ class FlowerClient(fl.client.NumPyClient):
         return get_parameters(self.net)
 
     def fit(self, parameters, config):
-        
         # Optimiser args
         try:
             optimiser_args = self.full_config["model"]["optimiser_args"]
         except KeyError:
             optimiser_args = {}
 
-        
         logger.debug("Start training of client %s", self.cid)
         set_parameters(self.net, parameters)
         logger.info("SERVER ROUND: {}".format(config["server_round"]))

@@ -12,7 +12,15 @@ class SwarmClient:
         STARTED_GLOBAL_ROUND = 2
         BUZY = 3
 
-    def __init__(self, cid, net, trainloader, valloader, swarm_config, nr_local_epochs=NUM_LOCAL_EPOCHS):
+    def __init__(
+        self,
+        cid,
+        net,
+        trainloader,
+        valloader,
+        swarm_config,
+        nr_local_epochs=NUM_LOCAL_EPOCHS,
+    ):
         self.cid = cid
         self.net = net
         self.trainloader = trainloader
@@ -36,12 +44,19 @@ class SwarmClient:
         print(f"[Client {self.cid}] My server is up and running on {self.address}")
         print(f"I'm the swarm client {cid} and I'm awake!")
 
-        self.server = multiprocessing.Process(target=app.run, args=(client_ip, client_port, False,))
-        #self.spawn_thread(m=app.run, args=(client_ip, client_port, False,))
+        self.server = multiprocessing.Process(
+            target=app.run,
+            args=(
+                client_ip,
+                client_port,
+                False,
+            ),
+        )
+        # self.spawn_thread(m=app.run, args=(client_ip, client_port, False,))
         self.discover_neighbours()
 
-        #self.spawn_thread(m=self.discover_neighbours, args=(self,))
-        #app.run(host=client_ip, port=client_port, debug=False)
+        # self.spawn_thread(m=self.discover_neighbours, args=(self,))
+        # app.run(host=client_ip, port=client_port, debug=False)
 
     def get_parameters(self):
         return self.net.state_dict()
@@ -57,7 +72,7 @@ class SwarmClient:
             plot=True,
             verbose=0,
             client_cid=self.cid,
-            model_name=f"client {self.cid} - {round_info}"
+            model_name=f"client {self.cid} - {round_info}",
         )
 
         self.losses.append(losses)
@@ -66,37 +81,49 @@ class SwarmClient:
     def participate_in_global_round(self):
         try:
             """run the client participation logic then aggregates"""
-            round_info = f'round {self.global_round_counter}'
+            round_info = f"round {self.global_round_counter}"
             print(f"🚧🚧🚧[Client {self.cid}] {round_info} has started.🚧🚧🚧")
             self.update_status(SwarmClient.Status.STARTED_GLOBAL_ROUND)
 
             self.fit(round_info)
             self.broadcast_to_neighbours()
 
-            while (not self.is_time_to_aggregate()):
-                print(f"[Client {self.cid}] waiting until recieved sufficient amount of models...")
+            while not self.is_time_to_aggregate():
+                print(
+                    f"[Client {self.cid}] waiting until recieved sufficient amount of models..."
+                )
                 time.sleep(self.check_interval)
 
-            print(f"[Client {self.cid}] got sufficient amount of models! started aggregating..")
+            print(
+                f"[Client {self.cid}] got sufficient amount of models! started aggregating.."
+            )
             self.update_status(SwarmClient.Status.BUZY)
             self.aggregate()
             self.update_status(SwarmClient.Status.READY)
-            print(f"🚧🚧🚧[Client {self.cid}] {round_info} is done for me and I killed the local thread doing it.🚧🚧🚧")
+            print(
+                f"🚧🚧🚧[Client {self.cid}] {round_info} is done for me and I killed the local thread doing it.🚧🚧🚧"
+            )
             self.global_round_counter += self.global_round_counter
             return
         except BaseException as e:
-            print(f"🔥🔥🔥[Client {self.cid}] Failed to continue participate_in_global_round: " + str(e))
+            print(
+                f"🔥🔥🔥[Client {self.cid}] Failed to continue participate_in_global_round: "
+                + str(e)
+            )
             return
 
     def is_time_to_aggregate(self):
-        return len(self.recieved_from) >= (len(self.neighbours) - self.absance_thresould)
+        return len(self.recieved_from) >= (
+            len(self.neighbours) - self.absance_thresould
+        )
 
     def aggregate(self, strategy=None):
         print(f"-> [Client {self.cid}] validating before aggregating:")
         self.validate()
         print(
-            f"[Client {self.cid}] aggredated parameters with {self.recieved_from} using {('FedAvg' if not strategy else strategy)} method")
-        if (not strategy):
+            f"[Client {self.cid}] aggredated parameters with {self.recieved_from} using {('FedAvg' if not strategy else strategy)} method"
+        )
+        if not strategy:
             self.FedAvg()
         print(f"<- [Client {self.cid}] validating After aggregating:")
         self.validate()
@@ -105,7 +132,9 @@ class SwarmClient:
         averaged_weights = self.get_parameters()
 
         for key in averaged_weights.keys():
-            averaged_weights[key] = ((averaged_weights[key] + self.neighbours_agg_model[key]) / (len(self.recieved_from) + 1))
+            averaged_weights[key] = (
+                averaged_weights[key] + self.neighbours_agg_model[key]
+            ) / (len(self.recieved_from) + 1)
 
         self.net.load_state_dict(averaged_weights)
         del averaged_weights
@@ -114,7 +143,7 @@ class SwarmClient:
 
     def validate(self):
         loss, accuracy = test(self.net, self.valloader)
-        if (ML_TASK == TASK.CLASSIFICATION):
+        if ML_TASK == TASK.CLASSIFICATION:
             print(f"🌠 [Client {self.cid}] test loss {loss}, accuracy {accuracy}")
             return float(loss), len(self.valloader), {"accuracy": float(accuracy)}
         else:
@@ -124,40 +153,50 @@ class SwarmClient:
     def discover_neighbours(self):
         print(f"🔭 [Client {self.cid}] discovering neighbours...")
         multiprocessing.Process(target=self.send_heart_beats_async)
-        #self.spawn_thread(m=self.send_heart_beats_async, args=())
+        # self.spawn_thread(m=self.send_heart_beats_async, args=())
 
-        while(True):
+        while True:
             time.sleep(5)
             swarm_config = read_swarm_config()
             run_global_round = SwarmClient.get_run_global_round(swarm_config)
-            print('got from the config run_global_round=', run_global_round)
-            if(run_global_round and self.all_neighbors_ready()):
+            print("got from the config run_global_round=", run_global_round)
+            if run_global_round and self.all_neighbors_ready():
                 self.participate_in_global_round()
 
-    
     def all_neighbors_ready(self):
-        neighbours_status=[]
+        neighbours_status = []
         for cid in self.neighbours:
-            neighbours_status.append(SwarmClient.get_status(cid) == SwarmClient.Status.READY)
+            neighbours_status.append(
+                SwarmClient.get_status(cid) == SwarmClient.Status.READY
+            )
         return all(neighbours_status)
 
     def broadcast_to_neighbours(self):
-        print(f"📡 [Client {self.cid}] broadcasting the model to the neighbours: {self.neighbours}")
+        print(
+            f"📡 [Client {self.cid}] broadcasting the model to the neighbours: {self.neighbours}"
+        )
         for cid in self.neighbours:
-            SwarmClient.send_data(cid, 'recieve_model', params='', data={'sender_id':self.cid, 'params':self.get_parameters()})
+            SwarmClient.send_data(
+                cid,
+                "recieve_model",
+                params="",
+                data={"sender_id": self.cid, "params": self.get_parameters()},
+            )
 
     def recieve(self, sender_cid, params):
-        if (self.status == SwarmClient.Status.BUZY):
-            print(f"X📡X [Client {self.cid}] discarded received model from: {sender_cid}. Too late!")
+        if self.status == SwarmClient.Status.BUZY:
+            print(
+                f"X📡X [Client {self.cid}] discarded received model from: {sender_cid}. Too late!"
+            )
             return
 
-        if (not sender_cid in self.recieved_from):
+        if not sender_cid in self.recieved_from:
             self.recieved_from.add(sender_cid)
             self.add_params_to_buffer(params)
         print(f"📡 [Client {self.cid}] received a model from: {sender_cid}")
 
     def add_params_to_buffer(self, params, factor=1):
-        if (not self.neighbours_agg_model):
+        if not self.neighbours_agg_model:
             self.neighbours_agg_model = params
         else:
             for key in params:
@@ -176,9 +215,11 @@ class SwarmClient:
         nodes.add(self.cid)
         G.add_nodes_from(nodes)
         G.add_edges_from([(self.cide, n) for n in nodes])
-        nx.draw_networkx(G, bbox=dict(facecolor="skyblue",
-                                      boxstyle="round", ec="silver", pad=1),
-                                      edge_color="gray")
+        nx.draw_networkx(
+            G,
+            bbox=dict(facecolor="skyblue", boxstyle="round", ec="silver", pad=1),
+            edge_color="gray",
+        )
         plt.title("Swarm learning simulation graph")
         plt.show()
 
@@ -186,157 +227,180 @@ class SwarmClient:
         cid_list = SwarmClient.get_client_ids(self.swarm_config)
         typology = SwarmClient.get_client_typology(self.swarm_config)
 
-        if(typology == 'fully_connected'):
+        if typology == "fully_connected":
             return cid_list
-        if(typology == 'random_dynamic'):
+        if typology == "random_dynamic":
             nr_picked_neighbours = random.randint(2, len(self.neighbours))
-            return random.sample(self.neighbours,nr_picked_neighbours)
+            return random.sample(self.neighbours, nr_picked_neighbours)
 
     def send_heart_beats_async(self):
-        while(True):
+        while True:
             neighbours = set([])
             for cid in self.get_cid_list():
                 c_ip, c_port = SwarmClient.get_client_address(cid)
-                params = f'?cid={self.cid}&status={self.status}'
-                status_code = SwarmClient.send_data(cid, "heart_beat", params, {}, f"sent heart beat to client {cid} with address {c_ip}:{c_port}")
-                if(status_code):
+                params = f"?cid={self.cid}&status={self.status}"
+                status_code = SwarmClient.send_data(
+                    cid,
+                    "heart_beat",
+                    params,
+                    {},
+                    f"sent heart beat to client {cid} with address {c_ip}:{c_port}",
+                )
+                if status_code:
                     neighbours.add(cid)
 
-            if(neighbours != self.neighbours and self.status == SwarmClient.Status.READY):
+            if (
+                neighbours != self.neighbours
+                and self.status == SwarmClient.Status.READY
+            ):
                 self.neighbours = neighbours
-                print(f"🔭 [Client {self.cid}] Detected new typology. Establised connection with the neighbours: {self.neighbours}")
+                print(
+                    f"🔭 [Client {self.cid}] Detected new typology. Establised connection with the neighbours: {self.neighbours}"
+                )
 
             time.sleep(2)
 
-
     """API endpoints"""
-    @app.route("/heart_beat", methods = ['POST', 'GET'])
-    def get_heart_beat(cid, status):
-        print(f'got heart beat signal from {cid} with status {status}')
 
-    @app.route("/status", methods = ['POST', 'GET'])
+    @app.route("/heart_beat", methods=["POST", "GET"])
+    def get_heart_beat(cid, status):
+        print(f"got heart beat signal from {cid} with status {status}")
+
+    @app.route("/status", methods=["POST", "GET"])
     def status(self):
         return self.status
 
-    @app.route("/recieve_model", methods = ['POST'])
+    @app.route("/recieve_model", methods=["POST"])
     def recieve_model(self):
         content = request.json
-        sender_id = str(content['sender_id'])
-        params = OrderedDict(content['params'])
-        self.recieve(sender_id, params) 
+        sender_id = str(content["sender_id"])
+        params = OrderedDict(content["params"])
+        self.recieve(sender_id, params)
 
     """static methods"""
+
     @staticmethod
     def send_data(cid, route, params, data, log_message=None):
         try:
             c_ip, c_port = SwarmClient.get_client_address(cid)
             r = requests.post(f"http://{c_ip}:{c_port}/{route}{params}", data)
-            if(log_message):
-                print(log_message) 
+            if log_message:
+                print(log_message)
             return r.status_code == 200
         except:
-            print(f'could not establish connection with {c_ip}:{c_port}')
+            print(f"could not establish connection with {c_ip}:{c_port}")
             return None
-        
+
     @staticmethod
     def get_status(cid):
         try:
             c_ip, c_port = SwarmClient.get_client_address(cid)
-            status = requests.get(f"http://{c_ip}:{c_port}/status").content.decode('utf-8')
-            print('status of {cid} is {status}')
+            status = requests.get(f"http://{c_ip}:{c_port}/status").content.decode(
+                "utf-8"
+            )
+            print("status of {cid} is {status}")
             return status
         except:
-            print(f'could not get status of {c_ip}:{c_port}')
+            print(f"could not get status of {c_ip}:{c_port}")
             return None
 
     @staticmethod
     def get_client_ids(swarm_config):
-        client_ids_key = 'client_ids'
+        client_ids_key = "client_ids"
         return json.loads(swarm_config[client_ids_key])
 
     @staticmethod
     def get_client_address(swarm_config, cid):
-        client_addresses_key = 'client_addresses'
+        client_addresses_key = "client_addresses"
         for c in swarm_config[client_addresses_key]:
             if list(c.keys())[0] == str(cid):
-                c_address = (c[str(cid)]).split(':')
+                c_address = (c[str(cid)]).split(":")
                 return c_address[0], c_address[1]
         return None
 
     @staticmethod
     def get_client_typology(swarm_config):
-        client_typology_key = 'client_typology'
+        client_typology_key = "client_typology"
         return swarm_config[client_typology_key]
 
     @staticmethod
     def get_nr_local_epochs(swarm_config):
-        nr_local_epochs = swarm_config['nr_local_epochs']
-        if(nr_local_epochs != None):
+        nr_local_epochs = swarm_config["nr_local_epochs"]
+        if nr_local_epochs != None:
             return int(nr_local_epochs)
-    
+
     @staticmethod
     def get_subset_factor(swarm_config):
-        subset_factor = swarm_config['subset_factor']
-        if(subset_factor != None):
+        subset_factor = swarm_config["subset_factor"]
+        if subset_factor != None:
             return float(subset_factor)
-    
+
     @staticmethod
     def get_batch_size(swarm_config):
-        batch_size = swarm_config['batch_size']
-        if(batch_size != None):
+        batch_size = swarm_config["batch_size"]
+        if batch_size != None:
             return int(batch_size)
-    
+
     @staticmethod
     def get_run_global_round(swarm_config):
-        run_global_round = swarm_config['run_global_round']
-        if(run_global_round != None):
+        run_global_round = swarm_config["run_global_round"]
+        if run_global_round != None:
             return bool(run_global_round)
 
 
 def create_client(cid, trainloaders, valloaders, swarm_config, nr_local_epochs):
-        net = net_instance(f"client {cid}")
-        trainloader = trainloaders[int(cid)]
-        valloader = valloaders[int(cid)]
-        client = SwarmClient(cid, net, trainloader, valloader, swarm_config, nr_local_epochs=nr_local_epochs)
-        return client
+    net = net_instance(f"client {cid}")
+    trainloader = trainloaders[int(cid)]
+    valloader = valloaders[int(cid)]
+    client = SwarmClient(
+        cid, net, trainloader, valloader, swarm_config, nr_local_epochs=nr_local_epochs
+    )
+    return client
 
 
 def read_swarm_config():
     # read the swarm config file
-    remote_url = 'https://ycommonstorage.blob.core.windows.net/misc/swarm_config.json?sp=r&st=2023-02-26T01:42:42Z&se=2026-01-01T09:42:42Z&sv=2021-06-08&sr=b&sig=dF8sGV7e%2FKmREMY%2FGWsYPhmuWyn8ysl%2BxVd5LvlY9Yc%3D'
-    swarm_config = json.loads(requests.get(remote_url).content.decode('utf-8'))
+    remote_url = "https://ycommonstorage.blob.core.windows.net/misc/swarm_config.json?sp=r&st=2023-02-26T01:42:42Z&se=2026-01-01T09:42:42Z&sv=2021-06-08&sr=b&sig=dF8sGV7e%2FKmREMY%2FGWsYPhmuWyn8ysl%2BxVd5LvlY9Yc%3D"
+    swarm_config = json.loads(requests.get(remote_url).content.decode("utf-8"))
     return swarm_config
 
-def main(cid):
 
+def main(cid):
     # read the swarm config file
     swarm_config = read_swarm_config()
-    print('Downloaded the swarm config file:\n',swarm_config)
+    print("Downloaded the swarm config file:\n", swarm_config)
 
-    # load data from swarm config 
+    # load data from swarm config
     nr_local_epochs = SwarmClient.get_nr_local_epochs(swarm_config)
     subset_factor = SwarmClient.get_subset_factor(swarm_config)
     batch_size = SwarmClient.get_batch_size(swarm_config)
     nr_clients = len(SwarmClient.get_client_ids(swarm_config))
 
     # import Zod data into memory
-    zod = ZODImporter(root=ZENSEACT_DATASET_ROOT, subset_factor=subset_factor, img_size=IMG_SIZE, batch_size=batch_size, stored_gt_path=STORED_GROUND_TRUTH_PATH)
+    zod = ZODImporter(
+        root=ZENSEACT_DATASET_ROOT,
+        subset_factor=subset_factor,
+        img_size=IMG_SIZE,
+        batch_size=batch_size,
+        stored_gt_path=STORED_GROUND_TRUTH_PATH,
+    )
 
     # create pytorch loaders
-    trainloaders, valloaders, testloader, completeTrainloader, completeValloader = zod.load_datasets(nr_clients)
+    (
+        trainloaders,
+        valloaders,
+        testloader,
+        completeTrainloader,
+        completeValloader,
+    ) = zod.load_datasets(nr_clients)
 
     # create swarm client
     c = create_client(cid, trainloaders, valloaders, swarm_config, nr_local_epochs)
 
 
-
 if __name__ == "__main__":
-    #if(len(sys.argv) != 0):
+    # if(len(sys.argv) != 0):
     #    print('starting client ', sys.argv[0])
     #    main(sys.argv[0])
-    #else:
+    # else:
     main(4)
-
-
-
-

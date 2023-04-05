@@ -2,20 +2,37 @@ from static_params import *
 from models import *
 
 
-def train(net, trainloader, valloader,
-          epochs: int, contin_val=True, plot=True,
-          client_cid=None, verbose=0, model_name="",
-          tb_subpath=None, tb_writer=None, server_round=1):
+def train(
+    net,
+    trainloader,
+    valloader,
+    epochs: int,
+    contin_val=True,
+    plot=True,
+    client_cid=None,
+    verbose=0,
+    model_name="",
+    tb_subpath=None,
+    tb_writer=None,
+    server_round=1,
+):
     """Train the network on the training set."""
     print(
-        f'⇉ Started transfer learning of model {model_name}' if net.is_pretrained else f'Started normal learning of model {model_name}')
+        f"⇉ Started transfer learning of model {model_name}"
+        if net.is_pretrained
+        else f"Started normal learning of model {model_name}"
+    )
     num_batches = len(trainloader)
     print_every = (num_batches // 3) if (num_batches // 3) != 0 else 1
 
     """tensor board publish"""
     running_batch_index = 1 + (server_round - 1) * len(trainloader)
 
-    criterion = torch.nn.CrossEntropyLoss() if ML_TASK == TASK.CLASSIFICATION else torch.nn.L1Loss()
+    criterion = (
+        torch.nn.CrossEntropyLoss()
+        if ML_TASK == TASK.CLASSIFICATION
+        else torch.nn.L1Loss()
+    )
     optimizer = torch.optim.Adam(net.model_parameters())
     net.train()
 
@@ -30,7 +47,6 @@ def train(net, trainloader, valloader,
         epoch_start_time = timer_start()
         batch_start_time = timer_start()
         for batch_index, (images, labels) in enumerate(trainloader):
-
             images, labels = images.to(DEVICE), labels.to(DEVICE)
             optimizer.zero_grad()
             outputs = net(images)
@@ -54,11 +70,13 @@ def train(net, trainloader, valloader,
                 )
             running_batch_index += 1
 
-            if (ML_TASK == TASK.CLASSIFICATION):
+            if ML_TASK == TASK.CLASSIFICATION:
                 correct += (torch.max(outputs.data, 1)[1] == labels).sum().item()
 
             if batch_index % print_every == 0 and verbose > 0:
-                print(f"\tBatch {batch_index}/{num_batches}: Train loss: {sum(epoch_loss[-print_every:]) / print_every:.3f}, {timer_end(batch_start_time)}")
+                print(
+                    f"\tBatch {batch_index}/{num_batches}: Train loss: {sum(epoch_loss[-print_every:]) / print_every:.3f}, {timer_end(batch_start_time)}"
+                )
                 batch_start_time = timer_start()
 
         epoch_loss = np.mean(epoch_loss)
@@ -73,30 +91,45 @@ def train(net, trainloader, valloader,
                 (server_round - 1) * epochs + epoch + 1,
             )
 
-        if (ML_TASK == TASK.CLASSIFICATION):
+        if ML_TASK == TASK.CLASSIFICATION:
             epoch_acc = correct / total
             accs.append(epoch_acc)
             val_accs.append(epoch_val_accuracy)
 
             print(
-                f" ↪ Client{client_cid} Epoch {epoch + 1}: train loss {epoch_loss}, accuracy {epoch_acc}, val loss {epoch_val_loss}, accuracy {epoch_val_accuracy}")
+                f" ↪ Client{client_cid} Epoch {epoch + 1}: train loss {epoch_loss}, accuracy {epoch_acc}, val loss {epoch_val_loss}, accuracy {epoch_val_accuracy}"
+            )
         else:
-            print(f" ↪ Client{client_cid} Epoch {epoch + 1}: train loss {epoch_loss},\t val loss {epoch_val_loss},\t {timer_end(epoch_start_time)}")
+            print(
+                f" ↪ Client{client_cid} Epoch {epoch + 1}: train loss {epoch_loss},\t val loss {epoch_val_loss},\t {timer_end(epoch_start_time)}"
+            )
 
-    print(f'Complete Training {timer_end(training_start_time)}')
+    print(f"Complete Training {timer_end(training_start_time)}")
 
-    if (plot):
-        if (ML_TASK == TASK.CLASSIFICATION):
+    if plot:
+        if ML_TASK == TASK.CLASSIFICATION:
             fig, ax = plt.subplots(ncols=2, figsize=(8, 4))
-            plot_metrics(ax, [[losses, val_losses], [accs, val_accs]],
-                         [f'Corss Entropy Loss - model {model_name}', f'Accuracy - model {model_name}'],
-                         ['Number of epochs', 'Number of epochs'], [['Train', 'Val'], ['Train', 'Val']])
+            plot_metrics(
+                ax,
+                [[losses, val_losses], [accs, val_accs]],
+                [
+                    f"Corss Entropy Loss - model {model_name}",
+                    f"Accuracy - model {model_name}",
+                ],
+                ["Number of epochs", "Number of epochs"],
+                [["Train", "Val"], ["Train", "Val"]],
+            )
         else:
             fig, ax = plt.subplots(ncols=1, figsize=(8, 4))
-            plot_metrics([ax], [[losses, val_losses]], [f'RMSE Loss - model {model_name}'],
-                         [f'Number of epochs - model {model_name}'], [['Train', 'Val']])
+            plot_metrics(
+                [ax],
+                [[losses, val_losses]],
+                [f"RMSE Loss - model {model_name}"],
+                [f"Number of epochs - model {model_name}"],
+                [["Train", "Val"]],
+            )
 
-    if (client_cid):
+    if client_cid:
         save_model(net, client_cid)
 
     print("For manual plotting:")
@@ -107,7 +140,11 @@ def train(net, trainloader, valloader,
 
 def test(net, testloader):
     """Evaluate the network on the entire test set."""
-    criterion = torch.nn.CrossEntropyLoss() if ML_TASK == TASK.CLASSIFICATION else torch.nn.L1Loss()
+    criterion = (
+        torch.nn.CrossEntropyLoss()
+        if ML_TASK == TASK.CLASSIFICATION
+        else torch.nn.L1Loss()
+    )
     correct, total = 0, 0
     net.eval()
     loss = []
@@ -119,7 +156,7 @@ def test(net, testloader):
             labels = labels.unsqueeze(0) if labels.shape[0] != 1 else labels
             loss.append(criterion(outputs, labels).item())
 
-            if (ML_TASK == TASK.CLASSIFICATION):
+            if ML_TASK == TASK.CLASSIFICATION:
                 _, predicted = torch.max(outputs.data, 1)
                 total += labels.size(0)
                 correct += (predicted == labels).sum().item()
@@ -129,33 +166,39 @@ def test(net, testloader):
 
 
 def get_parameters(net) -> List[np.ndarray]:
-    if (PRINT_DEBUG_DATA): print("⤺ Get model parameters")
+    if PRINT_DEBUG_DATA:
+        print("⤺ Get model parameters")
     return [val.cpu().numpy() for _, val in net.state_dict().items()]
 
 
 def set_parameters(net, parameters: List[np.ndarray]):
-    if (PRINT_DEBUG_DATA): print("⤻ Set model parameters")
+    if PRINT_DEBUG_DATA:
+        print("⤻ Set model parameters")
     params_dict = zip(net.state_dict().keys(), parameters)
     state_dict = OrderedDict(
-        {k: torch.Tensor(v) if v.shape != torch.Size([]) else torch.Tensor([0]) for k, v in params_dict})
+        {
+            k: torch.Tensor(v) if v.shape != torch.Size([]) else torch.Tensor([0])
+            for k, v in params_dict
+        }
+    )
     net.load_state_dict(state_dict, strict=True)
 
 
 def save_model(net, name):
     print(f"🔒 Saved the model of client {name} to the disk. 🔒")
-    torch.save(net.state_dict(), f'{name}.pth')
+    torch.save(net.state_dict(), f"{name}.pth")
 
 
 def load_model(name):
     print(f"🛅 Loaded the model of client {name} from the disk. 🛅")
     net = net_instance(f"{name}")
-    net = net.load_state_dict(torch.load(f'{name}.pth'))
+    net = net.load_state_dict(torch.load(f"{name}.pth"))
     return net
 
 
 def print_gpu_processes(extra_info=None):
     try:
-        if (extra_info):
+        if extra_info:
             print(extra_info, torch.cuda.list_gpu_processes())
         else:
             print(torch.cuda.list_gpu_processes())
@@ -203,21 +246,26 @@ def destroy_model(model, name):
 
 def use_cpu(model=None):
     print("swiched to cpu")
-    DEVICE = torch.device('cpu')
-    if (model):
+    DEVICE = torch.device("cpu")
+    if model:
         model = model.cpu()
 
 
 def use_gpu():
     print("swiched to gpu")
-    DEVICE = torch.device('cuda')
+    DEVICE = torch.device("cuda")
 
 
 def plot_client_losses(clients_data):
     for client in clients_data:
         fig, ax = plt.subplots(ncols=1, figsize=(8, 4))
-        plot_metrics([ax], [[client.losses, client.val_losses]], ['RMSE Loss'], ['Number of epochs'],
-                     [['Train', 'Val']])
+        plot_metrics(
+            [ax],
+            [[client.losses, client.val_losses]],
+            ["RMSE Loss"],
+            ["Number of epochs"],
+            [["Train", "Val"]],
+        )
 
 
 def save_dataset_tb_plot(tb_path, sample_distribution, subtitle, seed):
@@ -232,10 +280,12 @@ def save_dataset_tb_plot(tb_path, sample_distribution, subtitle, seed):
     writer.add_figure("sample_distribution/%s" % (subtitle), plt.gcf(), global_step=0)
     writer.close()
 
+
 def timer_start():
     start_time = time.time()
     return start_time
 
+
 def timer_end(start_time):
     end_time = time.time()
-    return f'exec time: {round((end_time - start_time),3)} seconds'
+    return f"exec time: {round((end_time - start_time),3)} seconds"

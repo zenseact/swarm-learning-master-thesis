@@ -30,18 +30,38 @@ with open(templates_path + "/config_message.md", "r") as file:
 
 
 class Platform:
+    """
+    The Platform class handles the training of centralised, federated, and swarm models according to the provided configuration.
+
+    Args:
+        config (dict): The configuration dictionary.
+        data_only (bool): A boolean flag indicating whether only the data handler should be created or if training should be performed (default: False).
+        write (bool): A boolean flag indicating whether files and logs should be written (default: True).
+
+    Attributes:
+        config (dict): The configuration dictionary.
+        top_log_dir (Path): The top directory for all runs.
+        run_id (str): The unique identifier for the current run.
+        run_dir (Path): The directory for the current run.
+        write (bool): A boolean flag indicating whether files and logs should be written.
+        skip (bool): A boolean flag indicating whether to skip the current run because it is identical to a previous run.
+        writer (SummaryWriter): A Tensorboard SummaryWriter object.
+        data (DataHandler): A DataHandler object.
+        methods (list): A list of methods to be used for training.
+    """
     def __init__(self, config: dict, data_only: bool = False, write=True) -> None:
         try:
             # Save config
             self.config = deepcopy(config)
             # Create run and relevant directories
-            self.top_log_dir = Path( "runs")
+            self.top_log_dir = Path("runs")
             self.create_if_not_exists(self.top_log_dir)
             self.run_id = self.create_run()
             self.run_dir = Path(self.top_log_dir, self.run_id)
             self.write = write
             self.skip = False
             
+            # Check if a run with the same configuration already exists
             skip, same_dir = self.check_for_same_run(config)
             if skip:
                 print("Same run already exists, skipping run but creates platform")
@@ -68,20 +88,19 @@ class Platform:
 
             # Check if config is valid
             self.validate_config()
-
+            # Parse the configurations
             self.parse_config()
-
+            # Announce configuration by logging it
             self.announce_configuration()
-
-            
 
             # Run configuration
             self.tb_log_config(config)
+            # Create data handler object and load data
             self.data = DataHandler(self.config, self.run_dir)
 
-            # If data_only is set, stop here
+            # If data_only flag is set, stop here
             if data_only or self.skip:
-                return 
+                return
 
             # Run training for each enabled method
             if "central" in self.methods:
@@ -99,7 +118,7 @@ class Platform:
             if "baseline" in self.methods:
                 run_swarm(**self.training_args("baseline"), baseline=True)
                 self.unmount_dataloaders("baseline")
-            
+            # Shutdown
             logger.info("END OF PLATFORM ACTIVITIES - SHUTTING DOWN")
         except Exception as e:
             logger.exception(e)
@@ -110,7 +129,20 @@ class Platform:
             logging.shutdown()
 
     def training_args(self, method: str) -> list:
-        # Dynamically create arguments for training functions
+        """
+        Dynamically creates arguments for training functions.
+
+        Args:
+            method (str): The name of the data processing method to use.
+
+        Returns:
+            dict: A dictionary containing the configuration, the relevant data object,
+                and log directory path for the writer.
+
+        Example:
+            >>> args = obj.training_args('preprocess_data')
+            >>> model.train(**args)
+        """
         return dict(
             config=self.config,
             data=getattr(self.data, method),
@@ -118,6 +150,18 @@ class Platform:
         )
 
     def create_if_not_exists(self, path: Path | str) -> None:
+        """
+        Creates a directory at the given path if it doesn't already exist.
+
+        Args:
+            path (Union[Path, str]): The path to create the directory at.
+        
+        Raises:
+            Exception: If an unknown error occurs while creating the directory.
+
+        Returns:
+            None
+        """
         try:
             Path(path).mkdir(parents=True, exist_ok=True)
             logger.debug("Created directory: {}".format(path))
@@ -142,6 +186,13 @@ class Platform:
             raise e
 
     def parse_config(self) -> None:
+        """
+        Validate the configuration file against the schema defined in templates.
+
+        Raises:
+            jsonschema.exceptions.ValidationError: If the configuration is invalid.
+
+        """
         logger.debug("Parsing configuration")
         # Get list of decentralised methods from shared decentralised config
         try:
@@ -161,11 +212,11 @@ class Platform:
 
         # Check if centralised method is specified in config
         try:
-            if "central" in self.config and self.config["central"]["train"] == "true":
+            if "central" in self.config and self.config["central"]["train"]:
                 methods.append("central")
         except KeyError:
             pass
-        
+
         # Add all enabled methods to the list
         self.methods = methods + decentralised_methods + specific_decentralised_methods
 
@@ -207,7 +258,7 @@ class Platform:
                 expansion_part[key].pop(sub_key)
 
             # Add enabled train parameters to expansion part
-            expansion_part["train"] = "true"
+            expansion_part["train"] = True
 
             # Make decentralised parameters into specific methods
             for method in decentralised_methods:
@@ -217,7 +268,7 @@ class Platform:
         for method in set(["central", "federated", "swarm", "baseline"]) - set(
             self.methods
         ):
-            self.config[method] = {"train": "false"}
+            self.config[method] = {"train": False}
 
         # Expand shortcut parameters
         if decentralised_methods:
@@ -243,6 +294,16 @@ class Platform:
         logger.info("[CONFIG] More information in tensorboard")
 
     def tb_log_config(self, original_config: dict) -> None:
+        """
+        Logs the experiment configuration to TensorBoard.
+
+        Args:
+            original_config (dict): The original configuration dictionary that was used to initialise the platform.
+
+        Raises:
+            Exception: If an error occurs while logging to TensorBoard.
+
+        """
         logger.debug("Logging configuration to tensorboard")
         config = json.dumps(original_config, indent=4)
         config_expanded = json.dumps(self.config, indent=4)
@@ -274,7 +335,7 @@ class Platform:
                 logger.warning(
                     "No dataloader to unmount for {} in {} set".format(method, set_type)
                 )
-                
+
     def check_for_same_run(self, input_config) -> None:
         # Get a list of all the directories in the runs directory
         run_dirs = os.listdir(self.top_log_dir)
