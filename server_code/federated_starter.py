@@ -73,7 +73,7 @@ class FederatedStarter:
             config=fl.server.ServerConfig(num_rounds=nr_global_rounds),
             client_resources=self.client_resources,
             strategy=self.create_server_strategy(),
-            ray_init_args = {"object_store_memory": ram_memory}
+            #ray_init_args = {"object_store_memory": ram_memory}
         )
 
     def client_fn(self, cid) -> FlowerClient:
