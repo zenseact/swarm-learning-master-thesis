@@ -1,5 +1,3 @@
-from static_params import *
-from utilities import *
 from groundtruth_utils import *
 
 
@@ -75,10 +73,11 @@ class ZODImporter:
 
     def is_valid_frame(self, frame_id):
         if self.ground_truth:
-            return frame_id in self.ground_truth and frame_id not in CORRUPTED_FRAMES
+            return frame_id in self.ground_truth and frame_id not in UNUSED_FRAMES
         else:
-            # return get_ground_truth(self.zod_frames, frame_id).shape[0] == NUM_OUTPUT and frame_id not in CORRUPTED_FRAMES
-            return frame_id not in CORRUPTED_FRAMES
+            # return get_ground_truth(self.zod_frames, frame_id).shape[0] == NUM_OUTPUT
+            # and frame_id not in UNUSED_FRAMES
+            return frame_id not in UNUSED_FRAMES
 
     def load_datasets(self, num_clients: int):
         seed = 42
