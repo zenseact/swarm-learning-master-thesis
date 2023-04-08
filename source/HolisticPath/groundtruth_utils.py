@@ -1,4 +1,3 @@
-from static_params import *
 from utilities import *
 
 
@@ -12,22 +11,24 @@ def get_ground_truth(zod_frames, frame_id):
     # get timestamp
     key_timestamp = zod_frame.info.keyframe_time.timestamp()
 
-    # get posses associated with frame timestamp
     try:
+        # get posses associated with frame timestamp
         current_pose = oxts.get_poses(key_timestamp)
+
         # transform poses
         all_poses = oxts.poses
         transformed_poses = np.linalg.pinv(current_pose) @ all_poses
 
-        def travelled_distance(poses) -> np.ndarray:
-            translations = poses[:, :3, 3]
-            distances = np.linalg.norm(np.diff(translations, axis=0), axis=1)
-            accumulated_distances = np.cumsum(distances).astype(int).tolist()
+        # get translations
+        translations = transformed_poses[:, :3, 3]
 
-            pose_idx = [accumulated_distances.index(i) for i in TARGET_DISTANCES]
-            return poses[pose_idx]
+        # calculate acc diff distance
+        distances = np.linalg.norm(np.diff(translations, axis=0), axis=1)
+        accumulated_distances = np.cumsum(distances).astype(int).tolist()
 
-        used_poses = travelled_distance(transformed_poses)
+        # get the poses that each have a point having a distance from TARGET_DISTANCES
+        pose_idx = [accumulated_distances.index(i) for i in TARGET_DISTANCES]
+        used_poses = transformed_poses[pose_idx]
 
     except:
         print("detected invalid frame: ", frame_id)
@@ -35,11 +36,12 @@ def get_ground_truth(zod_frames, frame_id):
 
     print(used_poses.shape)
     points = used_poses[:, :3, -1]
-    return flatten_ground_truth(points)
+    return points.flatten()
 
 
 def transform_pred(zod_frames, frame_id, pred):
     zod_frame = zod_frames[frame_id]
+    oxts = zod_frame.oxts
     key_timestamp = zod_frame.info.keyframe_time.timestamp()
     current_pose = oxts.get_poses(key_timestamp)
     pred = reshape_ground_truth(pred)
@@ -120,10 +122,6 @@ def visualize_HP_on_image(zod_frames, frame_id, preds=None):
     # plt.imshow(image)
 
 
-def flatten_ground_truth(label):
-    return label.flatten()
-
-
 def reshape_ground_truth(label, output_size=NUM_OUTPUT):
     return label.reshape(((NUM_OUTPUT // 3), 3))
 
@@ -153,6 +151,7 @@ def create_ground_truth(zod_frames, training_frames, validation_frames, path):
 
 
 def load_ground_truth(path):
+    """load ground truth from file"""
     with open(path) as json_file:
         gt = json.load(json_file)
         for f in gt.keys():
