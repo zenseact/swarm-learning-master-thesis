@@ -2,6 +2,7 @@ from common.utilities import *
 from common.datasets import *
 from edge_com.edge_handler import EdgeHandler
 from edge_com.edge_com import EdgeCom
+import flwr as fl
 
 class FlowerClient(fl.client.NumPyClient):
     def __init__(self, cid, edge_handler: EdgeHandler, tb_path=None, federated_subpath=None):
