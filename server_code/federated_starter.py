@@ -65,7 +65,6 @@ class FederatedStarter:
 
     def sim_fed(self, nr_clients=NUM_CLIENTS, nr_global_rounds=NUM_GLOBAL_ROUNDS):
         # start federated learning simulation
-        ram_memory = 10000 * 1024 * 1024
 
         fl.simulation.start_simulation(
             client_fn=self.client_fn,
