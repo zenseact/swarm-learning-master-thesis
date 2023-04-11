@@ -45,48 +45,18 @@ class ZODImporter:
             return get_ground_truth(self.zod_frames, frame_id).shape[0] == OUTPUT_SIZE * 3
 
     def load_datasets(self, num_clients: int):
-        seed = 42
         transform = transforms.Compose([transforms.ToTensor(), transforms.Resize((self.img_size, self.img_size))])
 
-        trainset = ZodDataset(zod_frames=self.zod_frames, frames_id_set=self.training_frames,
-                              stored_ground_truth=self.ground_truth, transform=transform)
         testset = ZodDataset(zod_frames=self.zod_frames, frames_id_set=self.validation_frames,
                              stored_ground_truth=self.ground_truth, transform=transform)
 
-        # Split training set into `num_clients` partitions to simulate different local datasets
-        partition_size = len(trainset) // num_clients
-        lengths = [partition_size] * (num_clients - 1)
-        lengths.append(len(trainset) - sum(lengths))
-        datasets = random_split(trainset, lengths, torch.Generator().manual_seed(seed))
-
-        # Split each partition into train/val and create DataLoader
-        trainloaders, valloaders = [], []
-        lengths_train, lengths_val = [], []
-        for ds in datasets:
-            len_val = int(len(ds) * VAL_FACTOR)
-            len_train = int(len(ds) - len_val)
-            lengths_train.append(len_train)
-            lengths_val.append(len_val)
-            lengths = [len_train, len_val]
-            ds_train, ds_val = random_split(ds, lengths, torch.Generator().manual_seed(seed))
-            trainloaders.append(DataLoader(ds_train, batch_size=self.batch_size, shuffle=True, num_workers=2))
-            valloaders.append(DataLoader(ds_val, batch_size=self.batch_size, num_workers=2))
-
-        len_complete_val = int(len(trainset) * VAL_FACTOR)
-        len_complete_train = int(len(trainset) - len_complete_val)
-        train_split, val_split = random_split(trainset, [len_complete_train, len_complete_val],
-                                              torch.Generator().manual_seed(seed))
-
-        completeTrainloader = DataLoader(train_split, batch_size=self.batch_size, num_workers=2)
-        completeValloader = DataLoader(val_split, batch_size=self.batch_size, num_workers=2)
-
-        testloader = DataLoader(testset, batch_size=self.batch_size, num_workers=2)
+        testloader = DataLoader(testset, batch_size=self.batch_size)
 
         # """report to tensor board"""
         # save_dataset_tb_plot(self.tb_path, lengths_train, "training", seed)
         # save_dataset_tb_plot(self.tb_path, lengths_val, "validation", seed)
 
-        return trainloaders, valloaders, testloader, completeTrainloader, completeValloader
+        return testloader
 
 
 class ZodDataset(Dataset):

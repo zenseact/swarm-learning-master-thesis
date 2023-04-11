@@ -65,15 +65,15 @@ class FederatedStarter:
 
     def sim_fed(self, nr_clients=NUM_CLIENTS, nr_global_rounds=NUM_GLOBAL_ROUNDS):
         # start federated learning simulation
-
+        
         fl.simulation.start_simulation(
             client_fn=self.client_fn,
             num_clients=nr_clients,
             config=fl.server.ServerConfig(num_rounds=nr_global_rounds),
             client_resources=self.client_resources,
             strategy=self.create_server_strategy(),
-            #ray_init_args = {"object_store_memory": ram_memory}
         )
+        
 
     def client_fn(self, cid) -> FlowerClient:
         client = FlowerClient(cid, self.edge_handler)

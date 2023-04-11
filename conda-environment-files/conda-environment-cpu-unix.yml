@@ -6,7 +6,6 @@ dependencies:
 - python=3.9
 - pytorch=1.12.1
 - torchvision=0.13
-- torchsummary
 - cpuonly
 - pip
 - numpy
@@ -21,6 +20,7 @@ dependencies:
 - spacy
 - unidecode
 - pip:
+  - torchsummary
   - future
   - tb-nightly
   - gym

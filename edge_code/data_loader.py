@@ -25,10 +25,10 @@ def load_datasets(partitioned_frame_ids: list):
 
         lengths = [len_train, len_val]
         ds_train, ds_val = random_split(trainset, lengths, Generator().manual_seed(seed))
-        trainloader = DataLoader(ds_train, batch_size=BATCH_SIZE, shuffle=True, num_workers=2)
-        valloader = DataLoader(ds_val, batch_size=BATCH_SIZE, num_workers=2)
+        trainloader = DataLoader(ds_train, batch_size=BATCH_SIZE, shuffle=True)
+        valloader = DataLoader(ds_val, batch_size=BATCH_SIZE)
 
-        testloader = DataLoader(testset, batch_size=BATCH_SIZE, num_workers=2)
+        testloader = DataLoader(testset, batch_size=BATCH_SIZE)
 
         # """report to tensor board"""
         # save_dataset_tb_plot(self.tb_path, lengths_train, "training", seed)
