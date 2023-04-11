@@ -27,7 +27,7 @@ def train(
     # Set up the loss function and optimizer
     criterion = loss_class()
     optimizer = optimiser_class(network.model_parameters(), **optimiser_args)
-    
+
     # Get the device that the model is on
     device = next(network.parameters()).device
     logger.debug("Using device: {}".format(device))

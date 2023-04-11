@@ -49,6 +49,7 @@ class Platform:
         data (DataHandler): A DataHandler object.
         methods (list): A list of methods to be used for training.
     """
+
     def __init__(self, config: dict, data_only: bool = False, write=True) -> None:
         try:
             # Save config
@@ -60,7 +61,7 @@ class Platform:
             self.run_dir = Path(self.top_log_dir, self.run_id)
             self.write = write
             self.skip = False
-            
+
             # Check if a run with the same configuration already exists
             skip, same_dir = self.check_for_same_run(config)
             if skip:
@@ -155,7 +156,7 @@ class Platform:
 
         Args:
             path (Union[Path, str]): The path to create the directory at.
-        
+
         Raises:
             Exception: If an unknown error occurs while creating the directory.
 

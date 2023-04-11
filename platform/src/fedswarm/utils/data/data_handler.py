@@ -80,21 +80,22 @@ class DataObject:
 
 class DataHandler:
     """
-    The platform `DataHandler` object is a custom class that handles the dataloading and 
-    contains all the data required for training. The `DataHandler` is accesssed using the 
-    `data` attribute of the platform. The `DataHandler` always contains the following attributes: 
-    
+    The platform `DataHandler` object is a custom class that handles the dataloading and
+    contains all the data required for training. The `DataHandler` is accesssed using the
+    `data` attribute of the platform. The `DataHandler` always contains the following attributes:
+
         - `train` - the training data
         - `val` - the validation data
         - `test` - the test data
 
-    The `train`, `val`, and `test` attributes are `utils.data.DataObject` objects. 
-    They are essentially just classes built from dictionaries so that they can be 
-    accessed using dot notation. 
-    
+    The `train`, `val`, and `test` attributes are `utils.data.DataObject` objects.
+    They are essentially just classes built from dictionaries so that they can be
+    accessed using dot notation.
+
     Read more about the `DataHandler` class here: `src/example-1-daa.ipynb`
-    
+
     """
+
     def __init__(self, full_config: dict, log_dir: str) -> None:
         logger.debug("Creating instance of DataHandler")
         # Add data specific config as config attribute
