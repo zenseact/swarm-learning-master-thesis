@@ -9,6 +9,8 @@ from typing import List, Optional, Tuple, Union
 from flwr.common.logger import log
 from logging import WARNING
 from flwr.server.strategy import FedAvg
+import numpy as np
+from common.utilities import get_parameters
 
 from flwr.common import (
     FitRes,
@@ -28,5 +30,6 @@ class BaseStrategy(FedAvg):
         failures: List[Union[Tuple[ClientProxy, FitRes], BaseException]],
     ) -> Optional[fl.common.NDArrays]:
         parameters_aggregated, metrics_aggregated = super().aggregate_fit(server_round, results, failures)
-        # NP.SAVEZ
+        print('Saving newest parameters')
+        np.savez(get_parameters(parameters_aggregated), "../../tmp/agg.npz")
         return parameters_aggregated, metrics_aggregated

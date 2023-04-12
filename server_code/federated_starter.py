@@ -8,7 +8,7 @@ from flwr.common.typing import Optional, Tuple, Dict
 
 class FederatedStarter:
     def __init__(self, testloader, nr_local_epochs=NUM_LOCAL_EPOCHS, tb_path=None, federated_subpath=None):
-        self.edge_handler = EdgeHandler.remote(1)
+        self.edge_handler = EdgeHandler(1)
         self.testloader = testloader
         self.client_resources = None
         self.nr_local_epochs = nr_local_epochs
@@ -51,7 +51,7 @@ class FederatedStarter:
         # Pass parameters to the Strategy for server-side parameter initialization
         server_model = net_instance(f"server")
         server_params = get_parameters(server_model)
-        strategy = fl.server.strategy.FedAvg(
+        strategy = BaseStrategy(
             fraction_fit=fraction_fit,
             fraction_evaluate=fraction_evaluate,
             min_fit_clients=min_fit_clients,

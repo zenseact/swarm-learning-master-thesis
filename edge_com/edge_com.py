@@ -25,7 +25,7 @@ class EdgeCom:
     def __recieve(self, cid: str):
         file_recieved = False
         while not file_recieved:
-            file_recieved = os.path.isfile("res.npz")
+            file_recieved = os.path.isfile("res"+cid+".npz")
         model = np.load("../tmp/res"+cid+".npz")
         return model
 
