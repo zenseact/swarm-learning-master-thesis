@@ -5,6 +5,7 @@ from edge_com.edge_handler import EdgeHandler
 from server_code.strategies.base_strategy import BaseStrategy
 import flwr as fl
 from flwr.common.typing import Optional, Tuple, Dict
+from data_partitioner import partition_train_data
 
 class FederatedStarter:
     def __init__(self, testloader, nr_local_epochs=NUM_LOCAL_EPOCHS, tb_path=None, federated_subpath=None):
@@ -66,8 +67,11 @@ class FederatedStarter:
         return strategy
 
     def sim_fed(self, nr_clients=NUM_CLIENTS, nr_global_rounds=NUM_GLOBAL_ROUNDS):
-        # start federated learning simulation
         
+        # partition data for client in file on server
+        partition_train_data(PartitionStrategy.RANDOM, 10000)
+
+        # start federated learning simulation
         fl.simulation.start_simulation(
             client_fn=self.client_fn,
             num_clients=nr_clients,

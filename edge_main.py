@@ -14,14 +14,16 @@ if __name__ == '__main__':
 
     # download current model from server
     with SSHClient(hostname='172.25.16.67', private_key_path='/home/nvidia/.ssh/id_rsa') as ssh:
-        ssh.download_file("/root/Fleet/tmp/agg.npz", "agg.npz")
+        ssh.download_file("/root/Fleet/fleet-learning/tmp/agg.npz", "agg.npz")
     model = np.load("agg.npz")
     os.remove("agg.npz")
+    print(f"type model{type(model)}")
 
     # load the data
     with SSHClient(hostname='172.25.16.67', private_key_path='/home/nvidia/.ssh/id_rsa') as ssh:
-        ssh.download_file("/root/Fleet/tmp/partitions.npz", "partitions.npz")
+        ssh.download_file("/root/Fleet/fleet-learning/tmp/partitions.npz", "partitions.npz")
     partition = np.load("partitions.npz")['0'][cid]
+    print(f"type partitions{type(partition)}")
     data = load_datasets(partition)
 
     # train the model

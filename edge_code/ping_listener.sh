@@ -11,7 +11,7 @@ check_for_updates() {
     LOCAL=$(git rev-parse HEAD)
     REMOTE=$(git rev-parse @{u})
     if [ $LOCAL != $REMOTE ]; then
-        git pull origin master
+        git pull origin main
     fi
 }
 
