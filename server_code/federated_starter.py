@@ -52,7 +52,7 @@ class FederatedStarter:
         server_model = net_instance(f"server")
         server_params = get_parameters(server_model)
         print('Saving initial parameters for edge devices')
-        np.savez(get_parameters(server_params), "../tmp/agg.npz")
+        np.savez(server_params, "../tmp/agg.npz")
         strategy = BaseStrategy(
             fraction_fit=fraction_fit,
             fraction_evaluate=fraction_evaluate,

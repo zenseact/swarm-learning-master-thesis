@@ -38,7 +38,6 @@ def partition_train_data(strat: PartitionStrategy, no_clients: int):
             cid_partitions[str(i)] = training_frames_all[i*sublist_size:(i+1)*sublist_size]
         # save partitions for clients to download
         np.savez('tmp/partitions.npz', **cid_partitions)
-        return cid_partitions
     if strat == PartitionStrategy.LOCATION:
         pass
 
