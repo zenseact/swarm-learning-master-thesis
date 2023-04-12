@@ -1,6 +1,6 @@
 from common.utilities import *
 from common.datasets import *
-from server_code.flwr_client import FlowerClient
+from server_code.clients.flwr_client import FlowerClient
 from edge_com.edge_handler import EdgeHandler
 from server_code.strategies.base_strategy import BaseStrategy
 import flwr as fl
@@ -51,6 +51,8 @@ class FederatedStarter:
         # Pass parameters to the Strategy for server-side parameter initialization
         server_model = net_instance(f"server")
         server_params = get_parameters(server_model)
+        print('Saving initial parameters for edge devices')
+        np.savez(get_parameters(server_params), "../tmp/agg.npz")
         strategy = BaseStrategy(
             fraction_fit=fraction_fit,
             fraction_evaluate=fraction_evaluate,

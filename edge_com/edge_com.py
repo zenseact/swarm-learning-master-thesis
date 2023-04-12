@@ -1,6 +1,7 @@
 import os
 import numpy as np
 from edge_com.edge_handler import EdgeHandler
+import time
 
 class EdgeCom:
     def __init__(self, edge_handler: EdgeHandler):
@@ -20,7 +21,9 @@ class EdgeCom:
         self.node = self.edge_handler.get_available_node()
         response = -1
         while response != 0:
-            response = os.system(f"ping -c 1 -M ip --ip-data={cid}:{strategy} {self.node}")
+            response = os.system(f"ping -c 1 -M dont --ip-data={cid}:{strategy} {self.node}")
+            time.sleep(1)
+            
 
     def __recieve(self, cid: str):
         file_recieved = False

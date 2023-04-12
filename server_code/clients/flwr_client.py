@@ -20,6 +20,7 @@ class FlowerClient(fl.client.NumPyClient):
         return get_parameters(self.net)
 
     def fit(self, parameters, config):
+        print('getting parameters from edge device')
         self.net = self.edge_com.update_model(self.cid, strategy="NotDefined")
         save_model(self.net, self.cid)
         params = get_parameters(self.net)
