@@ -1,5 +1,4 @@
 from common.utilities import *
-from common.datasets import *
 from edge_com.edge_handler import EdgeHandler
 from edge_com.edge_com import EdgeCom
 import flwr as fl

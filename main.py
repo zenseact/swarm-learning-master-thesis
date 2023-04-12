@@ -3,7 +3,7 @@ from common.datasets import *
 from server_code.federated_starter import FederatedStarter
 
 def main(
-        nr_clients=5,
+        nr_clients=NUM_CLIENTS,
         nr_local_epochs=10,
         nr_global_rounds=3,
         subset_factor=0.1,
@@ -17,7 +17,7 @@ def main(
     zod = ZODImporter(subset_factor=subset_factor, img_size=img_size, batch_size=batch_size, tb_path=tb_path, stored_gt_path=STORED_GROUND_TRUTH_PATH)
 
     # create pytorch loaders, CHANGE TO ONLY LOAD TEST
-    _, _, testloader, _, _ = zod.load_datasets(nr_clients)
+    testloader = zod.load_datasets(nr_clients)
 
     # create federated simulator
     fed_sim = FederatedStarter(testloader, nr_local_epochs=nr_local_epochs, tb_path=tb_path, federated_subpath=tb_federated)
