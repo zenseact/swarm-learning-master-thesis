@@ -11,7 +11,6 @@ if __name__ == '__main__':
     use_gpu()
     # Get the command-line arguments
     cid = sys.argv[1]
-    strategy = sys.argv[2]
 
     print('download current model from server')
     

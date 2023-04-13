@@ -29,7 +29,7 @@ class EdgeCom:
         file_recieved = False
         while not file_recieved:
             file_recieved = os.path.isfile("tmp/res"+cid+".npz")
-        parameters = list(np.load("tmp/res"+cid+".npz",allow_pickle = True)['arr_0'])
+        parameters = list(np.load("tmp/res"+cid+".npz", allow_pickle=True)['arr_0'])
         print('file recieved from client')
         return parameters
 
