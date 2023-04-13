@@ -2,31 +2,26 @@ import os
 import numpy as np
 from edge_com.edge_handler import EdgeHandler
 import time
+from edge_com.client_run import run
 
 class EdgeCom:
     def __init__(self, edge_handler: EdgeHandler):
         self.edge_handler: EdgeHandler = edge_handler
         self.node : str = None
     
-    def update_model(self, cid: str, strategy: str):
+    def update_model(self, cid: str):
         # find available edge node and tell it to train
-        self.__ping_train(cid, strategy)
+        self.__train(cid)
         # wait for edge node to finish and fetch new model
         model = self.__recieve(cid)
         # remove the model after fetch
         self.__remove(cid)
         return model
 
-    def __ping_train(self, cid: str, strategy: str):
-        print('pinging client waiting for response')
+    def __train(self, cid: str):
+        print('telling client to train with parameters cid and strategy')
         self.node = self.edge_handler.get_available_node()
-        response = -1
-        while response != 0:
-            ip_data = f"{cid}:{strategy}"
-            hex_data = ''.join(hex(ord(c))[2:] for c in ip_data)
-            response = os.system(f"ping -c 1 -M dont -p {hex_data} {self.node}")
-            time.sleep(1)
-        print('ping recieved by client')
+        run(self.node, cid)
             
 
     def __recieve(self, cid: str):

@@ -5,7 +5,7 @@ from edge_com.edge_handler import EdgeHandler
 from server_code.strategies.base_strategy import BaseStrategy
 import flwr as fl
 from flwr.common.typing import Optional, Tuple, Dict
-from data_partitioner import partition_train_data
+from server_code.data_partitioner import partition_train_data
 
 class FederatedStarter:
     def __init__(self, testloader, nr_local_epochs=NUM_LOCAL_EPOCHS, tb_path=None, federated_subpath=None):
