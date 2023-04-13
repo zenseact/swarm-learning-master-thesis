@@ -6,10 +6,11 @@ from server_code.strategies.base_strategy import BaseStrategy
 import flwr as fl
 from flwr.common.typing import Optional, Tuple, Dict
 from server_code.data_partitioner import partition_train_data
+from server_code.shared_dict import create_shared_dict
 
 class FederatedStarter:
     def __init__(self, testloader, nr_local_epochs=NUM_LOCAL_EPOCHS, tb_path=None, federated_subpath=None):
-        self.edge_handler = EdgeHandler(1)
+        self.edge_handler = EdgeHandler(1, create_shared_dict())
         self.testloader = testloader
         self.client_resources = None
         self.nr_local_epochs = nr_local_epochs
