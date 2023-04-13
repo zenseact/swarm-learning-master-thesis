@@ -19,7 +19,7 @@ class EdgeCom:
         return model
 
     def __train(self, cid: str):
-        print('telling client to train with parameters cid and strategy')
+        print('telling client to train with parameter cid')
         self.node = self.edge_handler.get_available_node()
         run(self.node, cid)
             
@@ -28,13 +28,13 @@ class EdgeCom:
         print('Waiting to recieve file from client')
         file_recieved = False
         while not file_recieved:
-            file_recieved = os.path.isfile("res"+cid+".npz")
-        model = np.load("../tmp/res"+cid+".npz")
+            file_recieved = os.path.isfile("tmp/res"+cid+".npz")
+        model = np.load("tmp/res"+cid+".npz")
         print('file recieved from client')
         return model
 
     def __remove(self, cid: str):
         self.edge_handler.job_done(self.node)
         self.node = None
-        os.remove("../tmp/res"+cid+".npz")
+        os.remove("tmp/res"+cid+".npz")
         print('client file removed')

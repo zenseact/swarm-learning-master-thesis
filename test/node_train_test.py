@@ -9,9 +9,9 @@ from edge_com.edge_handler import *
 class TestNodeTrain(unittest.TestCase):
 
     def test_node_train(self):
-        partition_train_data(PartitionStrategy.RANDOM, 10000)
+        partition_train_data(PartitionStrategy.RANDOM, 1000)
         edge_com = EdgeCom(EdgeHandler(1))
-        asd = edge_com.update_model("1","notDefined")
+        asd = edge_com.update_model("1")
         print(type(asd))
 
 if __name__ == '__main__':

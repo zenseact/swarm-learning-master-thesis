@@ -20,6 +20,7 @@ dependencies:
 - spacy                            
 - unidecode
 - pip:
+  - paramiko
   - PyQt5
   - future
   - tb-nightly

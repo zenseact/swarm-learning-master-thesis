@@ -20,6 +20,7 @@ dependencies:
 - spacy
 - unidecode
 - pip:
+  - paramiko
   - torchsummary
   - future
   - tb-nightly
