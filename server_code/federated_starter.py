@@ -53,7 +53,7 @@ class FederatedStarter:
         server_model = net_instance(f"server")
         server_params = get_parameters(server_model)
         print('Saving initial parameters for edge devices')
-        np.savez(server_params, "../tmp/agg.npz")
+        np.savez("tmp/agg.npz", server_params)
         strategy = BaseStrategy(
             fraction_fit=fraction_fit,
             fraction_evaluate=fraction_evaluate,
@@ -69,7 +69,7 @@ class FederatedStarter:
     def sim_fed(self, nr_clients=NUM_CLIENTS, nr_global_rounds=NUM_GLOBAL_ROUNDS):
         
         # partition data for client in file on server
-        partition_train_data(PartitionStrategy.RANDOM, 10000)
+        partition_train_data(PartitionStrategy.RANDOM, NUM_CLIENTS)
 
         # start federated learning simulation
         fl.simulation.start_simulation(
