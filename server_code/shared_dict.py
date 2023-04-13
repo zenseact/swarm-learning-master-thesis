@@ -15,9 +15,10 @@ def create_shared_dict():
         }
     
     # Create a shared memory buffer to hold the dictionary
-    buffer = mp.RawArray('c', len(repr(my_dict).encode()))
-    arr = np.frombuffer(buffer, dtype=np.uint8)
-    shared_dict = arr.view(dtype=np.dtype('O')).reshape(1)[0]
+    dt = np.dtype([('key', 'S'), ('value', np.int32)])
+    buffer = mp.RawArray('c', len(my_dict) * dt.itemsize)
+    arr = np.frombuffer(buffer, dtype=dt)
+    shared_dict = {arr[i]['key'].decode(): arr[i]['value'] for i in range(len(my_dict))}
     
     # Copy the dictionary into the shared memory buffer
     shared_dict[:] = repr(my_dict).encode()
@@ -26,8 +27,9 @@ def create_shared_dict():
 
 # Use the shared dictionary from another process
 def use_shared_dict(buffer):
+    dt = np.dtype([('key', 'S'), ('value', np.int32)])
     # Access the shared memory buffer as a numpy array
-    arr = np.frombuffer(buffer, dtype=np.uint8)
+    arr = np.frombuffer(buffer, dtype=dt)
     shared_dict = arr.view(dtype=np.dtype('O')).reshape(1)[0]
     
     # Convert the shared dictionary back into a regular dictionary
