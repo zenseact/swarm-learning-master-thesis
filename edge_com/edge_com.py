@@ -13,10 +13,10 @@ class EdgeCom:
         # find available edge node and tell it to train
         self.__train(cid)
         # wait for edge node to finish and fetch new model
-        model = self.__recieve(cid)
+        parameters = self.__recieve(cid)
         # remove the model after fetch
         self.__remove(cid)
-        return model
+        return parameters
 
     def __train(self, cid: str):
         print('telling client to train with parameter cid')
@@ -29,9 +29,9 @@ class EdgeCom:
         file_recieved = False
         while not file_recieved:
             file_recieved = os.path.isfile("tmp/res"+cid+".npz")
-        model = np.load("tmp/res"+cid+".npz")
+        parameters = list(np.load("tmp/res"+cid+".npz",allow_pickle = True)['arr_0'])
         print('file recieved from client')
-        return model
+        return parameters
 
     def __remove(self, cid: str):
         self.edge_handler.job_done(self.node)
