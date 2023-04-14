@@ -24,6 +24,7 @@ class SharedDict:
             node, running = min(self.dict.items(), key=lambda x: x[1])
             if running < node_capacity:
                 self.dict[node] = self.dict[node]+1
+                print(f"node chosen: {node} with runs: {self.dict[node]}")
                 return node
             else:
                 time.sleep(10)
