@@ -1,12 +1,13 @@
 import ray
 import time
+from threading import Lock
 
 # Create a shared dictionary
 @ray.remote
 class SharedDict:
     def __init__(self, d):
         self.dict = d
-        self.lock = ray.Lock()
+        self.lock = Lock()
     
     def get(self):
         return self.dict
