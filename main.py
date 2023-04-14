@@ -32,6 +32,8 @@ def main(
 
     # create pytorch loaders, CHANGE TO ONLY LOAD TEST
     testloader = zod.load_datasets(nr_clients)
+    testloader=testloader[0:int(len(testloader)*PERCENTAGE_OF_DATA)]
+    print(f"len testloader batches: {len(testloader)}")
 
     # create federated simulator
     fed_sim = FederatedStarter(testloader, nr_local_epochs=nr_local_epochs, tb_path=tb_path, federated_subpath=tb_federated)

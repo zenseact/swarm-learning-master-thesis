@@ -71,7 +71,8 @@ class FederatedStarter:
     def sim_fed(self, nr_clients=NUM_CLIENTS, nr_global_rounds=NUM_GLOBAL_ROUNDS):
         
         # partition data for client in file on server
-        partition_train_data(PartitionStrategy.RANDOM, NUM_CLIENTS)
+        partitions_not_to_use = 1/PERCENTAGE_OF_DATA
+        partition_train_data(PartitionStrategy.RANDOM, NUM_CLIENTS*partitions_not_to_use)
 
         # Available edge devices shared dictionary
         shared_device_dict = {
