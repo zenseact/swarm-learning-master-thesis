@@ -11,9 +11,10 @@ from logging import WARNING
 from flwr.server.strategy import FedAvg
 import numpy as np
 from common.utilities import get_parameters
-
 from flwr.common import (
     FitRes,
+    ndarrays_to_parameters,
+    parameters_to_ndarrays,
 )
 
 from flwr.server.client_proxy import ClientProxy
@@ -31,5 +32,5 @@ class BaseStrategy(FedAvg):
     ) -> Optional[fl.common.NDArrays]:
         parameters_aggregated, metrics_aggregated = super().aggregate_fit(server_round, results, failures)
         print('Saving newest parameters')
-        np.savez(get_parameters(parameters_aggregated), "../../tmp/agg.npz")
+        np.savez("tmp/agg.npz", parameters_to_ndarrays(parameters_aggregated))
         return parameters_aggregated, metrics_aggregated

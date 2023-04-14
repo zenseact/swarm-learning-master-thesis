@@ -22,7 +22,7 @@ class EdgeCom:
         print('telling client to train with parameter cid')
         self.node = self.edge_handler.get_available_node()
         run(self.node, cid)
-            
+        print(f"started training on {self.node}")
 
     def __recieve(self, cid: str):
         print('Waiting to recieve file from client')

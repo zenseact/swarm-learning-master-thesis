@@ -6,11 +6,14 @@ from server_code.strategies.base_strategy import BaseStrategy
 import flwr as fl
 from flwr.common.typing import Optional, Tuple, Dict
 from server_code.data_partitioner import partition_train_data
-from server_code.shared_dict import create_shared_dict
+from server_code.shared_dict import SharedDict
+import ray
+from flwr.common.logger import log
+from logging import INFO
 
 class FederatedStarter:
     def __init__(self, testloader, nr_local_epochs=NUM_LOCAL_EPOCHS, tb_path=None, federated_subpath=None):
-        self.edge_handler = EdgeHandler(1, create_shared_dict())
+        self.edge_handler = None
         self.testloader = testloader
         self.client_resources = None
         self.nr_local_epochs = nr_local_epochs
@@ -72,6 +75,32 @@ class FederatedStarter:
         # partition data for client in file on server
         partition_train_data(PartitionStrategy.RANDOM, NUM_CLIENTS)
 
+        # Initialize Ray
+        ray_init_args = {
+            "ignore_reinit_error": True,
+            "include_dashboard": False,
+        }
+        ray.init(**ray_init_args)  # type: ignore
+        log(
+            INFO,
+            "Flower VCE: Ray initialized with resources: %s",
+            ray.cluster_resources(),  # type: ignore
+        )
+
+        # Available edge devices shared dictionary
+        shared_device_dict = {
+            #"agx4.nodes.edgelab.network" : 0, NOT WORKING ATM, fix it!! (flush and reinstall)
+            "agx6.nodes.edgelab.network": 0,
+            "agx9.nodes.edgelab.network": 0,
+            "agx10.nodes.edgelab.network": 0,
+            "orin1.nodes.edgelab.network": 0,
+            "orin2.nodes.edgelab.network": 0
+        }
+
+        shared_dict_remote = SharedDict.remote(shared_device_dict)
+
+        self.edge_handler = EdgeHandler(1, shared_dict_remote)
+
         # start federated learning simulation
         fl.simulation.start_simulation(
             client_fn=self.client_fn,
@@ -79,6 +108,7 @@ class FederatedStarter:
             config=fl.server.ServerConfig(num_rounds=nr_global_rounds),
             client_resources=self.client_resources,
             strategy=self.create_server_strategy(),
+            keep_initialised=True,
         )
         
 

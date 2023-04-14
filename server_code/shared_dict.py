@@ -1,27 +1,29 @@
-import ctypes
-import multiprocessing as mp
-import numpy as np
+import ray
+import time
 
-def create_shared_dict():
-    # Define the dictionary
-    my_dict = {'key1': 'value1', 'key2': 'value2'}
+# Create a shared dictionary
+@ray.remote
+class SharedDict:
+    def __init__(self, d):
+        self.dict = d
+        self.lock = ray.Lock()
     
-    # Create a shared memory buffer to hold the dictionary
-    buffer = mp.RawArray(ctypes.c_char, len(repr(my_dict).encode()))
+    def get(self):
+        return self.dict
     
-    # Copy the dictionary into the shared memory buffer
-    ctypes.memmove(buffer, repr(my_dict).encode(), len(repr(my_dict).encode()))
+    def set(self, key, value):
+        self.dict[key] = value
     
-    return buffer
+    def decrement(self, key):
+        with self.lock:
+            self.dict[key] = self.dict[key]-1
 
-# Use the shared dictionary from another process
-def use_shared_dict(buffer):
-    # Access the shared memory buffer as a numpy array
-    arr = np.frombuffer(buffer, dtype=np.uint8)
-    shared_dict = arr.view(dtype=np.dtype('O')).reshape(1)[0]
-    
-    # Convert the shared dictionary back into a regular dictionary
-    my_dict = eval(shared_dict.tobytes().decode())
-    
-    # Access and modify the dictionary as needed
-    return my_dict
+    def get_available_node(self, node_capacity):
+        with self.lock:
+            node, running = min(self.dict.items(), key=lambda x: x[1])
+            if running < node_capacity:
+                self.dict[node] = self.dict[node]+1
+                return node
+            else:
+                time.sleep(10)
+                return self.get_available_node(node_capacity)
