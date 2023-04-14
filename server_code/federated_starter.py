@@ -7,9 +7,7 @@ import flwr as fl
 from flwr.common.typing import Optional, Tuple, Dict
 from server_code.data_partitioner import partition_train_data
 from server_code.shared_dict import SharedDict
-import ray
-from flwr.common.logger import log
-from logging import INFO
+
 
 class FederatedStarter:
     def __init__(self, testloader, nr_local_epochs=NUM_LOCAL_EPOCHS, tb_path=None, federated_subpath=None):
@@ -74,18 +72,6 @@ class FederatedStarter:
         
         # partition data for client in file on server
         partition_train_data(PartitionStrategy.RANDOM, NUM_CLIENTS)
-
-        # Initialize Ray
-        ray_init_args = {
-            "ignore_reinit_error": True,
-            "include_dashboard": False,
-        }
-        ray.init(**ray_init_args)  # type: ignore
-        log(
-            INFO,
-            "Flower VCE: Ray initialized with resources: %s",
-            ray.cluster_resources(),  # type: ignore
-        )
 
         # Available edge devices shared dictionary
         shared_device_dict = {

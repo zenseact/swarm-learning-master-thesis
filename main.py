@@ -1,6 +1,9 @@
 from common.static_params import *
 from common.datasets import *
 from server_code.federated_starter import FederatedStarter
+import ray
+from flwr.common.logger import log
+from logging import INFO
 
 def main(
         nr_clients=NUM_CLIENTS,
@@ -12,6 +15,17 @@ def main(
         device=DEVICE,
         tb_path=TB_PATH,
         tb_federated=TB_FEDERATED_SUB_PATH):
+    # Initialize Ray
+    ray_init_args = {
+        "ignore_reinit_error": True,
+        "include_dashboard": False,
+    }
+    ray.init(**ray_init_args)  # type: ignore
+    log(
+        INFO,
+        "Flower VCE: Ray initialized with resources: %s",
+        ray.cluster_resources(),  # type: ignore
+    )
 
     # import Zod data into memory
     zod = ZODImporter(subset_factor=subset_factor, img_size=img_size, batch_size=batch_size, tb_path=tb_path, stored_gt_path=STORED_GROUND_TRUTH_PATH)
