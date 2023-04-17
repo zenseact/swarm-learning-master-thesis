@@ -28,9 +28,11 @@ class EdgeCom:
         print('Waiting to recieve file from client')
         file_recieved = False
         while not file_recieved:
+            print('file recieved')
             file_recieved = os.path.isfile("tmp/res"+cid+".npz")
+        time.sleep(5)
         parameters = list(np.load("tmp/res"+cid+".npz", allow_pickle=True)['arr_0'])
-        print('file recieved from client')
+        print('file loaded')
         return parameters
 
     def __remove(self, cid: str):

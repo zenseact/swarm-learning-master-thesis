@@ -32,7 +32,6 @@ def main(
 
     # create pytorch loaders, CHANGE TO ONLY LOAD TEST
     testloader = zod.load_datasets(nr_clients)
-    testloader=testloader[0:int(len(testloader)*PERCENTAGE_OF_DATA)]
     print(f"len testloader batches: {len(testloader)}")
 
     # create federated simulator

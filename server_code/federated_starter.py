@@ -7,7 +7,7 @@ import flwr as fl
 from flwr.common.typing import Optional, Tuple, Dict
 from server_code.data_partitioner import partition_train_data
 from server_code.shared_dict import SharedDict
-
+from server_code.sim_app_flwr import start_simulation
 
 class FederatedStarter:
     def __init__(self, testloader, nr_local_epochs=NUM_LOCAL_EPOCHS, tb_path=None, federated_subpath=None):
@@ -25,6 +25,7 @@ class FederatedStarter:
         net = net_instance(f"server")
         valloader = self.testloader
         set_parameters(net, parameters)  # Update model with the latest parameters
+        print("testing model on server side test set")
         loss, accuracy = test(net, valloader)
         save_model(net, "server")
 
@@ -72,7 +73,7 @@ class FederatedStarter:
         
         # partition data for client in file on server
         partitions_not_to_use = 1/PERCENTAGE_OF_DATA
-        partition_train_data(PartitionStrategy.RANDOM, NUM_CLIENTS*partitions_not_to_use)
+        partition_train_data(PartitionStrategy.RANDOM, int(NUM_CLIENTS*partitions_not_to_use))
 
         # Available edge devices shared dictionary
         shared_device_dict = {
@@ -89,7 +90,7 @@ class FederatedStarter:
         self.edge_handler = EdgeHandler(1, shared_dict_remote)
 
         # start federated learning simulation
-        fl.simulation.start_simulation(
+        start_simulation(
             client_fn=self.client_fn,
             num_clients=nr_clients,
             config=fl.server.ServerConfig(num_rounds=nr_global_rounds),
