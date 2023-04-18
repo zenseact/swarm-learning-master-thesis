@@ -40,7 +40,7 @@ class ZODImporter:
         if num_clients > 1:
             lengths = [partition_size] * (num_clients - 1)
             lengths.append(len(trainset) - sum(lengths))
-            
+
         datasets = random_split(trainset, lengths, torch.Generator().manual_seed(seed))
 
         # Split each partition into train/val and create DataLoader
@@ -114,4 +114,52 @@ class ZodDataset(Dataset):
 
         return image, mask
 
+def dataset_visualize(train_dataset, valid_dataset, test_dataset):
+    # lets look at some samples
+    sample = train_dataset[0]
+    plt.subplot(1,2,1)
+    plt.imshow(sample["image"].transpose(1, 2, 0)) # for visualization we have to transpose back to HWC
+    plt.subplot(1,2,2)
+    plt.imshow(sample["mask"].squeeze())  # for visualization we have to remove 3rd dimension of mask
+    plt.show()
 
+    sample = valid_dataset[0]
+    plt.subplot(1,2,1)
+    plt.imshow(sample["image"].transpose(1, 2, 0)) # for visualization we have to transpose back to HWC
+    plt.subplot(1,2,2)
+    plt.imshow(sample["mask"].squeeze())  # for visualization we have to remove 3rd dimension of mask
+    plt.show()
+
+    sample = test_dataset[0]
+    plt.subplot(1,2,1)
+    plt.imshow(sample["image"].transpose(1, 2, 0)) # for visualization we have to transpose back to HWC
+    plt.subplot(1,2,2)
+    plt.imshow(sample["mask"].squeeze())  # for visualization we have to remove 3rd dimension of mask
+    plt.show()
+
+def predict_visualize(model, test_dataloader):
+    batch = next(iter(test_dataloader))
+    with torch.no_grad():
+        model.eval()
+        logits = model(batch["image"])
+    pr_masks = logits.sigmoid()
+
+    for image, gt_mask, pr_mask in zip(batch["image"], batch["mask"], pr_masks):
+        plt.figure(figsize=(10, 5))
+
+        plt.subplot(1, 3, 1)
+        plt.imshow(image.numpy().transpose(1, 2, 0))  # convert CHW -> HWC
+        plt.title("Image")
+        plt.axis("off")
+
+        plt.subplot(1, 3, 2)
+        plt.imshow(gt_mask.numpy().squeeze()) # just squeeze classes dim, because we have only one class
+        plt.title("Ground truth")
+        plt.axis("off")
+
+        plt.subplot(1, 3, 3)
+        plt.imshow(pr_mask.numpy().squeeze()) # just squeeze classes dim, because we have only one class
+        plt.title("Prediction")
+        plt.axis("off")
+
+        plt.show()

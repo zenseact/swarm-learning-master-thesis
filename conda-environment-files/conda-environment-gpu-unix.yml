@@ -49,3 +49,6 @@ dependencies:
   - networkx
   - torch summary
   - Flask 
+  - segmentation-models-pytorch
+  - pytorch-lightning
+  - torchtext

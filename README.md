@@ -6,14 +6,11 @@
 
 * Close all terminal windows currently open (the conda init step above will not have any effect on existing terminal windows - only on new ones).
 
-* Run the following command in the terminal if you intend to use cpu (Mac or Linux)
-
-`conda env create -f conda-environment-files/conda-environment-cpu-unix.yml`
-
-* OR the following if you use GPU (customize cuda version if neaded). This works on Mac and Linux.
-* Note! You need to change the version of CUDA drivers in the yml script before running the following command so you don't get inconsistent version with TorchVision  
+* Run the following command in the terminal 
 
 `conda env create -f conda-environment-files/conda-environment-gpu-unix.yml`
+
+* Note! You need to change the version of CUDA drivers in the yml script before running the following command so you don't get inconsistent version with TorchVision  
 
 * Run
 
