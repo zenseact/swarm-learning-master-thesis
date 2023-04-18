@@ -7,33 +7,17 @@ from common.groundtruth_utils import get_ground_truth
 from common.static_params import *
 from common.groundtruth_utils import load_ground_truth
 from torch.utils.data import Dataset
-import time
 
 
 def load_datasets(partitioned_frame_ids: list):
-        t = time.localtime()
-        current_time = time.strftime("%H:%M:%S", t)
-        print(f"TIME START = {current_time}")
         seed = 42
         transform = transforms.Compose([transforms.ToTensor(), transforms.Resize((IMG_SIZE, IMG_SIZE))])
-        t = time.localtime()
-        current_time = time.strftime("%H:%M:%S", t)
-        print(f"TIME TRANSFORMS DONE = {current_time}")
         zod_frames = ZodFrames(dataset_root="/mnt/ZOD", version="full")
-        t = time.localtime()
-        current_time = time.strftime("%H:%M:%S", t)
-        print(f"TIME ZOD FRAMES DONE= {current_time}")
 
         trainset = ZodDataset(zod_frames=zod_frames, frames_id_set=partitioned_frame_ids,
                               stored_ground_truth=load_ground_truth(STORED_GROUND_TRUTH_PATH), transform=transform)
-        t = time.localtime()
-        current_time = time.strftime("%H:%M:%S", t)
-        print(f"TIME TRANSET FROM PARTITIONS DONE = {current_time}")
         testset = ZodDataset(zod_frames=zod_frames, frames_id_set=partitioned_frame_ids,
                              stored_ground_truth=load_ground_truth(STORED_GROUND_TRUTH_PATH), transform=transform)
-        t = time.localtime()
-        current_time = time.strftime("%H:%M:%S", t)
-        print(f"TIME TESTSET FROM PARTITIONS DONE = {current_time}")
 
         # Split each partition into train/val and create DataLoader
         len_val = int(len(trainset) * VAL_FACTOR)
@@ -41,18 +25,10 @@ def load_datasets(partitioned_frame_ids: list):
 
         lengths = [len_train, len_val]
         ds_train, ds_val = random_split(trainset, lengths, Generator().manual_seed(seed))
-        trainloader = DataLoader(ds_train, batch_size=BATCH_SIZE, shuffle=True)
-        t = time.localtime()
-        current_time = time.strftime("%H:%M:%S", t)
-        print(f"TIME TRAINLOADER DONE = {current_time}")
-        valloader = DataLoader(ds_val, batch_size=BATCH_SIZE)
-        t = time.localtime()
-        current_time = time.strftime("%H:%M:%S", t)
-        print(f"TIME VALLOADER DONE = {current_time}")
-        testloader = DataLoader(testset, batch_size=BATCH_SIZE)
-        t = time.localtime()
-        current_time = time.strftime("%H:%M:%S", t)
-        print(f"TIME TESTLOADER DONE = {current_time}")
+        trainloader = DataLoader(ds_train, batch_size=BATCH_SIZE, shuffle=True, num_workers=16)
+        valloader = DataLoader(ds_val, batch_size=BATCH_SIZE, num_workers=16)
+
+        testloader = DataLoader(testset, batch_size=BATCH_SIZE, num_workers=16)
 
         # """report to tensor board"""
         # save_dataset_tb_plot(self.tb_path, lengths_train, "training", seed)
