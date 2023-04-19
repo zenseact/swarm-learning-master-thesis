@@ -7,6 +7,7 @@ from common.groundtruth_utils import get_ground_truth
 from common.static_params import *
 from common.groundtruth_utils import load_ground_truth
 from torch.utils.data import Dataset
+import time
 
 
 def load_datasets(partitioned_frame_ids: list):
@@ -41,7 +42,7 @@ class ZodDataset(Dataset):
     def __init__(self, zod_frames, frames_id_set, stored_ground_truth=None, transform=None, target_transform=None):
         self.zod_frames = zod_frames
         self.frames_id_set = frames_id_set
-        self.transform = transform
+        self.transform = transform if transform is not None else transforms.ToTensor()
         self.target_transform = target_transform
         self.stored_ground_truth = stored_ground_truth
 
@@ -51,8 +52,9 @@ class ZodDataset(Dataset):
     def __getitem__(self, idx):
         frame_idx = self.frames_id_set[idx]
         frame = self.zod_frames[frame_idx]
-
+        a = time.time()
         image = frame.get_image(Anonymization.DNAT)
+        print(f"load one image time: {time.time()-a}")
         label = None
 
         if (self.stored_ground_truth):
@@ -64,7 +66,9 @@ class ZodDataset(Dataset):
         image = image.astype('float32')
 
         if self.transform:
+            b = time.time()
             image = self.transform(image)
+            print(f"transform one image time: {time.time()-b}")
         if self.target_transform:
             label = self.target_transform(label)
 
