@@ -36,7 +36,7 @@ class ZODImporter:
 
         
     def is_valid(self, frame_id):
-        return frame_id not in UNUSED_FRAMES
+        return frame_id not in UNUSED_FRAMES and get_ground_truth(self.zod_frames, frame_id).shape == (NUM_OUTPUT,)
         
     def load_datasets(self, num_clients: int):
         seed = 42
@@ -152,7 +152,7 @@ def get_ground_truth(zod_frames, frame_id):
         current_pose = oxts.get_poses(key_timestamp)
 
         # transform poses
-        all_poses = oxts.poses
+        all_poses = oxts.poses[oxts.timestamps>=key_timestamp]
         transformed_poses = np.linalg.pinv(current_pose) @ all_poses
 
         # get translations
