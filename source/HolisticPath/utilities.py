@@ -28,14 +28,10 @@ def train(
     """tensor board publish"""
     running_batch_index = 1 + (server_round - 1) * len(trainloader)
 
-    criterion = (
-        torch.nn.CrossEntropyLoss()
-        if ML_TASK == TASK.CLASSIFICATION
-        else torch.nn.L1Loss()
-    )
+    criterion = (torch.nn.CrossEntropyLoss() if ML_TASK == TASK.CLASSIFICATION else torch.nn.L1Loss())
     optimizer = torch.optim.Adam(net.model_parameters())
     net.train()
-
+    
     losses = []
     accs = []
     val_losses = []
