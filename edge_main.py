@@ -5,7 +5,6 @@ import sys
 from edge_code.data_loader import load_datasets
 from common.utilities import train, use_gpu, net_instance, get_parameters, set_parameters
 from common.static_params import *
-import time
 
 if __name__ == '__main__':
     # use gpu on edge devices
@@ -25,10 +24,6 @@ if __name__ == '__main__':
     print('current model downloaded')
 
     print(f"load the data partition for client cid {cid}")
-
-    t = time.localtime()
-    current_time = time.strftime("%H:%M:%S", t)
-    print(f"TIME = {current_time}")
     
     with SSHClient(hostname='172.25.16.67', private_key_path='/home/nvidia/.ssh/id_rsa') as ssh:
         ssh.download_file("/root/Fleet/fleet-learning/tmp/partitions.npz", "partitions.npz")
@@ -37,9 +32,7 @@ if __name__ == '__main__':
     print('data partition loaded')
     
     print('load dataset to ram')
-    t = time.localtime()
-    current_time = time.strftime("%H:%M:%S", t)
-    print(f"TIME = {current_time}")
+    
     trainloader, valloader, testloader = load_datasets(partition)
     
     print('train the model')

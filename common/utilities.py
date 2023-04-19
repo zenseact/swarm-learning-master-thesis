@@ -37,9 +37,13 @@ def train(net, trainloader, valloader,
         epoch_loss = []
         epoch_start_time = timer_start()
         batch_start_time = timer_start()
+        print(f"num batches: {len(trainloader)}")
+        start_batch = time.time()
         for batch_index, (images, labels) in enumerate(trainloader):
-
             images, labels = images.to(DEVICE), labels.to(DEVICE)
+            endtime= time.time()-start_batch
+            print(f"images loaded to device in: {endtime}")
+            print(f"total batch loading estimate: {endtime*len(trainloader)}")
             optimizer.zero_grad()
             outputs = net(images)
 
