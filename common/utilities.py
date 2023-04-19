@@ -68,7 +68,10 @@ def train(net, trainloader, valloader,
 
             if (ML_TASK == TASK.CLASSIFICATION):
                 correct += (torch.max(outputs.data, 1)[1] == labels).sum().item()
-
+            endtime= time.time()-start_batch
+            print(f"One batch in: {endtime}")
+            time.sleep(1200)
+            
             if batch_index % print_every == 0 and verbose > 0:
                 print(f"\tBatch {batch_index}/{num_batches}: Train loss: {sum(epoch_loss[-print_every:]) / print_every:.3f}, {timer_end(batch_start_time)}")
                 batch_start_time = timer_start()

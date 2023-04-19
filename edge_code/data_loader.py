@@ -45,6 +45,7 @@ class ZodDataset(Dataset):
         self.transform = transform if transform is not None else transforms.ToTensor()
         self.target_transform = target_transform
         self.stored_ground_truth = stored_ground_truth
+        self.count = 0
 
     def __len__(self):
         return len(self.frames_id_set)
@@ -52,9 +53,7 @@ class ZodDataset(Dataset):
     def __getitem__(self, idx):
         frame_idx = self.frames_id_set[idx]
         frame = self.zod_frames[frame_idx]
-        a = time.time()
         image = frame.get_image(Anonymization.DNAT)
-        print(f"load one image time: {time.time()-a}")
         label = None
 
         if (self.stored_ground_truth):
@@ -66,10 +65,8 @@ class ZodDataset(Dataset):
         image = image.astype('float32')
 
         if self.transform:
-            b = time.time()
             image = self.transform(image)
-            print(f"transform one image time: {time.time()-b}")
         if self.target_transform:
             label = self.target_transform(label)
-
+        print(self.count)
         return image, label
