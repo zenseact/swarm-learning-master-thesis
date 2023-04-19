@@ -4,6 +4,7 @@ def train(model, train_dataloader, valid_dataloader, nr_epochs=NUM_LOCAL_EPOCHS)
     trainer = pl.Trainer(
         accelerator= 'gpu',
         max_epochs=nr_epochs,
+        default_root_dir='checkpoints'
     )
 
     trainer.fit(

@@ -1,5 +1,4 @@
 from static_params import *
-from GroundTruth.gt_utils import *
 
 class ZODImporter:
     def __init__(
@@ -15,6 +14,9 @@ class ZODImporter:
         self.training_frames = self.training_frames_all[: int(len(self.training_frames_all) * subset_factor)]
         self.validation_frames = self.validation_frames_all[: int(len(self.validation_frames_all) * subset_factor)]
 
+        self.training_frames = [x for x in tqdm(self.training_frames) if self.is_valid(x)]
+        self.validation_frames = [x for x in tqdm(self.validation_frames) if self.is_valid(x)]
+        
         print("length of training_frames subset:", len(self.training_frames))
         print("length of test_frames subset:", len(self.validation_frames))
 
@@ -22,12 +24,27 @@ class ZODImporter:
         self.batch_size = batch_size
         self.tb_path = tb_path
 
+            
+    def is_valid(self, frame_id):
+        zod_frame = self.zod_frames[frame_id]
+        
+        try:
+            # get the ego road annotations
+            polygon_annotations = zod_frame.get_annotation(AnnotationProject.EGO_ROAD)
+
+            # convert the polygons to a binary mask (which can be used
+            mask = polygons_to_binary_mask(polygon_annotations)
+        except:
+            print(f'{frame_id} is invalid')
+            return False
+        return True
+
     def load_datasets(self, num_clients: int):
         seed = 42
         transform = transforms.Compose([
             transforms.ToTensor(),
-            transforms.Normalize(FRAMES_IMAGE_MEAN, FRAMES_IMAGE_STD),
-            transforms.Resize((self.img_size, self.img_size))
+            #transforms.Normalize(FRAMES_IMAGE_MEAN, FRAMES_IMAGE_STD),
+            transforms.Resize(size=(self.img_size, self.img_size), antialias=True)
         ])
 
         trainset = ZodDataset(zod_frames=self.zod_frames, frames_id_set=self.training_frames, transform=transform)
@@ -98,21 +115,88 @@ class ZodDataset(Dataset):
         return len(self.frames_id_set)
 
     def __getitem__(self, idx):
+
         frame_idx = self.frames_id_set[idx]
         frame = self.zod_frames[frame_idx]
+        
+        image_path = frame.info.get_key_camera_frame(Anonymization.DNAT).filepath
+            
+        polygon_annotations = frame.get_annotation(AnnotationProject.EGO_ROAD)
+        mask = polygons_to_binary_mask(polygon_annotations)
 
-        image = frame.get_image(Anonymization.DNAT)
-        mask = get_frame_seg_mask(self.zod_frames, frame_idx)
+        image = np.array(Image.open(image_path).convert("RGB"))
+        trimap = mask
+        mask = self._preprocess_mask(trimap)
+        
+        sample = dict(image=image, mask=mask, trimap=trimap)
+        
+        # resize images
+        image = np.array(Image.fromarray(sample["image"]).resize((IMG_SIZE, IMG_SIZE), Image.BILINEAR))
+        mask = np.array(Image.fromarray(sample["mask"]).resize((IMG_SIZE, IMG_SIZE), Image.NEAREST))
+        trimap = np.array(Image.fromarray(sample["trimap"]).resize((IMG_SIZE, IMG_SIZE), Image.NEAREST))
 
-        #label = label.astype("float32")
-        #image = image.astype("float32")
+        # convert to other format HWC -> CHW
+        sample["image"] = np.moveaxis(image, -1, 0)
+        sample["mask"] = np.expand_dims(mask, 0)
+        sample["trimap"] = np.expand_dims(trimap, 0)
+        
+        return sample
 
-        if self.transform:
-            image = self.transform(image)
-        if self.target_transform:
-            mask = self.target_transform(mask)
+    @staticmethod
+    def _preprocess_mask(mask):
+        mask = mask.astype(np.float32)
+        mask[mask == False] = 0.0
+        mask[mask == True] = 1.0
+        return mask
 
-        return image, mask
+
+def load_ego_road(dataset_root):
+    zod_frames = ZodFrames(dataset_root=dataset_root, version="full")
+
+    loaded_train_seg_annotated_frames = load_from_json(TRAIN_FRAMES_PATH)
+    loaded_val_seg_annotated_frames = load_from_json(VAL_FRAMES_PATH)
+
+    print(f'loaded {len(loaded_train_seg_annotated_frames)} train frame ids.')
+    print(f'loaded {len(loaded_val_seg_annotated_frames)} val frame ids.')
+
+    return zod_frames, loaded_train_seg_annotated_frames, loaded_val_seg_annotated_frames
+
+def get_frame_seg_mask(zod_frames, frame_id):
+    zod_frame = zod_frames[frame_id]
+
+    # get the camera core-frame from front camera with dnat anonymization
+    camera_core_frame = zod_frame.info.get_key_camera_frame(Anonymization.DNAT)
+
+    # get the image
+    image = camera_core_frame.read()
+
+    # get the ego road annotations
+    polygon_annotations = zod_frame.get_annotation(AnnotationProject.EGO_ROAD)
+
+    # convert the polygons to a binary mask (which can be used
+    mask = polygons_to_binary_mask(polygon_annotations)
+    
+    return mask
+
+def save_to_json(path, data):
+    with open(path, 'w') as f:
+        f.write(json.dumps(data))
+        
+def load_from_json(json_path):
+    with open(json_path, 'r') as f:
+        return json.load(f)
+
+def save_dataset_tb_plot(tb_path, sample_distribution, subtitle, seed):
+    plt.bar(list(range(1, len(sample_distribution) + 1)), sample_distribution)
+    plt.xlabel("Partitions")
+    plt.ylabel("Samples")
+    plt.suptitle("Distribution of samples")
+    plt.title("%s, seed: %s" % (subtitle, seed)),
+
+    """report to tensor board"""
+    writer = SummaryWriter(tb_path)
+    writer.add_figure("sample_distribution/%s" % (subtitle), plt.gcf(), global_step=0)
+    writer.close()
 
 def dataset_visualize(train_dataset, valid_dataset, test_dataset):
     # lets look at some samples

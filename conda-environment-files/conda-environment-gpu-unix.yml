@@ -51,4 +51,3 @@ dependencies:
   - Flask 
   - segmentation-models-pytorch
   - pytorch-lightning
-  - torchtext

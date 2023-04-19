@@ -14,8 +14,8 @@ from zod.utils.polygon_transformations import polygons_to_binary_mask
 from matplotlib import pyplot as plt
 from torch.utils.tensorboard import SummaryWriter
 
-TRAIN_FRAMES_PATH = "training_seg_annotated_frames.json"
-VAL_FRAMES_PATH = "validation_seg_annotated_frames.json"
+TRAIN_FRAMES_PATH = "GroundTruth/training_seg_annotated_frames.json"
+VAL_FRAMES_PATH = "GroundTruth/validation_seg_annotated_frames.json"
 
 def load_zod():
     dataset_root = "/mnt/ZOD"  # AI Sweden
@@ -115,5 +115,3 @@ def main():
     # save train/val annotated frameids
     save_to_json('training_seg_annotated_frames.json', train_frame_ids)
     save_to_json('validation_seg_annotated_frames.json', val_frame_ids)
-
-main()
