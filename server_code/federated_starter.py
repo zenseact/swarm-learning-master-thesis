@@ -25,7 +25,7 @@ class FederatedStarter:
         net = net_instance(f"server")
         valloader = self.testloader
         set_parameters(net, parameters)  # Update model with the latest parameters
-        log("testing model on server side test set")
+        log(INFO,"testing model on server side test set")
         loss, accuracy = test(net, valloader)
         save_model(net, "server")
 
@@ -40,10 +40,10 @@ class FederatedStarter:
         # writer.close()
 
         if (ML_TASK == TASK.CLASSIFICATION):
-            log(f"Server-side evaluation loss {float(loss)} / accuracy {float(accuracy)}")
+            log(INFO,f"Server-side evaluation loss {float(loss)} / accuracy {float(accuracy)}")
             return float(loss), {"accuracy": float(accuracy)}
         else:
-            log(f"Server-side evaluation loss {float(loss)}")
+            log(INFO,f"Server-side evaluation loss {float(loss)}")
             return float(loss), {}
 
     def on_fit_config_fn(self, server_round: int):
@@ -55,7 +55,7 @@ class FederatedStarter:
         # Pass parameters to the Strategy for server-side parameter initialization
         server_model = net_instance(f"server")
         server_params = get_parameters(server_model)
-        log('Saving initial parameters for edge devices')
+        log(INFO,'Saving initial parameters for edge devices')
         np.savez("tmp/agg.npz", server_params)
         strategy = BaseStrategy(
             fraction_fit=fraction_fit,

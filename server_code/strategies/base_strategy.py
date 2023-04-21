@@ -18,6 +18,7 @@ from flwr.common import (
 )
 
 from flwr.server.client_proxy import ClientProxy
+from logging import INFO
 
 
 class BaseStrategy(FedAvg):
@@ -31,6 +32,6 @@ class BaseStrategy(FedAvg):
         failures: List[Union[Tuple[ClientProxy, FitRes], BaseException]],
     ) -> Optional[fl.common.NDArrays]:
         parameters_aggregated, metrics_aggregated = super().aggregate_fit(server_round, results, failures)
-        log('Saving newest parameters')
+        log(INFO,'Saving newest parameters')
         np.savez("tmp/agg.npz", parameters_to_ndarrays(parameters_aggregated))
         return parameters_aggregated, metrics_aggregated

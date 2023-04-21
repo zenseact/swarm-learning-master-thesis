@@ -13,7 +13,7 @@ from zod.constants import Camera
 from zod.utils.geometry import get_points_in_camera_fov, project_3d_to_2d_kannala, transform_points
 import cv2
 from flwr.common.logger import log
-
+from logging import INFO
 
 def get_ground_truth(zod_frames, frame_id):
     # get frame
@@ -43,10 +43,10 @@ def get_ground_truth(zod_frames, frame_id):
         used_poses = travelled_distance(transformed_poses)
     
     except:
-        log('detected invalid frame: ', frame_id)
+        log(INFO,'detected invalid frame: ', frame_id)
         return np.array([])
     
-    log(used_poses.shape)
+    log(INFO,f"{used_poses.shape}")
     points = used_poses[:, :3, -1]
     return flatten_ground_truth(points)
 
@@ -73,11 +73,11 @@ def visualize_HP_on_image(zod_frames, frame_id, preds=None):
     # transform point to camera coordinate system
     T_inv = np.linalg.pinv(calibs.get_extrinsics(camera).transform)
     camerapoints = transform_points(points[:, :3], T_inv)
-    log(f"Number of points: {points.shape[0]}")
+    log(INFO,f"Number of points: {points.shape[0]}")
 
     # filter points that are not in the camera field of view
     points_in_fov = get_points_in_camera_fov(calibs.cameras[camera].field_of_view, camerapoints)
-    log(f"Number of points in fov: {len(points_in_fov)}")
+    log(INFO,f"Number of points in fov: {len(points_in_fov)}")
 
     # project points to image plane
     xy_array = project_3d_to_2d_kannala(
@@ -103,7 +103,7 @@ def visualize_HP_on_image(zod_frames, frame_id, preds=None):
     # transform and draw predictions 
     if(preds):
         preds = reshape_ground_truth(preds)
-        log(f"Number of pred points on image: {preds.shape[0]}")
+        log(INFO,f"Number of pred points on image: {preds.shape[0]}")
         predpoints = transform_points(preds[:, :3], T_inv)
         predpoints_in_fov = get_points_in_camera_fov(calibs.cameras[camera].field_of_view, predpoints)
         xy_array_preds = project_3d_to_2d_kannala(
@@ -150,7 +150,7 @@ def create_ground_truth(zod_frames, training_frames, validation_frames, path):
     with open(path, "w") as outfile:
         outfile.write(json_object)
     
-    log(corrupted_frames)
+    log(INFO,f"{corrupted_frames}")
 
 def load_ground_truth(path):
     with open(path) as json_file:

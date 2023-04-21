@@ -3,6 +3,7 @@ import torchvision
 from flwr.common.logger import log
 from enum import Enum
 from datetime import datetime
+from logging import INFO
 
 class TASK(Enum):
     CLASSIFICATION = 1
@@ -34,8 +35,8 @@ DATASET_ROOT = "/mnt/ZOD"
 ZENSEACT_DATASET_ROOT = "/staging/dataset_donation/round_2"
 
 available_device = 'cuda' if torch.cuda.is_available() else 'only cpu'
-log(f"🚩{available_device} is available in this machine using PyTorch {torch.__version__}")
-log(f"🚩Pytorch vision version: {torchvision.__version__}")
+log(INFO,f"🚩{available_device} is available in this machine using PyTorch {torch.__version__}")
+log(INFO,f"🚩Pytorch vision version: {torchvision.__version__}")
 
 
 """ path to tensor board persistent folders"""
