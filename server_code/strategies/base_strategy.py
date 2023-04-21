@@ -31,6 +31,6 @@ class BaseStrategy(FedAvg):
         failures: List[Union[Tuple[ClientProxy, FitRes], BaseException]],
     ) -> Optional[fl.common.NDArrays]:
         parameters_aggregated, metrics_aggregated = super().aggregate_fit(server_round, results, failures)
-        print('Saving newest parameters')
+        log('Saving newest parameters')
         np.savez("tmp/agg.npz", parameters_to_ndarrays(parameters_aggregated))
         return parameters_aggregated, metrics_aggregated

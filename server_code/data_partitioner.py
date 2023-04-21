@@ -7,7 +7,7 @@ import random
 import numpy as np
 from common.static_params import STORED_GROUND_TRUTH_PATH
 from common.groundtruth_utils import load_ground_truth, get_ground_truth, OUTPUT_SIZE
-
+from flwr.common.logger import log
 # Data partition will be saved as a dictionary client_cid -> [frames_id's] and this dict is 
 # downloaded by the client that loads the correct elements by the idx list in the dictionary
 
@@ -21,7 +21,7 @@ def partition_train_data(strat: PartitionStrategy, no_clients: int):
     validation_frames_all = zod_frames.get_split(constants.VAL)
     
     ground_truth = load_ground_truth(STORED_GROUND_TRUTH_PATH)
-    print('loaded stored ground truth')
+    log('loaded stored ground truth')
 
     training_frames_all = [idx for idx in training_frames_all if is_valid_frame(idx, ground_truth)]
     validation_frames_all = [idx for idx in validation_frames_all if is_valid_frame(idx, ground_truth)]

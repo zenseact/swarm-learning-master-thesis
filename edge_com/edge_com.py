@@ -3,6 +3,7 @@ import numpy as np
 from edge_com.edge_handler import EdgeHandler
 import time
 from edge_com.client_run import run
+from flwr.common.logger import log
 
 class EdgeCom:
     def __init__(self, edge_handler: EdgeHandler):
@@ -19,24 +20,24 @@ class EdgeCom:
         return parameters
 
     def __train(self, cid: str):
-        print('telling client to train with parameter cid')
+        log('telling client to train with parameter cid')
         self.node = self.edge_handler.get_available_node()
         run(self.node, cid)
-        print(f"started training on {self.node}")
+        log(f"started training on {self.node}")
 
     def __recieve(self, cid: str):
-        print('Waiting to recieve file from client')
+        log('Waiting to recieve file from client')
         file_recieved = False
         while not file_recieved:
             file_recieved = os.path.isfile("tmp/res"+cid+".npz")
-        print('file recieved')
+        log('file recieved')
         time.sleep(5)
         parameters = list(np.load("tmp/res"+cid+".npz", allow_pickle=True)['arr_0'])
-        print('file loaded')
+        log('file loaded')
         return parameters
 
     def __remove(self, cid: str):
         self.edge_handler.job_done(self.node)
         self.node = None
         os.remove("tmp/res"+cid+".npz")
-        print('client file removed')
+        log('client file removed')

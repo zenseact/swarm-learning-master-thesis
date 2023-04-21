@@ -6,8 +6,7 @@ from torch import Generator
 from common.groundtruth_utils import get_ground_truth
 from common.static_params import *
 from common.groundtruth_utils import load_ground_truth
-from torch.utils.data import Dataset
-import time
+from torch.utils.data import Dataset, RandomSampler
 
 
 def load_datasets(partitioned_frame_ids: list):
@@ -26,7 +25,8 @@ def load_datasets(partitioned_frame_ids: list):
 
         lengths = [len_train, len_val]
         ds_train, ds_val = random_split(trainset, lengths, Generator().manual_seed(seed))
-        trainloader = DataLoader(ds_train, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
+        train_sampler = RandomSampler(ds_train)
+        trainloader = DataLoader(ds_train, batch_size=BATCH_SIZE, shuffle=False, num_workers=4, sampler=train_sampler)
         valloader = DataLoader(ds_val, batch_size=BATCH_SIZE, num_workers=4)
 
         testloader = DataLoader(testset, batch_size=BATCH_SIZE, num_workers=4)
@@ -45,7 +45,6 @@ class ZodDataset(Dataset):
         self.transform = transform if transform is not None else transforms.ToTensor()
         self.target_transform = target_transform
         self.stored_ground_truth = stored_ground_truth
-        self.count = 0
 
     def __len__(self):
         return len(self.frames_id_set)
@@ -68,5 +67,4 @@ class ZodDataset(Dataset):
             image = self.transform(image)
         if self.target_transform:
             label = self.target_transform(label)
-        print(self.count)
         return image, label

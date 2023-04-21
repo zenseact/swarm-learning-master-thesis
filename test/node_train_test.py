@@ -12,7 +12,7 @@ class TestNodeTrain(unittest.TestCase):
         partition_train_data(PartitionStrategy.RANDOM, 1000)
         edge_com = EdgeCom(EdgeHandler(1))
         asd = edge_com.update_model("1")
-        print(type(asd))
+        log(type(asd))
 
 if __name__ == '__main__':
     unittest.main()

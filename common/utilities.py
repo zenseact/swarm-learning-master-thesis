@@ -12,10 +12,10 @@ from typing import Dict, List, Optional, Tuple
 
 def train(net, trainloader, valloader,
           epochs: int, contin_val=True, plot=True,
-          client_cid=None, verbose=0, model_name="",
+          client_cid=None, verbose=1, model_name="",
           tb_subpath=None, tb_writer=None, server_round=1):
     """Train the network on the training set."""
-    print(
+    log(
         f'⇉ Started transfer learning of model {model_name}' if net.is_pretrained else f'Started normal learning of model {model_name}')
     num_batches = len(trainloader)
     print_every = (num_batches // 3) if (num_batches // 3) != 0 else 1
@@ -37,13 +37,8 @@ def train(net, trainloader, valloader,
         epoch_loss = []
         epoch_start_time = timer_start()
         batch_start_time = timer_start()
-        print(f"num batches: {len(trainloader)}")
-        start_batch = time.time()
         for batch_index, (images, labels) in enumerate(trainloader):
             images, labels = images.to(DEVICE), labels.to(DEVICE)
-            endtime= time.time()-start_batch
-            print(f"images loaded to device in: {endtime}")
-            print(f"total batch loading estimate: {endtime*len(trainloader)}")
             optimizer.zero_grad()
             outputs = net(images)
 
@@ -68,12 +63,9 @@ def train(net, trainloader, valloader,
 
             if (ML_TASK == TASK.CLASSIFICATION):
                 correct += (torch.max(outputs.data, 1)[1] == labels).sum().item()
-            endtime= time.time()-start_batch
-            print(f"One batch in: {endtime}")
-            time.sleep(1200)
             
             if batch_index % print_every == 0 and verbose > 0:
-                print(f"\tBatch {batch_index}/{num_batches}: Train loss: {sum(epoch_loss[-print_every:]) / print_every:.3f}, {timer_end(batch_start_time)}")
+                log(f"\tBatch {batch_index}/{num_batches}: Train loss: {sum(epoch_loss[-print_every:]) / print_every:.3f}, {timer_end(batch_start_time)}")
                 batch_start_time = timer_start()
 
         epoch_loss = np.mean(epoch_loss)
@@ -93,12 +85,12 @@ def train(net, trainloader, valloader,
             accs.append(epoch_acc)
             val_accs.append(epoch_val_accuracy)
 
-            print(
+            log(
                 f" ↪ Client{client_cid} Epoch {epoch + 1}: train loss {epoch_loss}, accuracy {epoch_acc}, val loss {epoch_val_loss}, accuracy {epoch_val_accuracy}")
         else:
-            print(f" ↪ Client{client_cid} Epoch {epoch + 1}: train loss {epoch_loss},\t val loss {epoch_val_loss},\t {timer_end(epoch_start_time)}")
+            log(f" ↪ Client{client_cid} Epoch {epoch + 1}: train loss {epoch_loss},\t val loss {epoch_val_loss},\t {timer_end(epoch_start_time)}")
 
-    print(f'Complete Training {timer_end(training_start_time)}')
+    log(f'Complete Training {timer_end(training_start_time)}')
 
     if (plot):
         if (ML_TASK == TASK.CLASSIFICATION):
@@ -114,9 +106,9 @@ def train(net, trainloader, valloader,
     if (client_cid):
         save_model(net, client_cid)
 
-    print("For manual plotting:")
-    print(f"Client{client_cid} Train losses = {losses}")
-    print(f"Client{client_cid} Val_losses = {val_losses}")
+    log("For manual plotting:")
+    log(f"Client{client_cid} Train losses = {losses}")
+    log(f"Client{client_cid} Val_losses = {val_losses}")
     return losses, accs, val_losses, val_accs
 
 
@@ -144,12 +136,12 @@ def test(net, testloader):
 
 
 def get_parameters(net) -> List[np.ndarray]:
-    if (PRINT_DEBUG_DATA): print("⤺ Get model parameters")
+    if (PRINT_DEBUG_DATA): log("⤺ Get model parameters")
     return [val.cpu().numpy() for _, val in net.state_dict().items()]
 
 
 def set_parameters(net, parameters: List[np.ndarray]):
-    if (PRINT_DEBUG_DATA): print("⤻ Set model parameters")
+    if (PRINT_DEBUG_DATA): log("⤻ Set model parameters")
     params_dict = zip(net.state_dict().keys(), parameters)
     state_dict = OrderedDict(
         {k: torch.Tensor(v) if v.shape != torch.Size([]) else torch.Tensor([0]) for k, v in params_dict})
@@ -157,12 +149,12 @@ def set_parameters(net, parameters: List[np.ndarray]):
 
 
 def save_model(net, name):
-    print(f"🔒 Saved the model of client {name} to the disk. 🔒")
+    log(f"🔒 Saved the model of client {name} to the disk. 🔒")
     torch.save(net.state_dict(), f'{name}.pth')
 
 
 def load_model(name):
-    print(f"🛅 Loaded the model of client {name} from the disk. 🛅")
+    log(f"🛅 Loaded the model of client {name} from the disk. 🛅")
     net = net_instance(f"{name}")
     net = net.load_state_dict(torch.load(f'{name}.pth'))
     return net
@@ -171,23 +163,23 @@ def load_model(name):
 def print_gpu_processes(extra_info=None):
     try:
         if (extra_info):
-            print(extra_info, torch.cuda.list_gpu_processes())
+            log(extra_info, torch.cuda.list_gpu_processes())
         else:
-            print(torch.cuda.list_gpu_processes())
+            log(torch.cuda.list_gpu_processes())
     except:
         pass
 
 
 def clear_gpu():
     print_gpu_processes()
-    print("started clearing the GPU RAM.")
+    log("started clearing the GPU RAM.")
     try:
         gc.collect()
         torch.cuda.empty_cache()
     except:
-        print("Could not clear the GPU RAM.")
+        log("Could not clear the GPU RAM.")
     print_gpu_processes()
-    print("Done clearing the GPU RAM.")
+    log("Done clearing the GPU RAM.")
 
 
 def plot_metrics(axs, metrics, titles, xlabels, legends, ylim=None):
@@ -203,7 +195,7 @@ def plot_metrics(axs, metrics, titles, xlabels, legends, ylim=None):
 
 def net_instance(name):
     net = PTNet().to(DEVICE) if RUN_PRETRAINED else Net().to(DEVICE)
-    print(f"🌻 Created new model - {name} 🌻")
+    log(f"🌻 Created new model - {name} 🌻")
     return net
 
 
@@ -212,19 +204,19 @@ def destroy_model(model, name):
     model = model.cpu()
     # odel.destroy()
     del model
-    print(f"꧁ destroyed model - {name} ꧂")
+    log(f"꧁ destroyed model - {name} ꧂")
     print_gpu_processes(f"⍤ [show gpu process usage after destroying model {name}] ⍤")
 
 
 def use_cpu(model=None):
-    print("swiched to cpu")
+    log("swiched to cpu")
     DEVICE = torch.device('cpu')
     if (model):
         model = model.cpu()
 
 
 def use_gpu():
-    print("swiched to gpu")
+    log("swiched to gpu")
     DEVICE = torch.device('cuda')
 
 

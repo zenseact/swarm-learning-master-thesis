@@ -10,6 +10,7 @@ from torch.utils.data import Dataset
 from zod import ZodFrames
 import zod.constants as constants
 from zod.constants import Anonymization
+from flwr.common.logger import log
 
 
 class ZODImporter:
@@ -24,7 +25,7 @@ class ZODImporter:
         self.ground_truth = None
         if (stored_gt_path):
             self.ground_truth = load_ground_truth(stored_gt_path)
-            print('loaded stored ground truth')
+            log('loaded stored ground truth')
 
         training_frames_all = [idx for idx in training_frames_all if self.is_valid_frame(idx)]
         validation_frames_all = [idx for idx in validation_frames_all if self.is_valid_frame(idx)]
@@ -32,8 +33,8 @@ class ZODImporter:
         self.training_frames = training_frames_all[:int(len(training_frames_all) * subset_factor)]
         self.validation_frames = validation_frames_all[:int(len(validation_frames_all) * subset_factor)]
 
-        print('training_frames length:', len(self.training_frames))
-        print('test_frames length:', len(self.validation_frames))
+        log('training_frames length:', len(self.training_frames))
+        log('test_frames length:', len(self.validation_frames))
         self.img_size = img_size
         self.batch_size = batch_size
         self.tb_path = tb_path
@@ -105,11 +106,11 @@ def main(
     # create pytorch loaders
     trainloaders, valloaders, testloader, completeTrainloader, completeValloader = zod.load_datasets(nr_clients)
 
-    print('nr of training imgs:', len(trainloaders[0].dataset))
-    print('nr of validation imgs:', len(valloaders[0].dataset))
-    print('nr of test imgs:', len(testloader.dataset))
-    print('input shape:', trainloaders[0].dataset[0][0].shape)
-    print('output shape:', trainloaders[0].dataset[0][1].shape)
+    log('nr of training imgs:', len(trainloaders[0].dataset))
+    log('nr of validation imgs:', len(valloaders[0].dataset))
+    log('nr of test imgs:', len(testloader.dataset))
+    log('input shape:', trainloaders[0].dataset[0][0].shape)
+    log('output shape:', trainloaders[0].dataset[0][1].shape)
 
 
 if __name__ == "__main__":
