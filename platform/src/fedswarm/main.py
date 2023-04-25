@@ -50,7 +50,7 @@ class Platform:
         methods (list): A list of methods to be used for training.
     """
 
-    def __init__(self, config: dict, data_only: bool = False, write=True) -> None:
+    def __init__(self, config: dict, data_only: bool = False, write=True, force=False) -> None:
         try:
             # Save config
             self.config = deepcopy(config)
@@ -64,7 +64,7 @@ class Platform:
 
             # Check if a run with the same configuration already exists
             skip, same_dir = self.check_for_same_run(config)
-            if skip:
+            if skip and not force:
                 print("Same run already exists, skipping run but creates platform")
                 print("Run found in {}".format(same_dir))
                 self.skip = True

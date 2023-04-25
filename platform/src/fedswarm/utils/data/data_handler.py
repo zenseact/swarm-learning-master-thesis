@@ -55,7 +55,8 @@ class DataObject:
     @property
     def dataloader(self) -> DataLoader:
         if not hasattr(self, "_dataset"):
-            raise AttributeError("No dataset attribute found when creating dataloader")
+            raise AttributeError(
+                "No dataset attribute found when creating dataloader")
         if not hasattr(self, "_dataloader"):
             logger.warning(
                 "Dataloader not created explicitly, creating it, do not forget to unmount it!"
@@ -136,7 +137,8 @@ class DataHandler:
                 self.__val_ids = val_ids
 
                 # Log that the custom train_val_id_generator is used
-                logger.info("Using custom train_val_id_generator: %s" % script_name)
+                logger.info("Using custom train_val_id_generator: %s" %
+                            script_name)
         except KeyError:
             logger.warning("No train_val_id_generator found, using default")
             default_id_generator()
@@ -156,19 +158,25 @@ class DataHandler:
             random.shuffle(self.__train_ids)
             random.shuffle(self.__val_ids)
 
-            logger.info("Shuffled ids with seed %s" % self._config["shuffle_seed"])
+            logger.info("Shuffled ids with seed %s" %
+                        self._config["shuffle_seed"])
         except KeyError:
             logger.warning("No shuffle seed found, not shuffling ids")
 
         # Create a test set from the val set
         self.__test_ids = self.__val_ids[: len(self.__val_ids) // 2]
-        self.__val_ids = self.__val_ids[len(self.__val_ids) // 2 :]
+        self.__val_ids = self.__val_ids[len(self.__val_ids) // 2:]
 
         # The default transforms and additional transforms from config
         try:
             img_size = self._config["img_size"]
             transforms = [ToTensor()]
-            transforms += eval(self._config["transforms"])
+            try:
+                result = eval(self._config["transforms"])
+            except SyntaxError:
+                result = []
+
+            transforms += result
 
             logger.debug(
                 "Added transforms from config: %s" % self._config["transforms"]
@@ -187,15 +195,12 @@ class DataHandler:
         # Creating the data objects for central training
         logger.info("Creating central datasets")
 
-        output_size = full_config["model"]["args"]["num_output"]
-
         self._test = DataObject(
             _ids=self.__test_ids,
             _dataset=ZodDataset(
                 self._zod_frames,
                 self.__test_ids,
                 transforms=transforms,
-                output_size=output_size,
                 config=full_config,
             ),
             _loader_args=self._config["dataloader_args"],
@@ -207,7 +212,6 @@ class DataHandler:
                 self._zod_frames,
                 self.__train_ids,
                 transforms=transforms,
-                output_size=output_size,
                 config=full_config,
             ),
             _loader_args=self._config["dataloader_args"],
@@ -219,7 +223,6 @@ class DataHandler:
                 self._zod_frames,
                 self.__val_ids,
                 transforms=transforms,
-                output_size=output_size,
                 config=full_config,
             ),
             _loader_args=self._config["dataloader_args"],
@@ -240,18 +243,19 @@ class DataHandler:
         )
 
         # Create decentralised data objects
-        if full_config["federated"]["train"] == "true":
+        if full_config["federated"]["train"]:
             self.create_decentralised_datasets(full_config, "federated")
-        if full_config["swarm"]["train"] == "true":
+        if full_config["swarm"]["train"]:
             self.create_decentralised_datasets(full_config, "swarm")
-        if full_config["baseline"]["train"] == "true":
+        if full_config["baseline"]["train"]:
             self.create_decentralised_datasets(full_config, "baseline")
 
         logger.info("DataHandler initialisation complete")
 
     def create_decentralised_datasets(self, config: dict, method: str) -> None:
         n_clients = config[method]["global"]["n_clients"]
-        logger.info("[{}] Splitting dataset for {} clients".format(method, n_clients))
+        logger.info("[{}] Splitting dataset for {} clients".format(
+            method, n_clients))
 
         writer = SummaryWriter(self.log_dir)
 
@@ -330,7 +334,6 @@ class ZodDataset(Dataset):
         self,
         zod_frames,
         frames_id_set,
-        output_size,
         config,
         transforms=None,
         target_transform=None,
@@ -339,7 +342,6 @@ class ZodDataset(Dataset):
         self.frames_id_set = frames_id_set
         self.transforms = Compose(transforms)
         self.target_transform = target_transform
-        self.output_size = output_size
         self.config = config
 
         # Check if a custom get_method is defined in the config
@@ -411,7 +413,8 @@ def split_dataset(
         lengths = [int(len(data) * d) for d in distribution]
 
         # check error size
-        pct_errors = [1 - p / len(data) / d for p, d in zip(lengths, distribution)]
+        pct_errors = [1 - p / len(data) / d for p,
+                      d in zip(lengths, distribution)]
 
         # if error is greater than 5%, raise error
         if max(pct_errors) > 0.05:

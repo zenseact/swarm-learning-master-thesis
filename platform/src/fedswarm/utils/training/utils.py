@@ -36,10 +36,12 @@ def train(
     # This is used for correct epoch and batch logging. Primarily useful when doing decentralised training
     # Example: global round 2 with 15 epochs per round. Then on the second global round, we say that we are on epoch 16
     if server_round:
-        running_batch_index = 1 + (server_round - 1) * len(trainloader) * epochs
+        running_batch_index = 1 + (server_round - 1) * \
+            len(trainloader) * epochs
         epoch_start = (server_round - 1) * epochs
         epoch_end = epoch_start + epochs
-        logger.debug("RESUME: Starting at batch {}".format(running_batch_index))
+        logger.debug("RESUME: Starting at batch {}".format(
+            running_batch_index))
         logger.debug("RESUME: Starting at epoch {}".format(epoch_start))
     else:
         running_batch_index = 1
@@ -54,11 +56,14 @@ def train(
         # Start the batch loop
         for batch_index, (images, labels) in enumerate(trainloader):
             logger.debug(
-                "Starting: Epoch {}, Batch {}".format(epoch + 1, batch_index + 1)
+                "Starting: Epoch {}, Batch {}".format(
+                    epoch + 1, batch_index + 1)
             )
             images, labels = images.to(device), labels.to(device)
             optimizer.zero_grad()
             outputs = network(images).squeeze()
+            # reshape the target tensor to match the input tensor
+            labels = labels.view_as(outputs)
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
@@ -74,11 +79,13 @@ def train(
                         running_batch_index,
                     )
                     logger.debug(
-                        "[TENSORBOARD] Added batch loss: {:.2f}".format(loss.item())
+                        "[TENSORBOARD] Added batch loss: {:.2f}".format(
+                            loss.item())
                     )
                 except Exception as e:
                     logger.error(
-                        "[TENSORBOARD] Error writing to tensorboard: {}".format(e)
+                        "[TENSORBOARD] Error writing to tensorboard: {}".format(
+                            e)
                     )
                     logger.exception(e)
             running_batch_index += 1
@@ -104,10 +111,12 @@ def train(
                     epoch + 1,
                 )
                 logger.debug(
-                    "[TENSORBOARD] Added epoch loss: {:.2f}".format(mean_epoch_loss)
+                    "[TENSORBOARD] Added epoch loss: {:.2f}".format(
+                        mean_epoch_loss)
                 )
             except Exception as e:
-                logger.error("[TENSORBOARD] Error writing to tensorboard: {}".format(e))
+                logger.error(
+                    "[TENSORBOARD] Error writing to tensorboard: {}".format(e))
                 logger.exception(e)
     return mean_epoch_loss, batch_losses, mean_validation_loss, network
 
@@ -119,12 +128,14 @@ def test(network: Module, dataloader: DataLoader, loss_class: object):
     network.eval()
 
     loss = []
-    logger.debug("Starting evaluation on {} samples".format(len(dataloader.dataset)))
+    logger.debug("Starting evaluation on {} samples".format(
+        len(dataloader.dataset)))
     start_time = datetime.now()
     with no_grad():
         for images, labels in dataloader:
             images, labels = images.to(device), labels.to(device)
             outputs = network(images).squeeze()
+            labels = labels.view_as(outputs)
             loss.append(criterion(outputs, labels).item())
     end_time = datetime.now()
     soft_duration = str(end_time - start_time).split(".")[0]
