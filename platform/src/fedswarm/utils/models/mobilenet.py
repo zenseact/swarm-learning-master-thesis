@@ -6,7 +6,8 @@ class MobileNetV2(nn.Module):
     def __init__(self, num_output, **kwargs):
         super(MobileNetV2, self).__init__()
         self.num_output = num_output
-        self.model = models.mobilenet_v2(pretrained=True)
+        self.model = models.mobilenet_v2(
+            weights=models.MobileNet_V2_Weights.DEFAULT)
         self.is_pretrained = True
         self.model.classifier = nn.Identity()  # remove classification layer
         self.projection_layer = nn.Sequential(
