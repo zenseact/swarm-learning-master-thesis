@@ -10,9 +10,10 @@ class Resnet18(nn.Module):
     def __init__(self, /, num_output, **kwargs) -> None:
         super(Resnet18, self).__init__()
         self.num_output = num_output
-        self.model = models.resnet18(weights=models.ResNet18_Weights.IMAGENET1K_V1)
+        self.model = models.resnet18(
+            weights=models.ResNet18_Weights.IMAGENET1K_V1)
         self.is_pretrained = True
-        self.change_head_net()
+        self.change_head_net(**kwargs)
 
     def forward(self, x: Tensor) -> Tensor:
         return np.squeeze(self.model(x))
@@ -24,12 +25,16 @@ class Resnet18(nn.Module):
         num_ftrs = self.model.fc.in_features
         self.model.fc = nn.Linear(num_ftrs, self.num_output)
 
-    def change_head_net(self):
+    def change_head_net(self, **kwargs):
+        if kwargs.get("head_size", None):
+            head_size = kwargs.get("head_size")
+        else:
+            head_size = 4096
         num_ftrs = self.model.fc.in_features
         head_net = nn.Sequential(
-            nn.Linear(num_ftrs, 4096, bias=True),
+            nn.Linear(num_ftrs, head_size, bias=True),
             nn.ReLU(inplace=True),
-            nn.Linear(4096, self.num_output, bias=True),
+            nn.Linear(head_size, self.num_output, bias=True),
         )
         self.model.fc = head_net
 

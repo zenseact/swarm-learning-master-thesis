@@ -49,7 +49,8 @@ class Platform:
         data (DataHandler): A DataHandler object.
         methods (list): A list of methods to be used for training.
     """
-    def __init__(self, config: dict, data_only: bool = False, write=True) -> None:
+
+    def __init__(self, config: dict, data_only: bool = False, write=True, force=False) -> None:
         try:
             # Save config
             self.config = deepcopy(config)
@@ -60,10 +61,10 @@ class Platform:
             self.run_dir = Path(self.top_log_dir, self.run_id)
             self.write = write
             self.skip = False
-            
+
             # Check if a run with the same configuration already exists
             skip, same_dir = self.check_for_same_run(config)
-            if skip:
+            if skip and not force:
                 print("Same run already exists, skipping run but creates platform")
                 print("Run found in {}".format(same_dir))
                 self.skip = True
@@ -155,7 +156,7 @@ class Platform:
 
         Args:
             path (Union[Path, str]): The path to create the directory at.
-        
+
         Raises:
             Exception: If an unknown error occurs while creating the directory.
 
