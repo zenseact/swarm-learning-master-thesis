@@ -1,19 +1,19 @@
 from imports import *
 
 NUM_OUTPUT = 51
-IMG_SIZE = 512
+IMG_SIZE = 800
 RUN_PRETRAINED = True
-BATCH_SIZE = 16
+BATCH_SIZE = 32
 VAL_FACTOR = 0.15
-SUBSET_FACTOR = 0.1
+SUBSET_FACTOR = 0.12
 USE_GPU = True
 NUM_GLOBAL_ROUNDS = 3
-NUM_LOCAL_EPOCHS = 10
+NUM_LOCAL_EPOCHS = 100
 PRINT_DEBUG_DATA = True
 NUM_WORKERS = 0 # os.cpu_count()
 FRAMES_IMAGE_MEAN = [0.337, 0.345, 0.367]
 FRAMES_IMAGE_STD = [0.160, 0.180, 0.214]
-DEVICE = torch.device("cuda" if USE_GPU else "cpu")
+DEVICE = torch.device("cuda:1" if USE_GPU else "cpu")
 TRAIN_FRAMES_PATH = "../GroundTruth/training_seg_annotated_frames.json"
 VAL_FRAMES_PATH = "../GroundTruth/validation_seg_annotated_frames.json"
 STORED_GROUND_TRUTH_PATH = "cached_gt/hp_gt_smp.json"

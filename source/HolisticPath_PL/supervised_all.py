@@ -56,16 +56,16 @@ from statistics import mean
 
 
 NUM_OUTPUT = 51
-IMG_SIZE = 512
+IMG_SIZE = 256
 RUN_PRETRAINED = True
-BATCH_SIZE = 32
-VAL_FACTOR = 0.10
-SUBSET_FACTOR = 0.05
+BATCH_SIZE = 8
+VAL_FACTOR = 0.1
+SUBSET_FACTOR = 0.12
 USE_GPU = True
 NUM_GLOBAL_ROUNDS = 3
-NUM_LOCAL_EPOCHS = 100
+NUM_LOCAL_EPOCHS = 250
 PRINT_DEBUG_DATA = True
-NUM_WORKERS = 0 # os.cpu_count()
+NUM_WORKERS = 2 # os.cpu_count()
 FRAMES_IMAGE_MEAN = [0.337, 0.345, 0.367]
 FRAMES_IMAGE_STD = [0.160, 0.180, 0.214]
 DEVICE = torch.device("cuda" if USE_GPU else "cpu")
@@ -76,7 +76,9 @@ STORED_BALANCED_DS_PATH = "cached_gt/balanced_frames.txt"
 DATASET_ROOT = "/mnt/ZOD"
 ZENSEACT_DATASET_ROOT = "/staging/dataset_donation/round_2"
 
-TARGET_DISTANCES = [5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 70, 80, 95, 110, 125, 145, 165]
+#TARGET_DISTANCES = [5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 70, 80, 95, 110, 125, 145, 165]
+TARGET_DISTANCES = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85] 
+
 
 with open("frames_with_less_than_165m_hp.json") as f:
     short_frames = json.load(f)
@@ -86,8 +88,9 @@ print(f"PyTorch={torch.__version__}. Pytorch vision={torchvision.__version__}. F
 print(f"Training will run on: {DEVICE}s")
 
 """ path to tensor board persistent folders"""
+DISC = f"Balanced_L1_85m_imgnet_normalized_{NUM_LOCAL_EPOCHS}epo_lr05_{SUBSET_FACTOR*34000}_{BATCH_SIZE}_{IMG_SIZE}_unfreezed"
 now = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-TB_PATH = f"TensorBoard/runs{now}"
+TB_PATH = f"TensorBoard/runs{now}_{DISC}"
 TB_CENTRALIZED_SUB_PATH = "TensorBoard_Centralized/loss/"
 TB_FEDERATED_SUB_PATH = "TensorBoard_Federated/loss/"
 TB_SWARM_SUB_PATH = "TensorBoard_Swarm/loss/"
@@ -110,6 +113,7 @@ class ZODImporter:
     ):
         if(zod_frames == None):
             self.zod_frames = ZodFrames(dataset_root=root, version='full')
+
             self.training_frames_all = self.zod_frames.get_split(constants.TRAIN)
             self.validation_frames_all = self.zod_frames.get_split(constants.VAL)
             
@@ -136,9 +140,12 @@ class ZODImporter:
         
     def load_datasets(self, num_clients: int):
         seed = 42
+        imagenet_mean=[0.485, 0.456, 0.406]
+        imagenet_std=[0.229, 0.224, 0.225]
+
         transform = transforms.Compose([
             transforms.ToTensor(),
-            #transforms.Normalize(FRAMES_IMAGE_MEAN, FRAMES_IMAGE_STD),
+            transforms.Normalize(imagenet_mean, imagenet_std),
             transforms.Resize(size=(self.img_size, self.img_size), antialias=True)
         ])
 
@@ -176,8 +183,15 @@ class ZODImporter:
             torch.Generator().manual_seed(seed),
         )
 
-        completeTrainloader = DataLoader(train_split, batch_size=self.batch_size, num_workers=NUM_WORKERS)
-        completeValloader = DataLoader(val_split, batch_size=self.batch_size, num_workers=NUM_WORKERS)
+        completeTrainloader = DataLoader(
+            train_split, batch_size=self.batch_size, num_workers=NUM_WORKERS, shuffle=True, 
+            prefetch_factor=2,
+            pin_memory= True)
+        
+        completeValloader = DataLoader(
+            val_split, batch_size=self.batch_size, num_workers=NUM_WORKERS, shuffle=True,
+            prefetch_factor=2,
+            pin_memory= True)
 
         testloader = DataLoader(testset, batch_size=self.batch_size, num_workers=NUM_WORKERS)
 
@@ -278,8 +292,14 @@ def compute_loss(pred_trajectory, target_trajectory):
     #loss_elementWise = [torch.sqrt(torch.sum(torch.pow(p - t, 2))).item() for p,t in zip(pred_trajectory, target_trajectory)]
     #loss_elementWise = loss_elementWise = torch.sum(torch.from_numpy(np.array(loss_elementWise)))
     
-    criterion = nn.MSELoss()
-    loss = torch.sqrt(criterion(pred_trajectory, target_trajectory))
+    criterion = torch.nn.L1Loss()
+    loss = criterion(pred_trajectory, target_trajectory)
+
+    #criterion = nn.MSELoss()
+    #loss = torch.sqrt(criterion(pred_trajectory, target_trajectory))
+
+    #criterion = nn.MSELoss()
+    #loss = criterion(pred_trajectory, target_trajectory)
 
     return loss
 
@@ -421,8 +441,9 @@ def predict(model, zod_frames, frame_id):
     outputs = model(image).squeeze(0)
     label = torch.from_numpy(get_ground_truth(zod_frames, frame_id)).to(DEVICE)
     
-    loss = compute_loss(label, outputs)
-    
+    #loss = compute_loss(label, outputs)
+    loss = torch.nn.L1Loss(label, outputs)
+
     print(f'frame: {frame_id}, loss: {loss.item()}')
     preds = outputs.cpu().detach().numpy()
     return preds
@@ -439,14 +460,18 @@ class PT_Model(pl.LightningModule):
         #    param.requires_grad = False
             
         self.change_head_net()
-        #self.loss_fn = torch.nn.L1Loss()
-        self.loss_fn = compute_loss
+        self.loss_fn = torch.nn.L1Loss()
+        #self.loss_fn = compute_loss
         
         # pytorch imagenet calculated mean/std
         self.mean=[0.485, 0.456, 0.406]
         self.std=[0.229, 0.224, 0.225]
         
-        self.batch_counter = 1
+        self.epoch_counter = 1
+
+        self.train_epoch_start_batch_idx = 0
+        self.val_epoch_start_batch_idx = 0
+
         self.inter_train_outputs = []
         self.inter_val_outputs = []
         self.inter_test_outputs = []
@@ -468,6 +493,10 @@ class PT_Model(pl.LightningModule):
             nn.Linear(512, NUM_OUTPUT, bias=True),
         )
         self.model.fc = head_net
+
+        #for param in self.model.fc.parameters():
+        #    param.requires_grad = True
+
 
     
     def shared_step(self, batch, stage):
@@ -494,22 +523,26 @@ class PT_Model(pl.LightningModule):
 
     def shared_epoch_end(self, outputs, stage):
         metrics = {
-            f"{stage}_loss": outputs[-1]['loss'],
+            f"{stage}_loss": outputs[-1],
         }
         
         self.log_dict(metrics, prog_bar=True)
 
     def training_step(self, batch, batch_idx):
         output = self.shared_step(batch, "train")
+        
+        if(batch_idx == 1 and len(self.inter_train_outputs) > 2):
+            epoch_loss = np.mean(self.inter_train_outputs[self.train_epoch_start_batch_idx:]) 
+            print(f'\nstarted new train epoch. Last epoch batch indexes: {self.train_epoch_start_batch_idx}-{len(self.inter_train_outputs)}. Train loss: {epoch_loss}')
 
-        writer.add_scalars(
-            TB_CENTRALIZED_SUB_PATH + "epoch",
-            {"train": output['loss']},
-            self.batch_counter,
-        )
-
-        self.batch_counter +=1
-        self.inter_train_outputs.append(output)
+            writer.add_scalars(
+                TB_CENTRALIZED_SUB_PATH + "epoch",
+                {"train": epoch_loss},
+                self.epoch_counter,
+            )
+            self.train_epoch_start_batch_idx = len(self.inter_train_outputs)
+            
+        self.inter_train_outputs.append(output['loss'].item())
         return output
 
     def on_training_epoch_end(self):
@@ -518,14 +551,20 @@ class PT_Model(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         output = self.shared_step(batch, "valid")
 
-        writer.add_scalars(
-            TB_CENTRALIZED_SUB_PATH + "epoch",
-            {"val": output['loss']},
-            self.batch_counter,
-        )
+        if(batch_idx == 1 and len(self.inter_val_outputs) > 2):
+            epoch_loss = np.mean(self.inter_val_outputs[self.val_epoch_start_batch_idx:]) 
+            print(f'\nstarted new val epoch. Last epoch batch indexes: {self.val_epoch_start_batch_idx}-{len(self.inter_val_outputs)}. Val loss: {epoch_loss}')
+            writer.add_scalars(
+                TB_CENTRALIZED_SUB_PATH + "epoch",
+                {"val": epoch_loss},
+                self.epoch_counter,
+            )
+            self.val_epoch_start_batch_idx = len(self.inter_val_outputs)
 
-        self.batch_counter +=1
-        self.inter_val_outputs.append(output)
+            # update epoch counter only after validation step
+            self.epoch_counter +=1
+
+        self.inter_val_outputs.append(output['loss'].item())
         return output
 
     def on_validation_epoch_end(self):
@@ -540,7 +579,7 @@ class PT_Model(pl.LightningModule):
         return self.shared_epoch_end(self.inter_test_outputs, "test")
 
     def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), lr=0.001)
+        return torch.optim.Adam(self.parameters(), lr=0.00001)
 
 
 
@@ -548,8 +587,8 @@ def train(model, train_dataloader, valid_dataloader, nr_epochs=NUM_LOCAL_EPOCHS)
     trainer = pl.Trainer(
         accelerator= 'gpu',
         max_epochs=nr_epochs,
-        devices=1,
-        num_nodes=1
+        devices=[0],
+        #resume_from_checkpoint = "/home/yasan/swarm-learning-master-thesis/source/HolisticPath_PL/lightning_logs/version_8/checkpoints/epoch=32-step=4059.ckpt"
     )
 
     trainer.fit(
@@ -594,6 +633,12 @@ def load_from_json(json_path):
 
     
 zod_frames, training_frames_all, validation_frames_all = load_HP(DATASET_ROOT)
+
+balanced_frame_ids = []
+with open("balanced_train_ids.txt") as f:
+    balanced_frame_ids = json.load(f)
+    print(f'balanced sample: {balanced_frame_ids[:5]}')
+training_frames_all = balanced_frame_ids
 
 training_frames = list(training_frames_all)[: int(len(training_frames_all) * SUBSET_FACTOR)]
 validation_frames = list(validation_frames_all)[: int(len(validation_frames_all) * SUBSET_FACTOR)]

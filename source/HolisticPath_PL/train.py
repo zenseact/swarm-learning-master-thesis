@@ -4,8 +4,7 @@ def train(model, train_dataloader, valid_dataloader, nr_epochs=NUM_LOCAL_EPOCHS)
     trainer = pl.Trainer(
         accelerator= 'gpu',
         max_epochs=nr_epochs,
-        devices=1,
-        num_nodes=1
+        devices="1",
     )
 
     trainer.fit(
