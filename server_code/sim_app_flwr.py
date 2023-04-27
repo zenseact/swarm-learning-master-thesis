@@ -168,7 +168,6 @@ def start_simulation(  # pylint: disable=too-many-arguments
         ray_init_args = {
             "ignore_reinit_error": True,
             "include_dashboard": False,
-            "object_store_memory": 1024 * 1024 * 1024, # one GB memory allocated for a client
         }
 
     # Shut down Ray if it has already been initialized (unless asked not to)

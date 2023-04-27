@@ -19,6 +19,7 @@ def main(
     ray_init_args = {
         "ignore_reinit_error": True,
         "include_dashboard": False,
+        "object_store_memory": 1024 * 1024 * 1024, # one GB memory allocated for a client
     }
     ray.init(**ray_init_args)  # type: ignore
     log(
