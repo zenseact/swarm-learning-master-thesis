@@ -76,15 +76,7 @@ class FederatedStarter:
         partition_train_data(PartitionStrategy.RANDOM, int(NUM_CLIENTS*partitions_not_to_use))
 
         # Available edge devices shared dictionary
-        shared_device_dict = {
-            #"agx4.nodes.edgelab.network" : 0, NOT WORKING ATM, fix it!! (flush and reinstall)
-            "agx6.nodes.edgelab.network": 0,
-            "agx9.nodes.edgelab.network": 0,
-            "agx10.nodes.edgelab.network": 0,
-            "orin1.nodes.edgelab.network": 0,
-            "orin2.nodes.edgelab.network": 0
-        }
-
+        shared_device_dict = DEVICE_DICT
         shared_dict_remote = SharedDict.remote(shared_device_dict)
 
         self.edge_handler = EdgeHandler(1, shared_dict_remote)

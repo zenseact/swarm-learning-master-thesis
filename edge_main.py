@@ -16,7 +16,7 @@ if __name__ == '__main__':
 
     log(INFO,'download current model from server')
     
-    with SSHClient(hostname='172.25.16.67', private_key_path='/home/nvidia/.ssh/id_rsa') as ssh:
+    with SSHClient(hostname=VM_IP, private_key_path=VM_KEY_PATH) as ssh:
         ssh.download_file("/root/Fleet/fleet-learning/tmp/agg.npz", "agg.npz")
     parameters = list(np.load("agg.npz",allow_pickle = True)['arr_0'])
     os.remove("agg.npz")
@@ -27,7 +27,7 @@ if __name__ == '__main__':
 
     log(INFO,f"load the data partition for client cid {cid}")
     
-    with SSHClient(hostname='172.25.16.67', private_key_path='/home/nvidia/.ssh/id_rsa') as ssh:
+    with SSHClient(hostname=VM_IP, private_key_path=VM_KEY_PATH) as ssh:
         ssh.download_file("/root/Fleet/fleet-learning/tmp/partitions.npz", "partitions.npz")
     partition = np.load("partitions.npz")[cid]
     
@@ -49,7 +49,7 @@ if __name__ == '__main__':
     np.savez("tmp/res"+cid+".npz", params)
     
     log(INFO,'upload model to server')
-    with SSHClient(hostname='172.25.16.67', private_key_path='/home/nvidia/.ssh/id_rsa') as ssh:
+    with SSHClient(hostname=VM_IP, private_key_path=VM_KEY_PATH) as ssh:
         ssh.upload_file("tmp/res"+cid+".npz", "/root/Fleet/fleet-learning/tmp/res"+cid+".npz")
 
     #remove the model

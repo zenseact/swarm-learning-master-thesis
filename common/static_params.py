@@ -13,6 +13,17 @@ class PartitionStrategy(Enum):
     RANDOM = 'random'
     LOCATION = 'location'
 
+VM_IP = '172.25.16.67'
+VM_KEY_PATH = '/home/nvidia/.ssh/id_rsa'
+
+DEVICE_DICT = {
+            #"agx4.nodes.edgelab.network" : 0, NOT WORKING ATM, fix it!! (flush and reinstall)
+            "agx6.nodes.edgelab.network": 0,
+            "agx9.nodes.edgelab.network": 0,
+            "agx10.nodes.edgelab.network": 0,
+            "orin1.nodes.edgelab.network": 0,
+            "orin2.nodes.edgelab.network": 0
+        }
 
 TARGET_DISTANCES = [5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 70, 80, 95, 110, 125, 145, 165]
 NUM_CLIENTS = 5

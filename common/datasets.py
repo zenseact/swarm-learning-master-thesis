@@ -33,8 +33,8 @@ class ZODImporter:
         self.training_frames = training_frames_all[:int(len(training_frames_all) * subset_factor)]
         self.validation_frames = validation_frames_all[:int(len(validation_frames_all) * subset_factor)]
 
-        log(INFO,'training_frames length:', len(self.training_frames))
-        log(INFO,'test_frames length:', len(self.validation_frames))
+        log(INFO,f"training_frames length: {len(self.training_frames)}")
+        log(INFO,f"test_frames length: {len(self.validation_frames)}")
         self.img_size = img_size
         self.batch_size = batch_size
         self.tb_path = tb_path
