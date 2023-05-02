@@ -2,7 +2,7 @@ from common.static_params import *
 from common.datasets import *
 from server_code.federated_starter import FederatedStarter
 import ray
-from flwr.common.logger import log
+from common.logger import log
 from logging import INFO
 
 def main(

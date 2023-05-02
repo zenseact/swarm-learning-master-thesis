@@ -10,7 +10,7 @@ from torch.utils.data import Dataset
 from zod import ZodFrames
 import zod.constants as constants
 from zod.constants import Anonymization
-from flwr.common.logger import log
+from common.logger import log
 from logging import INFO
 
 class ZODImporter:

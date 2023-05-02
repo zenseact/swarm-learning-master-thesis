@@ -8,6 +8,7 @@ import gc
 import time
 from matplotlib import pyplot as plt
 from typing import Dict, List, Optional, Tuple
+from common.logger import log
 # from torch.utils.tensorboard import SummaryWriter
 
 def train(net, trainloader, valloader,

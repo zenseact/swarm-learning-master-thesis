@@ -5,7 +5,7 @@ import sys
 from edge_code.data_loader import load_datasets
 from common.utilities import train, use_gpu, net_instance, get_parameters, set_parameters
 from common.static_params import *
-from flwr.common.logger import log
+from common.logger import log
 from logging import INFO
 
 if __name__ == '__main__':

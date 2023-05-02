@@ -7,7 +7,7 @@ import random
 import numpy as np
 from common.static_params import STORED_GROUND_TRUTH_PATH
 from common.groundtruth_utils import load_ground_truth, get_ground_truth, OUTPUT_SIZE
-from flwr.common.logger import log
+from common.logger import log
 from logging import INFO
 # Data partition will be saved as a dictionary client_cid -> [frames_id's] and this dict is 
 # downloaded by the client that loads the correct elements by the idx list in the dictionary

@@ -6,7 +6,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # or any {'0', '1', '2'}
 from typing import Optional, Tuple, List
 import flwr as fl
 from typing import List, Optional, Tuple, Union
-from flwr.common.logger import log
+from common.logger import log
 from logging import WARNING
 from flwr.server.strategy import FedAvg
 import numpy as np

@@ -3,7 +3,7 @@ import numpy as np
 from edge_com.edge_handler import EdgeHandler
 import time
 from edge_com.client_run import run
-from flwr.common.logger import log
+from common.logger import log
 from logging import INFO
 
 class EdgeCom:

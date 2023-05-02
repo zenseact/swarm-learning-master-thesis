@@ -1,7 +1,7 @@
 import ray
 import time
 from threading import Lock
-from flwr.common.logger import log
+from common.logger import log
 from logging import INFO
 # Create a shared dictionary
 @ray.remote
