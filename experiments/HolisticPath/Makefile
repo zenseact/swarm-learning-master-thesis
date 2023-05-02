@@ -2,9 +2,9 @@
 
 run:
 ifdef config
-	nohup python ../../platform/run_platform.py --config=$(config) &
+	nohup python ../../platform/run_platform.py --config=$(config) --force=False &
 else
-	nohup python ../../platform/run_platform.py --config=config.json &
+	nohup python ../../platform/run_platform.py --config=config.json --force=False &
 endif
 
 

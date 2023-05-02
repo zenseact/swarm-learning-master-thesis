@@ -30,7 +30,7 @@ def run_centralised(config: dict, data: object, log_dir=str) -> None:
     logger.info("Initialising centralised learning runtime")
     # Extract the model name from the config and create an instance of it
     model = load_model(config)
-    
+
     # Move the model to the correct device
     if config["central"]["use_gpu"]:
         model.to("cuda")

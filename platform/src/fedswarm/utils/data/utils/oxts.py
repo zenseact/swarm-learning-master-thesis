@@ -46,7 +46,7 @@ def camera_points_to_2d(zod_frames, frame_id, camera_points):
     frame = zod_frames[frame_id]
     calibs = frame.calibration
     # filter points that are not in the camera field of view
-    points_in_fov = get_points_in_camera_fov(
+    points_in_fov, _ = get_points_in_camera_fov(
         calibs.cameras[camera].field_of_view, camera_points
     )
 
@@ -131,7 +131,8 @@ def present_predictions(img, loss, ground_truth, output, frame_id):
     plt.legend(["Ground Truth", "Prediction"])
     plt.title("Birds-eye view")
 
-    plt.suptitle("{} | Prediction vs Ground Truth | loss: {}".format(frame_id, loss))
+    plt.suptitle(
+        "{} | Prediction vs Ground Truth | loss: {}".format(frame_id, loss))
 
 
 def euclidean_distance(coords):
@@ -145,13 +146,15 @@ def euclidean_distance(coords):
 
 def get_points_at_distance(points, target_distances):
     dists = euclidean_distance(points)
-    dists = np.insert(dists, 0, 0)  # so that there is a dist for all points in points.
+    # so that there is a dist for all points in points.
+    dists = np.insert(dists, 0, 0)
     accumulated_distances = np.cumsum(dists)
 
     interpolated_points = np.empty((len(target_distances), points.shape[1]))
 
     if max(target_distances) > accumulated_distances[-1]:
-        raise ValueError("Target distance is larger than the accumulated distance")
+        raise ValueError(
+            "Target distance is larger than the accumulated distance")
 
     index = 0
     inter_idx = 0

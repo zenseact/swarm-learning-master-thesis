@@ -5,7 +5,7 @@
         "ratio": 0.003,
         "shuffle_seed": 42,
         "img_size": 160,
-        "transforms": "[Resize((img_size, img_size))]",
+        "transforms": "[Resize(img_size)]",
         "dataloader_args": {
             "prefetch_factor": 2,
             "num_workers": 2,
@@ -20,8 +20,8 @@
         "loss": "MSELoss"
     },
     "central": {
-        "train": "true",
-        "use_gpu": "true",
+        "train": true,
+        "use_gpu": true,
         "epochs": 10
     },
     "decentralised": {
@@ -38,7 +38,7 @@
                 "num_gpus": 0.2
             },
             "ray_init_args": {
-                "include_dashboard": "true",
+                "include_dashboard": true,
                 "num_cpus": 12,
                 "num_gpus": 2
             },
