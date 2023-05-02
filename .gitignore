@@ -138,3 +138,9 @@ dataset/
 runs/
 
 *.out
+
+*.yaml
+*.ckpt
+*unfreezed_ema.txt
+*unfreezed.txt
+*_Backup/

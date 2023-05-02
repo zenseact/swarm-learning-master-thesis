@@ -52,7 +52,7 @@ from pprint import pprint
 from torch.utils.data import DataLoader
 from PIL import Image
 from statistics import mean
-
+from ema_pytorch import EMA
 
 
 NUM_OUTPUT = 51
@@ -65,7 +65,7 @@ USE_GPU = True
 NUM_GLOBAL_ROUNDS = 3
 NUM_LOCAL_EPOCHS = 250
 PRINT_DEBUG_DATA = True
-NUM_WORKERS = 2 # os.cpu_count()
+NUM_WORKERS = 4 # os.cpu_count()
 FRAMES_IMAGE_MEAN = [0.337, 0.345, 0.367]
 FRAMES_IMAGE_STD = [0.160, 0.180, 0.214]
 DEVICE = torch.device("cuda" if USE_GPU else "cpu")
@@ -88,7 +88,7 @@ print(f"PyTorch={torch.__version__}. Pytorch vision={torchvision.__version__}. F
 print(f"Training will run on: {DEVICE}s")
 
 """ path to tensor board persistent folders"""
-DISC = f"Balanced_L1_85m_imgnet_normalized_{NUM_LOCAL_EPOCHS}epo_lr05_{SUBSET_FACTOR*34000}_{BATCH_SIZE}_{IMG_SIZE}_unfreezed"
+DISC = f"Balanced_L1_85m_imgnet_normalized_{NUM_LOCAL_EPOCHS}epo_lr05_{SUBSET_FACTOR*34000}_{BATCH_SIZE}_{IMG_SIZE}_unfreezed_ema"
 now = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
 TB_PATH = f"TensorBoard/runs{now}_{DISC}"
 TB_CENTRALIZED_SUB_PATH = "TensorBoard_Centralized/loss/"
@@ -453,15 +453,17 @@ class PT_Model(pl.LightningModule):
     def __init__(self) -> None:
         super(PT_Model, self).__init__()
         self.model = models.resnet18(weights=models.ResNet18_Weights.IMAGENET1K_V1)
-        self.is_pretrained = True
-
-        # freeze parameters and replace head
-        #for param in self.model.parameters():
-        #    param.requires_grad = False
-            
         self.change_head_net()
+        self.ema = EMA(
+            self.model,
+            beta=0.995,
+            update_after_step=100,
+            power=3/4,
+            inv_gamma=1.0
+        )
+
+        self.is_pretrained = True
         self.loss_fn = torch.nn.L1Loss()
-        #self.loss_fn = compute_loss
         
         # pytorch imagenet calculated mean/std
         self.mean=[0.485, 0.456, 0.406]
@@ -473,12 +475,19 @@ class PT_Model(pl.LightningModule):
         self.val_epoch_start_batch_idx = 0
 
         self.inter_train_outputs = []
+        self.inter_train_ema_outputs = []
+
         self.inter_val_outputs = []
+        self.inter_val_ema_outputs = []
+
         self.inter_test_outputs = []
+        self.inter_test_ema_outputs = []
 
     def forward(self, image):
         label = self.model(image)
-        return label
+        ema_label = self.ema(image)
+
+        return label, ema_label
 
     def model_parameters(self):
         return self.model.fc.parameters()
@@ -494,10 +503,6 @@ class PT_Model(pl.LightningModule):
         )
         self.model.fc = head_net
 
-        #for param in self.model.fc.parameters():
-        #    param.requires_grad = True
-
-
     
     def shared_step(self, batch, stage):
         image = batch["image"]
@@ -511,19 +516,24 @@ class PT_Model(pl.LightningModule):
 
         label = batch["label"]
 
-        logits_label = self.forward(image)
+        logits_label, ema_logits_label = self.forward(image)
+
         logits_label = logits_label.unsqueeze(dim=1)
+        ema_logits_label = ema_logits_label.unsqueeze(dim=1)
         
         # Predicted mask contains logits, and loss_fn param `from_logits` is set to True
         loss = self.loss_fn(logits_label, label)
+        ema_loss = self.loss_fn(ema_logits_label, label)
 
         return {
             "loss": loss,
+            "ema_loss": ema_loss
         }
 
-    def shared_epoch_end(self, outputs, stage):
+    def shared_epoch_end(self, outputs, ema_outputs, stage):
         metrics = {
             f"{stage}_loss": outputs[-1],
+            f"{stage}_ema_loss": ema_outputs[-1],
         }
         
         self.log_dict(metrics, prog_bar=True)
@@ -533,50 +543,60 @@ class PT_Model(pl.LightningModule):
         
         if(batch_idx == 1 and len(self.inter_train_outputs) > 2):
             epoch_loss = np.mean(self.inter_train_outputs[self.train_epoch_start_batch_idx:]) 
+            ema_epoch_loss = np.mean(self.inter_train_ema_outputs[self.train_epoch_start_batch_idx:]) 
+
             print(f'\nstarted new train epoch. Last epoch batch indexes: {self.train_epoch_start_batch_idx}-{len(self.inter_train_outputs)}. Train loss: {epoch_loss}')
 
-            writer.add_scalars(
-                TB_CENTRALIZED_SUB_PATH + "epoch",
-                {"train": epoch_loss},
-                self.epoch_counter,
-            )
+            writer.add_scalars(TB_CENTRALIZED_SUB_PATH + "epoch", {"train": epoch_loss},self.epoch_counter)
+            writer.add_scalars(TB_CENTRALIZED_SUB_PATH + "epoch", {"train_ema": ema_epoch_loss},self.epoch_counter)
+
             self.train_epoch_start_batch_idx = len(self.inter_train_outputs)
             
         self.inter_train_outputs.append(output['loss'].item())
+        self.inter_train_ema_outputs.append(output['ema_loss'].item())
+
+        # Update the EMA model after each training step
+        self.ema.update()
+
         return output
 
     def on_training_epoch_end(self):
-        return self.shared_epoch_end(self.inter_train_outputs, "train")
+        self.shared_epoch_end(self.inter_train_outputs, self.inter_train_ema_outputs, "train")
 
     def validation_step(self, batch, batch_idx):
         output = self.shared_step(batch, "valid")
 
         if(batch_idx == 1 and len(self.inter_val_outputs) > 2):
             epoch_loss = np.mean(self.inter_val_outputs[self.val_epoch_start_batch_idx:]) 
+            ema_epoch_loss = np.mean(self.inter_val_ema_outputs[self.val_epoch_start_batch_idx:]) 
+
             print(f'\nstarted new val epoch. Last epoch batch indexes: {self.val_epoch_start_batch_idx}-{len(self.inter_val_outputs)}. Val loss: {epoch_loss}')
-            writer.add_scalars(
-                TB_CENTRALIZED_SUB_PATH + "epoch",
-                {"val": epoch_loss},
-                self.epoch_counter,
-            )
+            
+            writer.add_scalars(TB_CENTRALIZED_SUB_PATH + "epoch", {"val": epoch_loss}, self.epoch_counter)
+            writer.add_scalars(TB_CENTRALIZED_SUB_PATH + "epoch", {"ema_val": ema_epoch_loss}, self.epoch_counter)
+            
             self.val_epoch_start_batch_idx = len(self.inter_val_outputs)
 
             # update epoch counter only after validation step
             self.epoch_counter +=1
 
         self.inter_val_outputs.append(output['loss'].item())
+        self.inter_val_ema_outputs.append(output['ema_loss'].item())
+
         return output
 
     def on_validation_epoch_end(self):
-        return self.shared_epoch_end(self.inter_val_outputs, "valid")
+        return self.shared_epoch_end(self.inter_val_outputs, self.inter_val_ema_outputs, "valid")
 
     def test_step(self, batch, batch_idx):
         output = self.shared_step(batch, "test")
-        self.inter_test_outputs.append(output)
+
+        self.inter_test_outputs.append(output['loss'].item())
+        self.inter_test_ema_outputs.append(output['ema_loss'].item())
         return output
 
     def on_test_epoch_end(self):
-        return self.shared_epoch_end(self.inter_test_outputs, "test")
+        return self.shared_epoch_end(self.inter_test_outputs, self.inter_test_ema_outputs, "test")
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=0.00001)

@@ -36,3 +36,5 @@ TB_PATH = f"TensorBoard/runs{now}"
 TB_CENTRALIZED_SUB_PATH = "TensorBoard_Centralized/loss"
 TB_FEDERATED_SUB_PATH = "TensorBoard_Federated/loss"
 TB_SWARM_SUB_PATH = "TensorBoard_Swarm/loss"
+
+writer = SummaryWriter(TB_PATH)
