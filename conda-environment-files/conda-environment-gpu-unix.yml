@@ -40,7 +40,7 @@ dependencies:
   - pyproj==3
   - plotly==5.11.0
   - ipykernel>=5
-  - zod[cli]
+  - zod[cli]==0.1.8
   - imageio
   - timezonefinder
   - flwr[simulation]
