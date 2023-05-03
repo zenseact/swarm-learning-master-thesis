@@ -24,6 +24,3 @@ class FlowerClient(fl.client.NumPyClient):
         params = self.edge_com.update_model(self.cid)
         # return 1 as nr of training examples for now
         return params, 1, {}
-
-    def evaluate(self, parameters, config):
-        log(INFO,f"Not evaluating clients on server-side")
