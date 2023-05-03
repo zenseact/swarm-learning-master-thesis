@@ -163,25 +163,6 @@ def start_simulation(  # pylint: disable=too-many-arguments
         else:
             cids = [str(x) for x in range(num_clients)]
 
-    # Default arguments for Ray initialization
-    if not ray_init_args:
-        ray_init_args = {
-            "ignore_reinit_error": True,
-            "include_dashboard": False,
-        }
-
-    # Shut down Ray if it has already been initialized (unless asked not to)
-    if ray.is_initialized() and not keep_initialised:  # type: ignore
-        ray.shutdown()  # type: ignore
-
-    # Initialize Ray
-    ray.init(**ray_init_args)  # type: ignore
-    log(
-        INFO,
-        "Flower VCE: Ray initialized with resources: %s",
-        ray.cluster_resources(),  # type: ignore
-    )
-
     # Register one RayClientProxy object for each client with the ClientManager
     resources = client_resources if client_resources is not None else {}
     for cid in cids:
