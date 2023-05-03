@@ -7,7 +7,7 @@ from logging import INFO
 
 def main(
         nr_clients=NUM_CLIENTS,
-        nr_local_epochs=10,
+        nr_local_epochs=NUM_LOCAL_EPOCHS,
         nr_global_rounds=NUM_GLOBAL_ROUNDS,
         subset_factor=SUBSET_FACTOR,
         img_size=IMG_SIZE,
@@ -20,6 +20,7 @@ def main(
         "ignore_reinit_error": True,
         "include_dashboard": False,
         "object_store_memory": 1024 * 1024 * 1024, # one GB memory allocated for a client
+        "num_cpus" : 4,
     }
     ray.init(**ray_init_args)  # type: ignore
     log(
