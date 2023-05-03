@@ -20,6 +20,7 @@ dependencies:
 - spacy                            
 - unidecode
 - pip:
+  - pygit2
   - paramiko
   - PyQt5
   - future

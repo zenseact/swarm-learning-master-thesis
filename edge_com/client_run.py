@@ -3,6 +3,7 @@ import time
 from paramiko import RSAKey
 from common.logger import log
 from logging import INFO
+from pygit2 import Repository
 
 def run(ip, cid):
     ssh = paramiko.SSHClient()
@@ -13,7 +14,11 @@ def run(ip, cid):
 
     repo_location = '/home/nvidia/Fleet/fleet-learning'
     
+    branch = Repository('.').head.shorthand
+
     channel = ssh.invoke_shell()
+    channel.send(f'cd {repo_location} && git checkout {branch} \n')
+    time.sleep(3)
     channel.send(f'cd {repo_location} && git pull \n')
     time.sleep(5)
     channel.send(f'cd {repo_location} && nohup python3 edge_main.py {cid} > output.log 2>&1 &\n')
