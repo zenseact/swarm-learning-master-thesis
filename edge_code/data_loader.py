@@ -11,7 +11,7 @@ from torch.utils.data import Dataset, RandomSampler
 
 def load_datasets(partitioned_frame_ids: list):
         seed = 42
-        transform = transforms.Compose([transforms.ToTensor(), transforms.Resize((IMG_SIZE, IMG_SIZE))])
+        transform = transforms.Compose([transforms.ToTensor(), transforms.Resize((IMG_SIZE, IMG_SIZE),antialias=True)])
         zod_frames = ZodFrames(dataset_root="/mnt/ZOD", version="full")
 
         trainset = ZodDataset(zod_frames=zod_frames, frames_id_set=partitioned_frame_ids,

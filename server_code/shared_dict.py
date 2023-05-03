@@ -22,11 +22,14 @@ class SharedDict:
 
     def get_available_node(self, node_capacity):
         with self.lock:
+            found = False
             node, running = min(self.dict.items(), key=lambda x: x[1])
             if running < node_capacity:
                 self.dict[node] = self.dict[node]+1
                 log(INFO,f"node chosen: {node} with runs: {self.dict[node]}")
-                return node
-            else:
-                time.sleep(10)
-                return self.get_available_node(node_capacity)
+                found = True
+        if found:
+            return node
+        else:
+            time.sleep(10)
+            return self.get_available_node(node_capacity)

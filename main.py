@@ -9,7 +9,7 @@ def main(
         nr_clients=NUM_CLIENTS,
         nr_local_epochs=10,
         nr_global_rounds=NUM_GLOBAL_ROUNDS,
-        subset_factor=0.1,
+        subset_factor=SUBSET_FACTOR,
         img_size=IMG_SIZE,
         batch_size=BATCH_SIZE,
         device=DEVICE,

@@ -20,20 +20,10 @@ class FlowerClient(fl.client.NumPyClient):
         return get_parameters(self.net)
 
     def fit(self, parameters, config):
-        log(INFO,'getting parameters from edge device')
+        log(INFO,'Starting edge devie training process')
         params = self.edge_com.update_model(self.cid)
         # return 1 as nr of training examples for now
         return params, 1, {}
 
     def evaluate(self, parameters, config):
-        log(INFO,f"[Client {self.cid}] evaluate, config: {config}")
-        if (not self.net):
-            self.net = load_model(self.cid)
-        set_parameters(self.net, parameters)
-        loss, accuracy = test(self.net, self.valloader)
-        if (ML_TASK == TASK.CLASSIFICATION):
-            log(INFO,f"🌠 [Client {self.cid}] test loss {loss}, accuracy {accuracy}")
-            return float(loss), len(self.valloader), {"accuracy": float(accuracy)}
-        else:
-            log(INFO,f"🌠 [Client {self.cid}] test RMSE {loss}")
-            return float(loss), len(self.valloader), {"loss": float(loss)}
+        log(INFO,f"Not evaluating clients on server-side")

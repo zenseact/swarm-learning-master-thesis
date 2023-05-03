@@ -13,7 +13,7 @@ class FederatedStarter:
     def __init__(self, testloader, nr_local_epochs=NUM_LOCAL_EPOCHS, tb_path=None, federated_subpath=None):
         self.edge_handler = None
         self.testloader = testloader
-        self.client_resources = None
+        self.client_resources = {"num_cpus" : 0.5}
         self.nr_local_epochs = nr_local_epochs
         self.tb_path = tb_path
         self.federated_subpath = federated_subpath

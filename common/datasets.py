@@ -19,7 +19,6 @@ class ZODImporter:
         version = "full"  # "mini" or "full"
         self.zod_frames = ZodFrames(dataset_root=root, version=version)
 
-        training_frames_all = self.zod_frames.get_split(constants.TRAIN)
         validation_frames_all = self.zod_frames.get_split(constants.VAL)
 
         self.ground_truth = None
@@ -27,13 +26,10 @@ class ZODImporter:
             self.ground_truth = load_ground_truth(stored_gt_path)
             log(INFO,'loaded stored ground truth')
 
-        training_frames_all = [idx for idx in training_frames_all if self.is_valid_frame(idx)]
         validation_frames_all = [idx for idx in validation_frames_all if self.is_valid_frame(idx)]
 
-        self.training_frames = training_frames_all[:int(len(training_frames_all) * subset_factor)]
         self.validation_frames = validation_frames_all[:int(len(validation_frames_all) * subset_factor)]
 
-        log(INFO,f"training_frames length: {len(self.training_frames)}")
         log(INFO,f"test_frames length: {len(self.validation_frames)}")
         self.img_size = img_size
         self.batch_size = batch_size
@@ -46,7 +42,7 @@ class ZODImporter:
             return get_ground_truth(self.zod_frames, frame_id).shape[0] == OUTPUT_SIZE * 3
 
     def load_datasets(self, num_clients: int):
-        transform = transforms.Compose([transforms.ToTensor(), transforms.Resize((self.img_size, self.img_size))])
+        transform = transforms.Compose([transforms.ToTensor(), transforms.Resize((self.img_size, self.img_size),antialias=True)])
 
         testset = ZodDataset(zod_frames=self.zod_frames, frames_id_set=self.validation_frames,
                              stored_ground_truth=self.ground_truth, transform=transform)
