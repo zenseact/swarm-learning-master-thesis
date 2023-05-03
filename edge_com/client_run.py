@@ -21,9 +21,9 @@ def run(ip, cid):
     # Read the output of the 'echo $!' command
     channel.send("echo $?; exit\n")
     output = channel.recv(1024).decode('utf-8')
-    nohup_pid = output.split('\n')[-3]
+    nohup_pid = output.split('\n')
 
-    log(INFO, f"Nohup process ID: {nohup_pid}")
+    log(INFO, f"Nohup process output for ID: {nohup_pid}")
     channel.close()
 
     ssh.close()
