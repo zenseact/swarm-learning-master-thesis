@@ -104,9 +104,6 @@ def train(net, trainloader, valloader,
             plot_metrics([ax], [[losses, val_losses]], [f'RMSE Loss - model {model_name}'],
                          [f'Number of epochs - model {model_name}'], [['Train', 'Val']])
 
-    if (client_cid):
-        save_model(net, client_cid)
-
     log(INFO,"For manual plotting:")
     log(INFO,f"Client{client_cid} Train losses = {losses}")
     log(INFO,f"Client{client_cid} Val_losses = {val_losses}")
@@ -147,18 +144,6 @@ def set_parameters(net, parameters: List[np.ndarray]):
     state_dict = OrderedDict(
         {k: torch.Tensor(v) if v.shape != torch.Size([]) else torch.Tensor([0]) for k, v in params_dict})
     net.load_state_dict(state_dict, strict=True)
-
-
-def save_model(net, name):
-    log(INFO,f"🔒 Saved the model of client {name} to the disk. 🔒")
-    torch.save(net.state_dict(), f'{name}.pth')
-
-
-def load_model(name):
-    log(INFO,f"🛅 Loaded the model of client {name} from the disk. 🛅")
-    net = net_instance(f"{name}")
-    net = net.load_state_dict(torch.load(f'{name}.pth'))
-    return net
 
 
 def print_gpu_processes(extra_info=None):

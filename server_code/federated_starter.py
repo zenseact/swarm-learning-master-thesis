@@ -27,7 +27,6 @@ class FederatedStarter:
         set_parameters(net, parameters)  # Update model with the latest parameters
         log(INFO,"testing model on server side test set")
         loss, accuracy = test(net, valloader)
-        save_model(net, "server")
 
         # writer = SummaryWriter(self.tb_path)
 

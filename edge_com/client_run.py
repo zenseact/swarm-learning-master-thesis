@@ -1,6 +1,8 @@
 import paramiko
 import time
 from paramiko import RSAKey
+from common.logger import log
+from logging import INFO
 
 def run(ip, cid):
     ssh = paramiko.SSHClient()
@@ -16,6 +18,12 @@ def run(ip, cid):
     time.sleep(5)
     channel.send(f'cd {repo_location} && nohup python3 edge_main.py {cid} > output.log 2>&1 &\n')
     time.sleep(5)
+    # Read the output of the 'echo $!' command
+    channel.send("echo $?; exit\n")
+    output = channel.recv(1024).decode('utf-8')
+    nohup_pid = output.split('\n')[-3]
+
+    log(INFO, f"Nohup process ID: {nohup_pid}")
     channel.close()
 
     ssh.close()

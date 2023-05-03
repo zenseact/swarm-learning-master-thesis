@@ -20,7 +20,7 @@ class FlowerClient(fl.client.NumPyClient):
         return get_parameters(self.net)
 
     def fit(self, parameters, config):
-        log(INFO,'Starting edge devie training process')
+        log(INFO,'Starting edge devie training process for cid: {self.cid}')
         params = self.edge_com.update_model(self.cid)
         # return 1 as nr of training examples for now
         return params, 1, {}

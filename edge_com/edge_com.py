@@ -21,8 +21,10 @@ class EdgeCom:
         return parameters
 
     def __train(self, cid: str):
-        log(INFO,'telling client to train with parameter cid')
-        self.node = self.edge_handler.get_available_node()
+        log(INFO,f"finding available node for client {cid}")
+        node = self.edge_handler.get_available_node()
+        log(INFO,f"node {node} found")
+        self.node = node
         run(self.node, cid)
         log(INFO,f"started training on {self.node}")
 

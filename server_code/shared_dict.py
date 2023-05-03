@@ -21,13 +21,18 @@ class SharedDict:
             self.dict[key] = self.dict[key]-1
 
     def get_available_node(self, node_capacity):
+        print(f"get available node")
         with self.lock:
+            print("lock on... dict:")
+            for item in self.dict.items():
+                print(item)
             found = False
             node, running = min(self.dict.items(), key=lambda x: x[1])
             if running < node_capacity:
                 self.dict[node] = self.dict[node]+1
                 log(INFO,f"node chosen: {node} with runs: {self.dict[node]}")
                 found = True
+            print("stop lock")
         if found:
             return node
         else:
