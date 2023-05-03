@@ -19,7 +19,7 @@ from logging.handlers import HTTPHandler
 from typing import Any, Dict, Optional, Tuple
 
 # Create logger
-LOGGER_NAME = "flwr"
+LOGGER_NAME = "fleet"
 FLOWER_LOGGER = logging.getLogger(LOGGER_NAME)
 FLOWER_LOGGER.setLevel(logging.DEBUG)
 
