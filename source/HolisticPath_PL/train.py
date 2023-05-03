@@ -1,10 +1,10 @@
 from static_params import *
 
-def train(model, train_dataloader, valid_dataloader, nr_epochs=NUM_LOCAL_EPOCHS):
+def train(model, train_dataloader, valid_dataloader, nr_epochs=c('num_local_epochs')):
     trainer = pl.Trainer(
         accelerator= 'gpu',
         max_epochs=nr_epochs,
-        devices="1",
+        devices=[c('gpu_id')],
     )
 
     trainer.fit(
