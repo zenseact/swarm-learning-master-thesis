@@ -1,8 +1,8 @@
-from common.utilities import *
-from common.static_params import *
 from edge_com.edge_handler import EdgeHandler
 from edge_com.edge_com import EdgeCom
 import flwr as fl
+from common.logger import log
+from logging import INFO
 
 class FlowerClient(fl.client.NumPyClient):
     def __init__(self, cid, edge_handler: EdgeHandler, tb_path=None, federated_subpath=None):
@@ -14,10 +14,6 @@ class FlowerClient(fl.client.NumPyClient):
         #self.tb_path = tb_path
         #self.federated_subpath = federated_subpath
         #self.tb_writer = SummaryWriter(self.tb_path)s
-
-    def get_parameters(self, config):
-        log(INFO,f"⤺ Get model parameters of client {self.cid}]")
-        return get_parameters(self.net)
 
     def fit(self, parameters, config):
         log(INFO,'Starting edge devie training process for cid: {self.cid}')

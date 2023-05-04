@@ -19,7 +19,7 @@ def main(
     ray_init_args = {
         "ignore_reinit_error": True,
         "include_dashboard": False,
-        "object_store_memory": 1024 * 1024 * 1024/NUM_CLIENTS, # for some reason clients have to share 1 GB memory.. But its fine probably
+        "object_store_memory": 1024 * 1024 * 1024/(NUM_CLIENTS*1.2), # for some reason clients have to share 1 GB memory.. But its fine probably
         "num_cpus" : 4,
     }
     ray.init(**ray_init_args)  # type: ignore
