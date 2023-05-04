@@ -22,8 +22,6 @@ class SharedDict:
 
     def get_available_node(self, node_capacity):
         with self.lock:
-            for item in self.dict.items():
-                print(item)
             found = False
             node, running = min(self.dict.items(), key=lambda x: x[1])
             if running < node_capacity:
