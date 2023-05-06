@@ -15,7 +15,7 @@ print(f"PyTorch={torch.__version__}. Pytorch vision={torchvision.__version__}. F
 print(f"Training will run on: {DEVICE}s")
 
 # path to tensor board persistent folders
-DISC = f"exp-{c('exp_id')}_{c('type')}_agent-{c('agent_id')}_{c('dataset_division')}_{c('loss')}_{c('target_distances')[-1]}m_imgnet_normalized_{c('num_local_epochs')}epochs_lr{c('learning_rate')}_{c('subset_factor')*34000}trainImages_bs{c('batch_size')}_imgSize{c('image_size')}_unfreezed_ema-{c('use_ema')}"
+DISC = f"exp-{c('exp_id')}_{c('type')}_agent-{c('agent_id')}_{c('model')}_{c('dataset_division')}_{c('loss')}_{c('target_distances')[-1]}m_imgnet_normalized_{c('num_local_epochs')}epochs_lr{c('learning_rate')}_{c('subset_factor')*34000}trainImages_bs{c('batch_size')}_imgSize{c('image_size')}_unfreezed_ema-{c('use_ema')}"
 now = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
 TB_PATH = f"TensorBoard/{DISC}_{now}"
 TB_CENTRALIZED_SUB_PATH = "TensorBoard_Centralized/loss/"

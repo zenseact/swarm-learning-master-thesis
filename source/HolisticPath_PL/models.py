@@ -4,7 +4,12 @@ class PT_Model(pl.LightningModule):
     def __init__(self) -> None:
         super(PT_Model, self).__init__()
 
-        self.model = models.resnet18(weights=models.ResNet18_Weights.IMAGENET1K_V1)
+        self.model = None
+        if(c('model') == 'resnet18'):
+            self.model = models.resnet18(weights=models.ResNet18_Weights.IMAGENET1K_V1)
+        elif(c('model') == 'mobile_net'):
+            self.model = models.mobilenet_v3_large(weights=models.MobileNet_V3_Large_Weights.IMAGENET1K_V1)
+
         self.change_head_net()
         self.ema = None
 
@@ -43,6 +48,7 @@ class PT_Model(pl.LightningModule):
 
         if(c('use_ema')):
             ema_label = self.ema(image)
+            print(c('use_ema'))
             return label, ema_label
 
         return label, None
@@ -51,7 +57,13 @@ class PT_Model(pl.LightningModule):
         return self.model.fc.parameters()
 
     def change_head_net(self):
-        num_ftrs = self.model.fc.in_features
+        num_ftrs = 0
+
+        if(c('model') == 'resnet18'):
+            num_ftrs = self.model.fc.in_features
+        elif(c('model') == 'mobile_net'):
+            num_ftrs = self.model.classifier[-1].in_features
+
         head_net = nn.Sequential(
             nn.Linear(num_ftrs, 1024, bias=True),
             nn.ReLU(inplace=True),
@@ -59,8 +71,12 @@ class PT_Model(pl.LightningModule):
             nn.ReLU(inplace=True),
             nn.Linear(512, c('output_size'), bias=True),
         )
-        self.model.fc = head_net
-        
+
+        if(c('model') == 'resnet18'):
+            self.model.fc = head_net
+        elif(c('model') == 'mobile_net'):
+            self.model.classifier[-1] = head_net
+            
     def shared_step(self, batch, stage):
         image = batch["image"]
         
