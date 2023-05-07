@@ -1,8 +1,14 @@
 from imports import *
 
-# read unused frames and the config
+# read unused frames
 with open("frames_with_less_than_165m_hp.json") as f: UNUSED_FRAMES = set(json.load(f))
-with open("config.json") as f: config = json.load(f)[-1]
+
+# read the config
+with open("config.json") as f: configs = json.load(f)
+if(len(sys.argv) == 0): 
+    config = configs[-1]
+else:
+    config = [c for c in configs if c['exp_id'] == int(sys.argv[1])][0]
 print(config)
 
 # helper function to read from config

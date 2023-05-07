@@ -48,7 +48,6 @@ class PT_Model(pl.LightningModule):
 
         if(c('use_ema')):
             ema_label = self.ema(image)
-            print(c('use_ema'))
             return label, ema_label
 
         return label, None
