@@ -29,7 +29,7 @@ class ZODImporter:
             self.validation_frames = validation_frames
             
         print("length of training_frames subset:", len(self.training_frames))
-        print("length of test_frames subset:", len(self.validation_frames))
+        print("length of validation_frames subset:", len(self.validation_frames))
 
         self.img_size = img_size
         self.batch_size = batch_size
@@ -52,7 +52,7 @@ class ZODImporter:
     def is_valid(self, frame_id):
         return frame_id not in UNUSED_FRAMES
         
-    def load_datasets(self, num_clients: int):
+    def load_datasets(self, num_clients=c('num_clients')):
         seed = 42
         imagenet_mean=[0.485, 0.456, 0.406]
         imagenet_std=[0.229, 0.224, 0.225]
@@ -112,6 +112,7 @@ class ZODImporter:
         """report to tensor board"""
         save_dataset_tb_plot(self.tb_path, lengths_train, "training", seed)
         save_dataset_tb_plot(self.tb_path, lengths_val, "validation", seed)
+        save_dataset_tb_plot(self.tb_path, [len(testset)], "testing", seed)
 
         return (
             trainloaders,

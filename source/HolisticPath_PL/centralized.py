@@ -11,13 +11,13 @@ def simulate_centralized():
     model = PT_Model.load_from_checkpoint(c('checkpoint_path')) if(c('start_from_checkpoint')) else PT_Model()
 
     # train supervised
-    trainer = train(model, completeTrainloader, completeValloader, nr_epochs=c('num_local_epochs'))
+    train(model, completeTrainloader, completeValloader, nr_epochs=c('num_local_epochs'))
 
     # validate 
-    validate(trainer, model, completeValloader)
+    validate(model, completeValloader)
 
     # test
-    test(trainer, model, testloader)
+    test(model, testloader)
 
     writer.close()
 

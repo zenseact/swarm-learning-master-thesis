@@ -1,7 +1,7 @@
 from static_params import *
 
 class PT_Model(pl.LightningModule):
-    def __init__(self) -> None:
+    def __init__(self, cid=0) -> None:
         super(PT_Model, self).__init__()
 
         self.model = None
@@ -24,6 +24,7 @@ class PT_Model(pl.LightningModule):
 
         self.is_pretrained = True
         self.loss_fn = torch.nn.L1Loss()
+        self.cid = cid
         
         # pytorch imagenet calculated mean/std
         self.mean=[0.485, 0.456, 0.406]
@@ -117,12 +118,12 @@ class PT_Model(pl.LightningModule):
         if(batch_idx == 1 and len(self.inter_train_outputs) > 2):
             epoch_loss = np.mean(self.inter_train_outputs[self.train_epoch_start_batch_idx:]) 
             print(f'\nstarted new train epoch. Last epoch batch indexes: {self.train_epoch_start_batch_idx}-{len(self.inter_train_outputs)}. Train loss: {epoch_loss}')
-            writer.add_scalars(TB_CENTRALIZED_SUB_PATH + "epoch", {"train": epoch_loss},self.epoch_counter)
+            writer.add_scalars(self.get_TB_path(), {"train": epoch_loss},self.epoch_counter)
             self.train_epoch_start_batch_idx = len(self.inter_train_outputs)
             
             if(c('use_ema')):
                 ema_epoch_loss = np.mean(self.inter_train_ema_outputs[self.train_epoch_start_batch_idx:]) 
-                writer.add_scalars(TB_CENTRALIZED_SUB_PATH + "epoch", {"train_ema": ema_epoch_loss},self.epoch_counter)
+                writer.add_scalars(self.get_TB_path(), {"train_ema": ema_epoch_loss},self.epoch_counter)
 
             
         self.inter_train_outputs.append(output['loss'].item())
@@ -142,12 +143,12 @@ class PT_Model(pl.LightningModule):
         if(batch_idx == 1 and len(self.inter_val_outputs) > 2):
             epoch_loss = np.mean(self.inter_val_outputs[self.val_epoch_start_batch_idx:]) 
             print(f'\nstarted new val epoch. Last epoch batch indexes: {self.val_epoch_start_batch_idx}-{len(self.inter_val_outputs)}. Val loss: {epoch_loss}')
-            writer.add_scalars(TB_CENTRALIZED_SUB_PATH + "epoch", {"val": epoch_loss}, self.epoch_counter)
+            writer.add_scalars(self.get_TB_path(), {"val": epoch_loss}, self.epoch_counter)
             self.val_epoch_start_batch_idx = len(self.inter_val_outputs)
 
             if(c('use_ema')):
                 ema_epoch_loss = np.mean(self.inter_val_ema_outputs[self.val_epoch_start_batch_idx:]) 
-                writer.add_scalars(TB_CENTRALIZED_SUB_PATH + "epoch", {"ema_val": ema_epoch_loss}, self.epoch_counter)
+                writer.add_scalars(self.get_TB_path(), {"ema_val": ema_epoch_loss}, self.epoch_counter)
             
             # update epoch counter only after validation step
             self.epoch_counter +=1
@@ -195,3 +196,9 @@ class PT_Model(pl.LightningModule):
                 'L2_loss_x': L2_loss[:, 0],
                 'L2_loss_y': L2_loss[:, 1],
                 'L2_loss_z': L2_loss[:, 2]}
+    
+    def get_TB_path(self):
+        if(c('type')=='centralized'):
+            return TB_CENTRALIZED_SUB_PATH
+        if(c('type')=='federated'):
+            return f"{TB_FEDERATED_SUB_PATH}/{self.cid}/",
