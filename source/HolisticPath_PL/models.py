@@ -149,7 +149,6 @@ class PT_Model(pl.LightningModule):
 
     def updateTB(self, tb_log, stage):
         writer.add_scalars('Loss', tb_log, global_step=self.epoch_counter)
-        #self.logger.experiment.add_scalars('Loss', tb_log, global_step=self.epoch_counter)
         self.create_intermediate_steps()
 
     def create_intermediate_steps(self):

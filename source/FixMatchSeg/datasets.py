@@ -8,15 +8,23 @@ class ZODImporter:
         img_size=IMG_SIZE,
         batch_size=BATCH_SIZE,
         tb_path=TB_PATH,
+        zod_frames=None,
+        training_frames=None, 
+        validation_frames=None
     ):
-        self.zod_frames, self.training_frames_all, self.validation_frames_all = load_ego_road(root)
+        if(zod_frames == None):
+            self.zod_frames, self.training_frames_all, self.validation_frames_all = load_ego_road(root)
 
-        self.training_frames = self.training_frames_all[: int(len(self.training_frames_all) * subset_factor)]
-        self.validation_frames = self.validation_frames_all[: int(len(self.validation_frames_all) * subset_factor)]
+            self.training_frames = self.training_frames_all[: int(len(self.training_frames_all) * subset_factor)]
+            self.validation_frames = self.validation_frames_all[: int(len(self.validation_frames_all) * subset_factor)]
 
-        self.training_frames = [x for x in tqdm(self.training_frames) if self.is_valid(x)]
-        self.validation_frames = [x for x in tqdm(self.validation_frames) if self.is_valid(x)]
-        
+            self.training_frames = [x for x in tqdm(self.training_frames) if self.is_valid(x)]
+            self.validation_frames = [x for x in tqdm(self.validation_frames) if self.is_valid(x)]
+        else:
+            self.zod_frames = zod_frames
+            self.training_frames = training_frames
+            self.validation_frames = validation_frames
+            
         print("length of training_frames subset:", len(self.training_frames))
         print("length of test_frames subset:", len(self.validation_frames))
 
@@ -24,7 +32,7 @@ class ZODImporter:
         self.batch_size = batch_size
         self.tb_path = tb_path
 
-            
+        
     def is_valid(self, frame_id):
         zod_frame = self.zod_frames[frame_id]
         
@@ -38,7 +46,7 @@ class ZODImporter:
             print(f'{frame_id} is invalid')
             return False
         return True
-
+        
     def load_datasets(self, num_clients: int):
         seed = 42
         transform = transforms.Compose([
@@ -113,7 +121,7 @@ class ZodDataset(Dataset):
 
     def __len__(self):
         return len(self.frames_id_set)
-
+    
     def __getitem__(self, idx):
 
         frame_idx = self.frames_id_set[idx]
@@ -131,9 +139,9 @@ class ZodDataset(Dataset):
         sample = dict(image=image, mask=mask, trimap=trimap)
         
         # resize images
-        image = np.array(Image.fromarray(sample["image"]).resize((IMG_SIZE, IMG_SIZE), Image.BILINEAR))
-        mask = np.array(Image.fromarray(sample["mask"]).resize((IMG_SIZE, IMG_SIZE), Image.NEAREST))
-        trimap = np.array(Image.fromarray(sample["trimap"]).resize((IMG_SIZE, IMG_SIZE), Image.NEAREST))
+        image = np.array(Image.fromarray(sample["image"]).resize((256, 256), Image.BILINEAR))
+        mask = np.array(Image.fromarray(sample["mask"]).resize((256, 256), Image.NEAREST))
+        trimap = np.array(Image.fromarray(sample["trimap"]).resize((256, 256), Image.NEAREST))
 
         # convert to other format HWC -> CHW
         sample["image"] = np.moveaxis(image, -1, 0)
@@ -164,18 +172,16 @@ def load_ego_road(dataset_root):
 def get_frame_seg_mask(zod_frames, frame_id):
     zod_frame = zod_frames[frame_id]
 
-    # get the camera core-frame from front camera with dnat anonymization
-    camera_core_frame = zod_frame.info.get_key_camera_frame(Anonymization.DNAT)
+    mask = None
+    try:
+        # get the ego road annotations
+        polygon_annotations = zod_frame.get_annotation(AnnotationProject.EGO_ROAD)
 
-    # get the image
-    image = camera_core_frame.read()
-
-    # get the ego road annotations
-    polygon_annotations = zod_frame.get_annotation(AnnotationProject.EGO_ROAD)
-
-    # convert the polygons to a binary mask (which can be used
-    mask = polygons_to_binary_mask(polygon_annotations)
-    
+        # convert the polygons to a binary mask (which can be used
+        mask = polygons_to_binary_mask(polygon_annotations)
+    except:
+        print(f'problem with frame {frame_id}')
+        
     return mask
 
 def save_to_json(path, data):
