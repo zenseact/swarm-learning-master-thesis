@@ -41,18 +41,72 @@ class ZODImporter:
                 training_frames_all = json.load(f)
                 print(f'balanced sample: {training_frames_all[:5]}')
 
+        if(c('validation_set') == 'kil'):
+            validation_frames_all = KIL_VAL_FRAMES
+            print(f'Kil sample: {validation_frames_all[:5]}')
+
         training_frames = list(training_frames_all)[: int(len(training_frames_all) * subset_factor)]
         validation_frames = list(validation_frames_all)[: int(len(validation_frames_all) * subset_factor)]
 
-        training_frames = [x for x in tqdm(training_frames) if is_valid(x)]
-        validation_frames = [x for x in tqdm(validation_frames) if is_valid(x)]
+        training_frames = [x for x in tqdm(training_frames) if self.is_valid(x)]
 
+        if(c('validation_set') != 'kil'):
+            validation_frames = [x for x in tqdm(validation_frames) if self.is_valid(x)]
+
+        inter = set(training_frames).intersection(set(validation_frames))
+        print('intersection', inter)
+        print('len(intersection)', len(inter))
+        
         return training_frames, validation_frames
         
     def is_valid(self, frame_id):
-        return frame_id not in UNUSED_FRAMES
+        return (str(frame_id).zfill(6) not in UNUSED_FRAMES) and (str(frame_id).zfill(6) not in set(KIL_VAL_FRAMES))
+    
+    def load_seperate_datasets(self):
+        imagenet_mean=[0.485, 0.456, 0.406]
+        imagenet_std=[0.229, 0.224, 0.225]
+
+        transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(imagenet_mean, imagenet_std),
+            transforms.Resize(size=(self.img_size, self.img_size), antialias=True)
+        ])
+
+        trainset = ZodDataset(zod_frames=self.zod_frames, frames_id_set=self.training_frames, transform=transform)
+        valset = ZodDataset(zod_frames=self.zod_frames, frames_id_set=self.validation_frames, transform=transform)
+        testset = ZodDataset(zod_frames=self.zod_frames, frames_id_set=self.validation_frames, transform=transform)
+
+        completeTrainloader = DataLoader(
+            trainset, batch_size=self.batch_size, num_workers=c('num_workers'), shuffle=True, 
+            prefetch_factor=c('prefetch_factor'),
+            pin_memory= True)
+        
+        completeValloader = DataLoader(
+            valset, batch_size=self.batch_size, num_workers=c('num_workers'), shuffle=True,
+            prefetch_factor=c('prefetch_factor'),
+            pin_memory= True)
+
+        testloader = DataLoader(testset, batch_size=len(self.validation_frames), num_workers=c('num_workers'))
+
+        print("length of training_frames subset:", len(self.training_frames))
+        print("length of validation_frames subset:", len(self.validation_frames))
+        print("length of testing_frames subset:", len(self.validation_frames))
+        inter = set(self.training_frames).intersection(set(self.validation_frames))
+        print("intersection train-val:", inter)
+        print("len:", len(inter))
+
+        return (
+            None,
+            None,
+            testloader,
+            completeTrainloader,
+            completeValloader,
+        )
         
     def load_datasets(self, num_clients=c('num_clients')):
+        if(c('validation_set') == 'kil'):
+            return self.load_seperate_datasets()
+
         seed = 42
         imagenet_mean=[0.485, 0.456, 0.406]
         imagenet_std=[0.229, 0.224, 0.225]

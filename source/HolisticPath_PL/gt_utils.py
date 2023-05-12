@@ -47,7 +47,7 @@ def save_dataset_tb_plot(tb_path, sample_distribution, subtitle, seed):
     plt.title("%s, seed: %s" % (subtitle, seed)),
 
     """report to tensor board"""
-    writer.add_figure("sample_distribution/%s" % (subtitle), plt.gcf(), global_step=0)
+    #writer.add_figure("sample_distribution/%s" % (subtitle), plt.gcf(), global_step=0)
 
 
 def reshape_ground_truth(label, output_size=c('output_size')):

@@ -2,8 +2,7 @@ from static_params import *
 from models import *
 
 def train(model, train_dataloader, valid_dataloader, nr_epochs=c('num_local_epochs')):
-    trainer = get_trainer()
-
+    trainer = get_trainer(model)
     trainer.fit(
         model, 
         train_dataloaders=train_dataloader, 
@@ -23,11 +22,23 @@ def test(model, test_dataloader):
     pprint(test_metrics)
     return test_metrics
 
-def get_trainer():
+def get_TB_path(self, cid=''):
+    if(c('type')=='centralized'):
+        return TB_CENTRALIZED_SUB_PATH
+    if(c('type')=='federated'):
+        return f"{TB_FEDERATED_SUB_PATH}{cid}/",
+
+def get_trainer(model):
+    #epoch_logger = TensorBoardLogger(save_dir=TB_PATH, sub_dir=f'{get_TB_path(model.cid)}/epoch/', name="epoch_logger")
+    #logger=epoch_logger
+
+    #model.set_TB_loggers(logger)
+
     return pl.Trainer(
         accelerator= 'gpu',
         max_epochs=c('num_local_epochs'),
-        #devices=[c('gpu_id')],
+        devices=[c('gpu_id')],
+        #logger=logger
     )
 
 def net_instance(name):

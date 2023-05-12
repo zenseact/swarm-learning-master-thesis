@@ -3,7 +3,7 @@ from static_params import *
 class PT_Model(pl.LightningModule):
     def __init__(self, cid=0) -> None:
         super(PT_Model, self).__init__()
-
+        
         self.model = None
         if(c('model') == 'resnet18'):
             self.model = models.resnet18(weights=models.ResNet18_Weights.IMAGENET1K_V1)
@@ -11,9 +11,10 @@ class PT_Model(pl.LightningModule):
             self.model = models.mobilenet_v3_large(weights=models.MobileNet_V3_Large_Weights.IMAGENET1K_V1)
 
         self.change_head_net()
+        self.useEma = c('use_ema')
         self.ema = None
 
-        if(c('use_ema')):
+        if(self.useEma):
             self.ema = EMA(
                 self.model,
                 beta=0.995,
@@ -31,23 +32,14 @@ class PT_Model(pl.LightningModule):
         self.std=[0.229, 0.224, 0.225]
         
         self.epoch_counter = 1
-
-        self.train_epoch_start_batch_idx = 0
-        self.val_epoch_start_batch_idx = 0
-
-        self.inter_train_outputs = []
-        self.inter_train_ema_outputs = []
-
-        self.inter_val_outputs = []
-        self.inter_val_ema_outputs = []
-
-        self.inter_test_outputs = []
-        self.inter_test_ema_outputs = []
+        self.tb_log = {}
+        self.create_intermediate_steps()
+        
 
     def forward(self, image):
         label = self.model(image)
 
-        if(c('use_ema')):
+        if(self.useEma):
             ema_label = self.ema(image)
             return label, ema_label
 
@@ -77,101 +69,59 @@ class PT_Model(pl.LightningModule):
         elif(c('model') == 'mobile_net'):
             self.model.classifier[-1] = head_net
             
-    def shared_step(self, batch, stage):
+    def shared_step(self, batch, batch_idx, stage, inter_outputs, ema_inter_outputs):
         image = batch["image"]
-        
-        # Shape of the image should be (batch_size, num_channels, height, width)
-        # if you work with grayscale images, expand channels dim to have [batch_size, 1, height, width]
-        assert image.ndim == 4
-
-        h, w = image.shape[2:]
-        assert h % 32 == 0 and w % 32 == 0
-
         label = batch["label"]
 
         logits_label, ema_logits_label = self.forward(image)
-
-        # Predicted mask contains logits, and loss_fn param `from_logits` is set to True
         logits_label = logits_label.unsqueeze(dim=1)
         loss = self.loss_fn(logits_label, label)
 
-        if(c('use_ema')):
+        if(self.useEma):
             ema_logits_label = ema_logits_label.unsqueeze(dim=1)
             ema_loss = self.loss_fn(ema_logits_label, label)
 
-        return {
-            "loss": loss,
-            "ema_loss": ema_loss if(c('use_ema')) else None
-        }
-
-    def shared_epoch_end(self, outputs, ema_outputs, stage):
-        metrics = {
-            f"{stage}_loss": outputs[-1],
-            f"{stage}_ema_loss": ema_outputs[-1] if(c('use_ema')) else None,
-        }
+        ema_loss = ema_loss if(self.useEma) else None
         
-        self.log_dict(metrics, prog_bar=True)
+        inter_outputs.append(loss.item())
+        if(self.useEma):
+            ema_inter_outputs.append(ema_loss.item())
+            if(stage == 'train'):
+                self.ema.update()
 
-    def training_step(self, batch, batch_idx):
-        output = self.shared_step(batch, "train")
+        return loss
+
+    def shared_epoch_end(self, inter_outputs, ema_inter_outputs, stage):
+        self.tb_log[f'{stage}_loss'] = np.mean(inter_outputs)
         
-        if(batch_idx == 1 and len(self.inter_train_outputs) > 2):
-            epoch_loss = np.mean(self.inter_train_outputs[self.train_epoch_start_batch_idx:]) 
-            print(f'\nstarted new train epoch. Last epoch batch indexes: {self.train_epoch_start_batch_idx}-{len(self.inter_train_outputs)}. Train loss: {epoch_loss}')
-            writer.add_scalars(self.get_TB_path(), {"train": epoch_loss},self.epoch_counter)
-            self.train_epoch_start_batch_idx = len(self.inter_train_outputs)
-            
-            if(c('use_ema')):
-                ema_epoch_loss = np.mean(self.inter_train_ema_outputs[self.train_epoch_start_batch_idx:]) 
-                writer.add_scalars(self.get_TB_path(), {"train_ema": ema_epoch_loss},self.epoch_counter)
+        if(self.useEma):
+            self.tb_log[f'{stage}_ema_loss'] = np.mean(ema_inter_outputs) 
 
-            
-        self.inter_train_outputs.append(output['loss'].item())
-        if(c('use_ema')):
-            self.inter_train_ema_outputs.append(output['ema_loss'].item())
-            # Update the EMA model after each training step
-            self.ema.update()
-
-        return output
-
-    def on_training_epoch_end(self):
-        self.shared_epoch_end(self.inter_train_outputs, self.inter_train_ema_outputs, "train")
-
-    def validation_step(self, batch, batch_idx):
-        output = self.shared_step(batch, "valid")
-
-        if(batch_idx == 1 and len(self.inter_val_outputs) > 2):
-            epoch_loss = np.mean(self.inter_val_outputs[self.val_epoch_start_batch_idx:]) 
-            print(f'\nstarted new val epoch. Last epoch batch indexes: {self.val_epoch_start_batch_idx}-{len(self.inter_val_outputs)}. Val loss: {epoch_loss}')
-            writer.add_scalars(self.get_TB_path(), {"val": epoch_loss}, self.epoch_counter)
-            self.val_epoch_start_batch_idx = len(self.inter_val_outputs)
-
-            if(c('use_ema')):
-                ema_epoch_loss = np.mean(self.inter_val_ema_outputs[self.val_epoch_start_batch_idx:]) 
-                writer.add_scalars(self.get_TB_path(), {"ema_val": ema_epoch_loss}, self.epoch_counter)
-            
-            # update epoch counter only after validation step
+        self.log_dict(self.tb_log, prog_bar=True)
+        if(stage == 'train'):
+            self.updateTB(self.tb_log, stage)
             self.epoch_counter +=1
 
-        self.inter_val_outputs.append(output['loss'].item())
-        if(c('use_ema')):
-            self.inter_val_ema_outputs.append(output['ema_loss'].item())
+    def training_step(self, batch, batch_idx):
+        loss = self.shared_step(batch, batch_idx, 'train', self.inter_train_outputs, self.inter_train_ema_outputs)
+        return loss
 
-        return output
+    def on_train_epoch_end(self):
+        return self.shared_epoch_end(self.inter_train_outputs, self.inter_train_ema_outputs, 'train')
+
+    def validation_step(self, batch, batch_idx):
+        loss = self.shared_step(batch, batch_idx, 'valid', self.inter_val_outputs, self.inter_val_ema_outputs)
+        return loss
 
     def on_validation_epoch_end(self):
-        return self.shared_epoch_end(self.inter_val_outputs, self.inter_val_ema_outputs, "valid")
+        return self.shared_epoch_end(self.inter_val_outputs, self.inter_val_ema_outputs, 'valid')
 
     def test_step(self, batch, batch_idx):
-        output = self.shared_step(batch, "test")
-
-        self.inter_test_outputs.append(output['loss'].item())
-        if(c('use_ema')):
-            self.inter_test_ema_outputs.append(output['ema_loss'].item())
-        return output
+        loss = self.shared_step(batch, batch_idx, 'test', self.inter_test_outputs, self.inter_test_ema_outputs)
+        return loss
 
     def on_test_epoch_end(self):
-        return self.shared_epoch_end(self.inter_test_outputs, self.inter_test_ema_outputs, "test")
+        return self.shared_epoch_end(self.inter_test_outputs, self.inter_test_ema_outputs, 'test')
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=c('learning_rate'))
@@ -196,9 +146,22 @@ class PT_Model(pl.LightningModule):
                 'L2_loss_x': L2_loss[:, 0],
                 'L2_loss_y': L2_loss[:, 1],
                 'L2_loss_z': L2_loss[:, 2]}
-    
-    def get_TB_path(self):
-        if(c('type')=='centralized'):
-            return TB_CENTRALIZED_SUB_PATH
-        if(c('type')=='federated'):
-            return f"{TB_FEDERATED_SUB_PATH}/{self.cid}/",
+
+    def updateTB(self, tb_log, stage):
+        writer.add_scalars('Loss', tb_log, global_step=self.epoch_counter)
+        #self.logger.experiment.add_scalars('Loss', tb_log, global_step=self.epoch_counter)
+        self.create_intermediate_steps()
+
+    def create_intermediate_steps(self):
+        self.inter_train_outputs = []
+        self.inter_train_ema_outputs = []
+
+        self.inter_val_outputs = []
+        self.inter_val_ema_outputs = []
+
+        self.inter_test_outputs = []
+        self.inter_test_ema_outputs = []
+        self.tb_log = {}
+
+    def set_TB_loggers(self, logger):
+        self.epoch_logger = logger

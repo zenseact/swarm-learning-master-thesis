@@ -54,3 +54,4 @@ from PIL import Image
 from statistics import mean
 from ema_pytorch import EMA
 import sys
+from pytorch_lightning.loggers import TensorBoardLogger
