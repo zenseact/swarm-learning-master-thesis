@@ -1,6 +1,5 @@
 from static_params import *
 
-
 class PTModel(pl.LightningModule):
 
     def __init__(self, arch, encoder_name, in_channels, out_classes, **kwargs):
@@ -96,13 +95,96 @@ class PTModel(pl.LightningModule):
         outputs.append(output)
         return output
 
+    def shared_step_fixmatch(self, batch, stage, outputs):
+        image = batch["image"]
+        assert image.ndim == 4
+
+        h, w = image.shape[2:]
+        assert h % 32 == 0 and w % 32 == 0
+
+        mask = batch["mask"]
+        assert mask.ndim == 4
+        assert mask.max() <= 1.0 and mask.min() >= 0
+        
+        isLabeled = batch['isLabeled']
+        labeled_idx = torch.where(isLabeled == True)[0].tolist()
+        unlabeled_idx = [i for i in range(len(isLabeled)) if i not in labeled_idx]
+        
+        is_all_labeled = len(labeled_idx) == len(isLabeled)
+        is_all_unlabeled = len(unlabeled_idx) == len(isLabeled)
+
+        combinedLoss = None
+        combinedEmaLoss = None
+
+        if(stage != 'train'):
+            logits_mask, ema_mask = self.forward(image)
+            combinedLoss = self.loss_fn(logits_mask, mask)
+            combinedEmaLoss = self.loss_fn(ema_mask, mask)
+
+        else:
+            loss_u = 0; loss = 0; ema_loss = 0
+
+            image_u_w = batch['image_u_w']
+            image_u_s = batch['image_u_s']
+
+            image = image[labeled_idx]
+            mask = mask[labeled_idx]
+            image_u_w = image_u_w[unlabeled_idx]
+            image_u_s = image_u_s[unlabeled_idx]
+
+            logits_mask, ema_mask = self.forward(image)
+            if(not is_all_labeled):
+                logits_mask_u_w, _ = self.forward(image_u_w)
+                logits_mask_u_s, _ = self.forward(image_u_s)
+                loss_u = self.loss_fn(logits_mask_u_w, logits_mask_u_s)
+            
+            if(not is_all_unlabeled):
+                # Predicted mask contains logits, and loss_fn param `from_logits` is set to True
+                loss = self.loss_fn(logits_mask, mask)
+                ema_loss = self.loss_fn(ema_mask, mask)
+
+            # combined loss
+            combinedLoss = loss + loss_u
+            combinedEmaLoss = ema_loss + loss_u
+
+        tp, fp, fn, tn = None, None, None, None
+        if(not is_all_unlabeled):
+            # Lets compute metrics for some threshold
+            # first convert mask values to probabilities, then 
+            # apply thresholding
+            prob_mask = logits_mask.sigmoid()
+            pred_mask = (prob_mask > 0.5).float()
+
+            # We will compute IoU metric by two ways
+            #   1. dataset-wise
+            #   2. image-wise
+            # but for now we just compute true positive, false positive, false negative and
+            # true negative 'pixels' for each image and class
+            # these values will be aggregated in the end of an epoch
+            tp, fp, fn, tn = smp.metrics.get_stats(pred_mask.long(), mask.long(), mode="binary")
+
+        if(stage == 'train'):
+            self.ema.update()
+        
+        output = {
+            "loss": combinedLoss,
+            "ema_loss": combinedEmaLoss,
+            "tp": tp,
+            "fp": fp,
+            "fn": fn,
+            "tn": tn,
+        }
+
+        outputs.append(output)
+        return output
+
     def shared_epoch_end(self, outputs, stage):
 
         # aggregate step metics
-        tp = torch.cat([x['tp'] for x in outputs])
-        fp = torch.cat([x['fp'] for x in outputs])
-        fn = torch.cat([x['fn'] for x in outputs])
-        tn = torch.cat([x['tn'] for x in outputs])
+        tp = torch.cat([x['tp'] for x in outputs if x['tp'] != None])
+        fp = torch.cat([x['fp'] for x in outputs if x['fp'] != None])
+        fn = torch.cat([x['fn'] for x in outputs if x['fn'] != None])
+        tn = torch.cat([x['tn'] for x in outputs if x['tn'] != None])
 
         # per image IoU means that we first calculate IoU score for each image 
         # and then compute mean over these scores
@@ -130,21 +212,21 @@ class PTModel(pl.LightningModule):
             self.epoch_counter +=1
 
     def training_step(self, batch, batch_idx):
-        output = self.shared_step(batch, "train", self.inter_train_outputs)
+        output = self.shared_step_fixmatch(batch, "train", self.inter_train_outputs)
         return output
 
     def on_train_epoch_end(self):
         return self.shared_epoch_end(self.inter_train_outputs, "train")
 
     def validation_step(self, batch, batch_idx):
-        output = self.shared_step(batch, "valid", self.inter_val_outputs)
+        output = self.shared_step_fixmatch(batch, "valid", self.inter_val_outputs)
         return output
 
     def on_validation_epoch_end(self):
         return self.shared_epoch_end(self.inter_val_outputs, "valid")
 
     def test_step(self, batch, batch_idx):
-        output = self.shared_step(batch, "test", self.inter_test_outputs)
+        output = self.shared_step_fixmatch(batch, "test", self.inter_test_outputs)
         return output
 
     def on_test_epoch_end(self):

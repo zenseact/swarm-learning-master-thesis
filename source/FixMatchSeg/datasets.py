@@ -1,4 +1,5 @@
 from static_params import *
+from fixmatch_utils import *
 
 class ZODImporter:
     def __init__(
@@ -47,28 +48,40 @@ class ZODImporter:
             return False
         return True
         
-    def load_datasets(self, num_clients: int):
-        seed = 42
-        transform = transforms.Compose([
+    def get_zod_datasets(self):
+        transform_labeled = transforms.Compose([
             transforms.ToTensor(),
-            #transforms.Normalize(FRAMES_IMAGE_MEAN, FRAMES_IMAGE_STD),
-            transforms.Resize(size=(self.img_size, self.img_size), antialias=True)
+            transforms.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD)
         ])
+        transform_val = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD)
+        ])
+        transform_fixmatch = TransformFixMatch(mean=IMAGENET_MEAN, std=IMAGENET_STD)
 
-        trainset = ZodDataset(zod_frames=self.zod_frames, frames_id_set=self.training_frames, transform=transform)
-        testset = ZodDataset(zod_frames=self.zod_frames, frames_id_set=self.validation_frames, transform=transform)
+        train_ids, validation_ids = x_u_split(self.training_frames, self.validation_frames)
+
+        train_dataset = ZodDataset(zod_frames=self.zod_frames, frames_id_set=train_ids, set_type='train', transform=transform_labeled, transform_fixmatch=transform_fixmatch)
+        validation_set = ZodDataset(zod_frames=self.zod_frames, frames_id_set=validation_ids, set_type='val', transform=transform_val)
+
+        return train_dataset, validation_set
+
+    def load_datasets(self, num_clients: int):
+
+        train_dataset, validation_set = self.get_zod_datasets()
 
         # Split training set into `num_clients` partitions to simulate different local datasets
-        partition_size = len(trainset) // num_clients
+        partition_size = len(train_dataset) // num_clients
 
         lengths = [partition_size]
         if num_clients > 1:
             lengths = [partition_size] * (num_clients - 1)
-            lengths.append(len(trainset) - sum(lengths))
+            lengths.append(len(train_dataset) - sum(lengths))
 
-        datasets = random_split(trainset, lengths, torch.Generator().manual_seed(seed))
+        datasets = random_split(train_dataset, lengths, torch.Generator().manual_seed(SEED))
 
         # Split each partition into train/val and create DataLoader
+        # TODO: make loaders as tuple of labeled and unlabeled
         trainloaders, valloaders = [], []
         lengths_train, lengths_val = [], []
         for ds in datasets:
@@ -77,26 +90,17 @@ class ZODImporter:
             lengths_train.append(len_train)
             lengths_val.append(len_val)
             lengths = [len_train, len_val]
-            ds_train, ds_val = random_split(ds, lengths, torch.Generator().manual_seed(seed))
+            ds_train, ds_val = random_split(ds, lengths, torch.Generator().manual_seed(SEED))
             trainloaders.append(DataLoader(ds_train,batch_size=self.batch_size, shuffle=True, num_workers=NUM_WORKERS))
             valloaders.append(DataLoader(ds_val, batch_size=self.batch_size, num_workers=NUM_WORKERS))
 
-        len_complete_val = int(len(trainset) * VAL_FACTOR)
-        len_complete_train = int(len(trainset) - len_complete_val)
-        train_split, val_split = random_split(
-            trainset,
-            [len_complete_train, len_complete_val],
-            torch.Generator().manual_seed(seed),
-        )
-
-        completeTrainloader = DataLoader(train_split, batch_size=self.batch_size, num_workers=NUM_WORKERS)
-        completeValloader = DataLoader(val_split, batch_size=self.batch_size, num_workers=NUM_WORKERS)
-
-        testloader = DataLoader(testset, batch_size=self.batch_size, num_workers=NUM_WORKERS)
+        completeTrainloader = DataLoader(train_dataset, batch_size=self.batch_size, num_workers=NUM_WORKERS)
+        completeValloader = DataLoader(validation_set, batch_size=self.batch_size, num_workers=NUM_WORKERS)
+        testloader = DataLoader(validation_set, batch_size=len(validation_set), num_workers=NUM_WORKERS)
 
         """report to tensor board"""
-        save_dataset_tb_plot(self.tb_path, lengths_train, "training", seed)
-        save_dataset_tb_plot(self.tb_path, lengths_val, "validation", seed)
+        save_dataset_tb_plot(self.tb_path, lengths_train, "training", SEED)
+        save_dataset_tb_plot(self.tb_path, lengths_val, "validation", SEED)
 
         return (
             trainloaders,
@@ -111,20 +115,22 @@ class ZodDataset(Dataset):
         self,
         zod_frames,
         frames_id_set,
-        transform=None,
-        target_transform=None,
+        set_type,
+        transform,
+        transform_fixmatch=None
     ):
         self.zod_frames = zod_frames
         self.frames_id_set = frames_id_set
         self.transform = transform
-        self.target_transform = target_transform
+        self.transform_fixmatch  = transform_fixmatch
+        self.set_type = set_type
 
     def __len__(self):
         return len(self.frames_id_set)
     
     def __getitem__(self, idx):
 
-        frame_idx = self.frames_id_set[idx]
+        frame_idx, isLabeled = self.frames_id_set[idx]
         frame = self.zod_frames[frame_idx]
         
         image_path = frame.info.get_key_camera_frame(Anonymization.DNAT).filepath
@@ -133,21 +139,26 @@ class ZodDataset(Dataset):
         mask = polygons_to_binary_mask(polygon_annotations)
 
         image = np.array(Image.open(image_path).convert("RGB"))
-        trimap = mask
-        mask = self._preprocess_mask(trimap)
-        
-        sample = dict(image=image, mask=mask, trimap=trimap)
+        mask = self._preprocess_mask(mask)
+
+        sample = dict(image=image, mask=mask)
         
         # resize images
-        image = np.array(Image.fromarray(sample["image"]).resize((256, 256), Image.BILINEAR))
-        mask = np.array(Image.fromarray(sample["mask"]).resize((256, 256), Image.NEAREST))
-        trimap = np.array(Image.fromarray(sample["trimap"]).resize((256, 256), Image.NEAREST))
+        image = np.array(Image.fromarray(sample["image"]).resize((IMG_SIZE, IMG_SIZE), Image.BILINEAR))
+        mask = np.array(Image.fromarray(sample["mask"]).resize((IMG_SIZE, IMG_SIZE), Image.NEAREST))
+        mask = np.expand_dims(mask, 0)
 
-        # convert to other format HWC -> CHW
-        sample["image"] = np.moveaxis(image, -1, 0)
-        sample["mask"] = np.expand_dims(mask, 0)
-        sample["trimap"] = np.expand_dims(trimap, 0)
-        
+        # transform
+        transformed_image = self.transform(image)
+        if(self.set_type == 'train'):
+            image_u_w, image_u_s = self.transform_fixmatch(image)
+            sample["image_u_w"] = image_u_w
+            sample["image_u_s"] = image_u_s
+
+        sample["image"] = transformed_image
+        sample["mask"] = mask
+        sample["isLabeled"] = isLabeled
+
         return sample
 
     @staticmethod
