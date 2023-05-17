@@ -85,7 +85,7 @@ class FederatedSimulator:
 
         writer.add_scalars(
             self.federated_subpath,
-            {"global": float()},
+            {"global": float(loss)},
             server_round,
         )
 
@@ -120,16 +120,19 @@ class FederatedSimulator:
         return strategy
 
     def sim_fed(self, nr_clients=c('num_clients'), nr_global_rounds=c('num_global_rounds')):
-        ram_memory = 10000 * 1024 * 1024
+        #ram_memory = 10000 * 1024 * 1024
 
+        client_resources = {"num_cpus": 2,"num_gpus": 0.35}
+        ray_init_args = {"include_dashboard": True,"num_cpus": 10,"num_gpus": 2}
+        
         fl.simulation.start_simulation(
             client_fn=self.client_fn,
             num_clients=nr_clients,
             config=fl.server.ServerConfig(num_rounds=nr_global_rounds),
-            client_resources=self.client_resources,
+            client_resources=client_resources,
             strategy=self.create_server_strategy(),
             #ray_init_args={"object_store_memory": ram_memory},
-            ray_init_args={"num_gpus":1}
+            ray_init_args=ray_init_args
         )
 
     def client_fn(self, cid) -> FlowerClient:

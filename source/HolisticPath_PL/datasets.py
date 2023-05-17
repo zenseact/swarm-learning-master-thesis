@@ -63,6 +63,8 @@ class ZODImporter:
         return (str(frame_id).zfill(6) not in UNUSED_FRAMES) and (str(frame_id).zfill(6) not in set(KIL_VAL_FRAMES))
     
     def load_seperate_datasets(self):
+        seed = 42
+
         imagenet_mean=[0.485, 0.456, 0.406]
         imagenet_std=[0.229, 0.224, 0.225]
 
@@ -76,17 +78,35 @@ class ZODImporter:
         valset = ZodDataset(zod_frames=self.zod_frames, frames_id_set=self.validation_frames, transform=transform)
         testset = ZodDataset(zod_frames=self.zod_frames, frames_id_set=self.validation_frames, transform=transform)
 
+        trainloaders, valloaders = [], []
+        if(c('type')=='federated'):
+            # Split training set into `num_clients` partitions to simulate different local datasets
+            partition_size = len(trainset) // c('num_clients')
+
+            lengths = [partition_size]
+            if c('num_clients') > 1:
+                lengths = [partition_size] * (c('num_clients') - 1)
+                lengths.append(len(trainset) - sum(lengths))
+
+            datasets = random_split(trainset, lengths, torch.Generator().manual_seed(seed))
+
+            # Split each partition into train/val and create DataLoader
+            for ds in datasets:
+                trainloaders.append(DataLoader(ds,batch_size=self.batch_size, shuffle=True, num_workers=c('num_workers')))
+                valloaders.append(DataLoader(valset, batch_size=self.batch_size, shuffle=False, num_workers=c('num_workers')))
+
+
         completeTrainloader = DataLoader(
             trainset, batch_size=self.batch_size, num_workers=c('num_workers'), shuffle=True, 
             prefetch_factor=c('prefetch_factor'),
             pin_memory= True)
         
         completeValloader = DataLoader(
-            valset, batch_size=self.batch_size, num_workers=c('num_workers'), shuffle=True,
+            valset, batch_size=self.batch_size, num_workers=c('num_workers'), shuffle=False,
             prefetch_factor=c('prefetch_factor'),
             pin_memory= True)
 
-        testloader = DataLoader(testset, batch_size=len(self.validation_frames), num_workers=c('num_workers'))
+        testloader = DataLoader(testset, batch_size=len(self.validation_frames), shuffle=False, num_workers=c('num_workers'))
 
         print("length of training_frames subset:", len(self.training_frames))
         print("length of validation_frames subset:", len(self.validation_frames))
@@ -96,8 +116,8 @@ class ZODImporter:
         print("len:", len(inter))
 
         return (
-            None,
-            None,
+            trainloaders, 
+            valloaders,
             testloader,
             completeTrainloader,
             completeValloader,
