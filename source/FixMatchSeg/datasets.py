@@ -92,11 +92,11 @@ class ZODImporter:
             lengths = [len_train, len_val]
             ds_train, ds_val = random_split(ds, lengths, torch.Generator().manual_seed(SEED))
             trainloaders.append(DataLoader(ds_train,batch_size=self.batch_size, shuffle=True, num_workers=NUM_WORKERS, prefetch_factor=PREFETCH_FACTOR, pin_memory= True))
-            valloaders.append(DataLoader(ds_val, batch_size=self.batch_size, shuffle=True, num_workers=NUM_WORKERS, prefetch_factor=PREFETCH_FACTOR, pin_memory= True))
+            valloaders.append(DataLoader(ds_val, batch_size=self.batch_size, shuffle=False, num_workers=NUM_WORKERS, prefetch_factor=PREFETCH_FACTOR, pin_memory= True))
 
         completeTrainloader = DataLoader(train_dataset, batch_size=self.batch_size, num_workers=NUM_WORKERS, shuffle=True, prefetch_factor=PREFETCH_FACTOR, pin_memory= True)
-        completeValloader = DataLoader(validation_set, batch_size=self.batch_size, num_workers=NUM_WORKERS, shuffle=True, prefetch_factor=PREFETCH_FACTOR, pin_memory= True)
-        testloader = DataLoader(validation_set, batch_size=len(validation_set), num_workers=NUM_WORKERS, shuffle=True, prefetch_factor=PREFETCH_FACTOR, pin_memory= True)
+        completeValloader = DataLoader(validation_set, batch_size=self.batch_size, num_workers=NUM_WORKERS, shuffle=False, prefetch_factor=PREFETCH_FACTOR, pin_memory= True)
+        testloader = DataLoader(validation_set, batch_size=len(validation_set), num_workers=NUM_WORKERS, shuffle=False, prefetch_factor=PREFETCH_FACTOR, pin_memory= True)
 
         """report to tensor board"""
         save_dataset_tb_plot(self.tb_path, lengths_train, "training", SEED)

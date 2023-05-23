@@ -59,9 +59,9 @@
         "prefetch_factor": 48,
         "frames_image_mean": [0.337, 0.345, 0.367],
         "frames_image_std": [0.160, 0.180, 0.214],
-        "learning_rate": 0.0001,
+        "learning_rate": 0.001,
         "gpu_id": 0,
         "threshold":0.9,
-        "lambda": 0.4
+        "lambda": 1
     }
 ]
