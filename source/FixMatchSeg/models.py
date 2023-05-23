@@ -1,4 +1,5 @@
 from static_params import *
+from fixmatch_utils import *
 
 class PTModel(pl.LightningModule):
 
@@ -22,7 +23,7 @@ class PTModel(pl.LightningModule):
         )
         
         # for image segmentation dice loss could be the best first choice
-        self.loss_fn = smp.losses.DiceLoss(smp.losses.BINARY_MODE, from_logits=True)
+        self.DiceLoss = smp.losses.DiceLoss(smp.losses.BINARY_MODE, from_logits=True)
 
         self.epoch_counter = 1
         self.tb_log = {}
@@ -63,8 +64,10 @@ class PTModel(pl.LightningModule):
         logits_mask, ema_mask = self.forward(image)
         
         # Predicted mask contains logits, and loss_fn param `from_logits` is set to True
-        loss = self.loss_fn(logits_mask, mask)
-        ema_loss = self.loss_fn(ema_mask, mask)
+        #loss = dice_loss(logits_mask, mask)
+        #ema_loss = dice_loss(ema_mask, mask)
+        loss = self.DiceLoss(logits_mask, mask) 
+        ema_loss = self.DiceLoss(ema_mask, mask)
 
         # Lets compute metrics for some threshold
         # first convert mask values to probabilities, then 
@@ -118,8 +121,8 @@ class PTModel(pl.LightningModule):
 
         if(stage != 'train'):
             logits_mask, ema_mask = self.forward(image)
-            combinedLoss = self.loss_fn(logits_mask, mask)
-            combinedEmaLoss = self.loss_fn(ema_mask, mask)
+            combinedLoss = self.DiceLoss(logits_mask, mask)
+            combinedEmaLoss = self.DiceLoss(ema_mask, mask)
 
         else:
             loss_u = 0; loss = 0; ema_loss = 0
@@ -129,6 +132,7 @@ class PTModel(pl.LightningModule):
 
             image = image[labeled_idx]
             mask = mask[labeled_idx]
+
             image_u_w = image_u_w[unlabeled_idx]
             image_u_s = image_u_s[unlabeled_idx]
 
@@ -136,16 +140,16 @@ class PTModel(pl.LightningModule):
             if(not is_all_labeled):
                 logits_mask_u_w, _ = self.forward(image_u_w)
                 logits_mask_u_s, _ = self.forward(image_u_s)
-                loss_u = self.loss_fn(logits_mask_u_w, logits_mask_u_s)
+
+                loss_u = compute_unsupervised_loss(logits_mask_u_w, logits_mask_u_s, THRESHOLD)
             
             if(not is_all_unlabeled):
-                # Predicted mask contains logits, and loss_fn param `from_logits` is set to True
-                loss = self.loss_fn(logits_mask, mask)
-                ema_loss = self.loss_fn(ema_mask, mask)
+                loss = compute_supervised_loss(mask, logits_mask)
+                ema_loss = compute_supervised_loss(mask, ema_mask)
 
             # combined loss
-            combinedLoss = loss + loss_u
-            combinedEmaLoss = ema_loss + loss_u
+            combinedLoss = loss + LAMBDA * loss_u
+            combinedEmaLoss = ema_loss + LAMBDA * loss_u
 
         tp, fp, fn, tn = None, None, None, None
         if(not is_all_unlabeled):

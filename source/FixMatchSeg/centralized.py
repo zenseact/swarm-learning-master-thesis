@@ -10,7 +10,7 @@ def run_centralized():
     trainloaders, valloaders, testloader, completeTrainloader, completeValloader = zodImporter.load_datasets(num_clients=1)
 
     # create model
-    model = PTModel("FPN", "resnet34", in_channels=3, out_classes=1)
+    model = PTModel(ARC, MODEL, in_channels=IN_CHANNEL, out_classes=OUT_CLASSES)
 
     # train centralized
     trainer = train(model, completeTrainloader, completeValloader, nr_epochs=NUM_LOCAL_EPOCHS)

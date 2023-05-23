@@ -40,5 +40,28 @@
         "frames_image_std": [0.160, 0.180, 0.214],
         "learning_rate": 0.0001,
         "gpu_id": 0
+    },
+    {
+        "exp_id": 3,
+        "type": "centralized",
+        "image_size": 224,
+        "run_pretrained": true,
+        "batch_size": 16,
+        "val_factor": 0.1,
+        "subset_factor": 0.15,
+        "labeled_factor": 0.40,
+        "use_gpu": true,
+        "num_clients": 1,
+        "num_global_rounds": null,
+        "num_local_epochs": 250,
+        "print_debug_data": true,
+        "num_workers": 10,
+        "prefetch_factor": 48,
+        "frames_image_mean": [0.337, 0.345, 0.367],
+        "frames_image_std": [0.160, 0.180, 0.214],
+        "learning_rate": 0.0001,
+        "gpu_id": 0,
+        "threshold":0.9,
+        "lambda": 0.4
     }
 ]

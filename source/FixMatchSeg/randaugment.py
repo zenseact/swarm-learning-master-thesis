@@ -4,7 +4,6 @@
 # https://github.com/google-research/fixmatch/blob/master/libml/ctaugment.py
 
 from imports import *
-
 logger = logging.getLogger(__name__)
 
 PARAMETER_MAX = 10
@@ -140,40 +139,12 @@ def _int_parameter(v, max_v):
 def fixmatch_augment_pool():
     # FixMatch paper
     augs = [(AutoContrast, None, None),
-            (Brightness, 0.9, 0.05),
             (Color, 0.9, 0.05),
             (Contrast, 0.9, 0.05),
-            (Equalize, None, None),
-            (Identity, None, None),
             (Posterize, 4, 4),
-            (Rotate, 30, 0),
             (Sharpness, 0.9, 0.05),
-            (ShearX, 0.3, 0),
-            (ShearY, 0.3, 0),
             (Solarize, 256, 0),
-            (TranslateX, 0.3, 0),
-            (TranslateY, 0.3, 0)]
-    return augs
-
-
-def my_augment_pool():
-    # Test
-    augs = [(AutoContrast, None, None),
-            (Brightness, 1.8, 0.1),
-            (Color, 1.8, 0.1),
-            (Contrast, 1.8, 0.1),
-            (Cutout, 0.2, 0),
-            (Equalize, None, None),
-            (Invert, None, None),
-            (Posterize, 4, 4),
-            (Rotate, 30, 0),
-            (Sharpness, 1.8, 0.1),
-            (ShearX, 0.3, 0),
-            (ShearY, 0.3, 0),
-            (Solarize, 256, 0),
-            (SolarizeAdd, 110, 0),
-            (TranslateX, 0.45, 0),
-            (TranslateY, 0.45, 0)]
+            ]
     return augs
 
 
@@ -191,7 +162,6 @@ class RandAugmentPC(object):
             prob = np.random.uniform(0.2, 0.8)
             if random.random() + prob >= 1:
                 img = op(img, v=self.m, max_v=max_v, bias=bias)
-        img = CutoutAbs(img, int(32*0.5))
         return img
 
 

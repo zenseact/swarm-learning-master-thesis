@@ -23,6 +23,10 @@ NUM_CLIENTS = c('num_clients')
 NUM_GLOBAL_ROUNDS = c('num_global_rounds')
 NUM_LOCAL_EPOCHS = c('num_local_epochs')
 LR=c('learning_rate')
+ARC = 'FPN'
+MODEL = 'resnet34'
+IN_CHANNEL=3
+OUT_CLASSES=1
 NUM_WORKERS = c('num_workers')
 PREFETCH_FACTOR = c('prefetch_factor')
 FRAMES_IMAGE_MEAN = c('frames_image_mean')
@@ -36,6 +40,8 @@ TRAIN_FRAMES_PATH = "GroundTruth/training_seg_annotated_frames.json"
 VAL_FRAMES_PATH = "GroundTruth/validation_seg_annotated_frames.json"
 DATASET_ROOT = "/mnt/ZOD"
 ZENSEACT_DATASET_ROOT = "/staging/dataset_donation/round_2"
+THRESHOLD = c('threshold')
+LAMBDA = c('lambda')
 
 # specify the device
 DEVICE = torch.device("cuda" if c('use_gpu') else "cpu")
