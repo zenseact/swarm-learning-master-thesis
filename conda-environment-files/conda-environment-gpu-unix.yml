@@ -19,6 +19,8 @@ dependencies:
 - h5py
 - spacy                            
 - unidecode
+- pytest
+- pytest-mock
 - pip:
   - pygit2
   - paramiko

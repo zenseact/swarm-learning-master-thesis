@@ -42,5 +42,5 @@ class EdgeCom:
     def __remove(self, cid: str):
         self.edge_handler.job_done(self.node)
         self.node = None
-        os.remove("tmp/res"+cid+".npz")
+        # os.remove("tmp/res"+cid+".npz")
         log(INFO,'client file removed')

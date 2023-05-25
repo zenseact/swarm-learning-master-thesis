@@ -136,3 +136,4 @@ events.out*
 dataset/
 # added
 output.log
+.vscode
