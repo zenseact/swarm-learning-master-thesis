@@ -6,7 +6,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # or any {'0', '1', '2'}
 from typing import Optional, Tuple, List
 import flwr as fl
 from typing import List, Optional, Tuple, Union
-from common.logger import log
+from common.logger import fleet_log
 from logging import WARNING
 from flwr.server.strategy import FedAvg
 import numpy as np
@@ -32,6 +32,6 @@ class BaseStrategy(FedAvg):
         failures: List[Union[Tuple[ClientProxy, FitRes], BaseException]],
     ) -> Optional[fl.common.NDArrays]:
         parameters_aggregated, metrics_aggregated = super().aggregate_fit(server_round, results, failures)
-        log(INFO,'Saving newest parameters')
+        fleet_log(INFO,'Saving newest parameters')
         np.savez("tmp/agg.npz", parameters_to_ndarrays(parameters_aggregated))
         return parameters_aggregated, metrics_aggregated

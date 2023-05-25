@@ -1,7 +1,7 @@
 import ray
 import time
 from threading import Lock
-from common.logger import log
+from common.logger import fleet_log
 from logging import INFO
 # Create a shared dictionary
 @ray.remote
@@ -26,7 +26,7 @@ class SharedDict:
             node, running = min(self.dict.items(), key=lambda x: x[1])
             if running < node_capacity:
                 self.dict[node] = self.dict[node]+1
-                log(INFO,f"node chosen: {node} with runs: {self.dict[node]}")
+                fleet_log(INFO,f"node chosen: {node} with runs: {self.dict[node]}")
                 found = True
         if found:
             return node

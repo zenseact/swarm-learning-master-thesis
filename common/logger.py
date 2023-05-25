@@ -95,4 +95,4 @@ def configure(
 
 
 logger = logging.getLogger(LOGGER_NAME)  # pylint: disable=invalid-name
-log = logger.log  # pylint: disable=invalid-name
+fleet_log = logger.log  # pylint: disable=invalid-name

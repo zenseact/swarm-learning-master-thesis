@@ -23,7 +23,7 @@ import ray
 
 from flwr.client.client import Client
 from flwr.common import EventType, event
-from common.logger import log
+from common.logger import fleet_log
 from flwr.server import Server
 from flwr.server.app import ServerConfig, _fl, _init_defaults
 from flwr.server.client_manager import ClientManager
@@ -142,7 +142,7 @@ def start_simulation(  # pylint: disable=too-many-arguments
         strategy=strategy,
         client_manager=client_manager,
     )
-    log(
+    fleet_log(
         INFO,
         "Starting Flower simulation, config: %s",
         initialized_config,
@@ -152,13 +152,13 @@ def start_simulation(  # pylint: disable=too-many-arguments
     cids: List[str]
     if clients_ids is not None:
         if (num_clients is not None) and (len(clients_ids) != num_clients):
-            log(ERROR, INVALID_ARGUMENTS_START_SIMULATION)
+            fleet_log(ERROR, INVALID_ARGUMENTS_START_SIMULATION)
             sys.exit()
         else:
             cids = clients_ids
     else:
         if num_clients is None:
-            log(ERROR, INVALID_ARGUMENTS_START_SIMULATION)
+            fleet_log(ERROR, INVALID_ARGUMENTS_START_SIMULATION)
             sys.exit()
         else:
             cids = [str(x) for x in range(num_clients)]

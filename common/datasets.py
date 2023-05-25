@@ -1,7 +1,5 @@
-from common.static_params import *
-from common.utilities import *
-from common.groundtruth_utils import *
-
+from common.static_params import global_configs
+from common.groundtruth_utils import load_ground_truth, get_ground_truth
 import torch
 import torchvision.transforms as transforms
 from torchvision import transforms
@@ -10,11 +8,11 @@ from torch.utils.data import Dataset
 from zod import ZodFrames
 import zod.constants as constants
 from zod.constants import Anonymization
-from common.logger import log
+from common.logger import fleet_log
 from logging import INFO
 
 class ZODImporter:
-    def __init__(self, root=DATASET_ROOT, subset_factor=SUBSET_FACTOR, img_size=IMG_SIZE, batch_size=BATCH_SIZE,
+    def __init__(self, root=global_configs.DATASET_ROOT, subset_factor=global_configs.SUBSET_FACTOR, img_size=global_configs.IMG_SIZE, batch_size=global_configs.BATCH_SIZE,
                  tb_path=None, stored_gt_path=None):
         version = "full"  # "mini" or "full"
         self.zod_frames = ZodFrames(dataset_root=root, version=version)
@@ -24,13 +22,13 @@ class ZODImporter:
         self.ground_truth = None
         if (stored_gt_path):
             self.ground_truth = load_ground_truth(stored_gt_path)
-            log(INFO,'loaded stored ground truth')
+            fleet_log(INFO,'loaded stored ground truth')
 
         validation_frames_all = [idx for idx in validation_frames_all if self.is_valid_frame(idx)]
 
         self.validation_frames = validation_frames_all[:int(len(validation_frames_all) * subset_factor)]
 
-        log(INFO,f"test_frames length: {len(self.validation_frames)}")
+        fleet_log(INFO,f"test_frames length: {len(self.validation_frames)}")
         self.img_size = img_size
         self.batch_size = batch_size
         self.tb_path = tb_path
@@ -39,7 +37,7 @@ class ZODImporter:
         if (self.ground_truth):
             return frame_id in self.ground_truth
         else:
-            return get_ground_truth(self.zod_frames, frame_id).shape[0] == OUTPUT_SIZE * 3
+            return get_ground_truth(self.zod_frames, frame_id).shape[0] == global_configs.OUTPUT_SIZE * 3
 
     def load_datasets(self, num_clients: int):
         transform = transforms.Compose([transforms.ToTensor(), transforms.Resize((self.img_size, self.img_size),antialias=True)])
@@ -92,21 +90,21 @@ class ZodDataset(Dataset):
 
 def main(
         nr_clients=2,
-        subset_factor=SUBSET_FACTOR,
-        img_size=IMG_SIZE,
-        batch_size=BATCH_SIZE):
+        subset_factor=global_configs.SUBSET_FACTOR,
+        img_size=global_configs.IMG_SIZE,
+        batch_size=global_configs.BATCH_SIZE):
     # import Zod data into memory
     zod = ZODImporter(subset_factor=subset_factor, img_size=img_size, batch_size=batch_size,
-                      stored_gt_path=STORED_GROUND_TRUTH_PATH)
+                      stored_gt_path=global_configs.STORED_GROUND_TRUTH_PATH)
 
     # create pytorch loaders
     trainloaders, valloaders, testloader, completeTrainloader, completeValloader = zod.load_datasets(nr_clients)
 
-    log(INFO,'nr of training imgs:', len(trainloaders[0].dataset))
-    log(INFO,'nr of validation imgs:', len(valloaders[0].dataset))
-    log(INFO,'nr of test imgs:', len(testloader.dataset))
-    log(INFO,'input shape:', trainloaders[0].dataset[0][0].shape)
-    log(INFO,'output shape:', trainloaders[0].dataset[0][1].shape)
+    fleet_log(INFO,'nr of training imgs:', len(trainloaders[0].dataset))
+    fleet_log(INFO,'nr of validation imgs:', len(valloaders[0].dataset))
+    fleet_log(INFO,'nr of test imgs:', len(testloader.dataset))
+    fleet_log(INFO,'input shape:', trainloaders[0].dataset[0][0].shape)
+    fleet_log(INFO,'output shape:', trainloaders[0].dataset[0][1].shape)
 
 
 if __name__ == "__main__":

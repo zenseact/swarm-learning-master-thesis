@@ -1,16 +1,19 @@
-from common.utilities import *
-from common.datasets import *
+from common.static_params import TASK, PartitionStrategy, global_configs
+from common.utilities import net_instance, set_parameters, test, get_parameters
+from common.logger import fleet_log 
+from logging import INFO
 from server_code.clients.flwr_client import FlowerClient
 from edge_com.edge_handler import EdgeHandler
 from server_code.strategies.base_strategy import BaseStrategy
 import flwr as fl
 from flwr.common.typing import Optional, Tuple, Dict
+import numpy as np
 from server_code.data_partitioner import partition_train_data
 from server_code.shared_dict import SharedDict
 from server_code.sim_app_flwr import start_simulation
 
 class FederatedStarter:
-    def __init__(self, testloader, nr_local_epochs=NUM_LOCAL_EPOCHS, tb_path=None, federated_subpath=None):
+    def __init__(self, testloader, nr_local_epochs=global_configs.NUM_LOCAL_EPOCHS, tb_path=None, federated_subpath=None):
         self.edge_handler = None
         self.testloader = testloader
         self.client_resources = {"num_cpus" : 0.5}
@@ -25,7 +28,7 @@ class FederatedStarter:
         net = net_instance(f"server")
         valloader = self.testloader
         set_parameters(net, parameters)  # Update model with the latest parameters
-        log(INFO,"testing model on server side test set")
+        fleet_log(INFO,"testing model on server side test set")
         loss, accuracy = test(net, valloader)
 
         # writer = SummaryWriter(self.tb_path)
@@ -38,23 +41,23 @@ class FederatedStarter:
 
         # writer.close()
 
-        if (ML_TASK == TASK.CLASSIFICATION):
-            log(INFO,f"Server-side evaluation loss {float(loss)} / accuracy {float(accuracy)}")
+        if (global_configs.ML_TASK == TASK.CLASSIFICATION):
+            fleet_log(INFO,f"Server-side evaluation loss {float(loss)} / accuracy {float(accuracy)}")
             return float(loss), {"accuracy": float(accuracy)}
         else:
-            log(INFO,f"Server-side evaluation loss {float(loss)}")
+            fleet_log(INFO,f"Server-side evaluation loss {float(loss)}")
             return float(loss), {}
 
     def on_fit_config_fn(self, server_round: int):
         return dict(server_round=server_round)
 
     def create_server_strategy(self,
-                               fraction_fit=1, fraction_evaluate=1, min_fit_clients=NUM_CLIENTS,
-                               min_evaluate_clients=NUM_CLIENTS, min_available_clients=NUM_CLIENTS):
+                               fraction_fit=1, fraction_evaluate=1, min_fit_clients=global_configs.NUM_CLIENTS,
+                               min_evaluate_clients=global_configs.NUM_CLIENTS, min_available_clients=global_configs.NUM_CLIENTS):
         # Pass parameters to the Strategy for server-side parameter initialization
         server_model = net_instance(f"server")
         server_params = get_parameters(server_model)
-        log(INFO,'Saving initial parameters for edge devices')
+        fleet_log(INFO,'Saving initial parameters for edge devices')
         np.savez("tmp/agg.npz", server_params)
         strategy = BaseStrategy(
             fraction_fit=fraction_fit,
@@ -68,14 +71,14 @@ class FederatedStarter:
         )
         return strategy
 
-    def sim_fed(self, nr_clients=NUM_CLIENTS, nr_global_rounds=NUM_GLOBAL_ROUNDS):
+    def sim_fed(self, nr_clients=global_configs.NUM_CLIENTS, nr_global_rounds=global_configs.NUM_GLOBAL_ROUNDS):
         
         # partition data for client in file on server
-        partitions_not_to_use = 1/PERCENTAGE_OF_DATA
-        partition_train_data(PartitionStrategy.RANDOM, int(NUM_CLIENTS*partitions_not_to_use))
+        partitions_not_to_use = 1/global_configs.PERCENTAGE_OF_DATA
+        partition_train_data(PartitionStrategy.RANDOM, int(global_configs.NUM_CLIENTS*partitions_not_to_use))
 
         # Available edge devices shared dictionary
-        shared_device_dict = DEVICE_DICT
+        shared_device_dict = global_configs.DEVICE_DICT
         shared_dict_remote = SharedDict.remote(shared_device_dict)
 
         self.edge_handler = EdgeHandler(1, shared_dict_remote)

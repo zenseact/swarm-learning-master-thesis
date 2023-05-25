@@ -4,32 +4,32 @@ import torchvision.transforms as transforms
 from torch.utils.data import DataLoader, random_split
 from torch import Generator
 from common.groundtruth_utils import get_ground_truth
-from common.static_params import *
+from common.static_params import global_configs
 from common.groundtruth_utils import load_ground_truth
 from torch.utils.data import Dataset, RandomSampler
 
 
 def load_datasets(partitioned_frame_ids: list):
         seed = 42
-        transform = transforms.Compose([transforms.ToTensor(), transforms.Resize((IMG_SIZE, IMG_SIZE),antialias=True)])
+        transform = transforms.Compose([transforms.ToTensor(), transforms.Resize((global_configs.IMG_SIZE, global_configs.IMG_SIZE),antialias=True)])
         zod_frames = ZodFrames(dataset_root="/mnt/ZOD", version="full")
 
         trainset = ZodDataset(zod_frames=zod_frames, frames_id_set=partitioned_frame_ids,
-                              stored_ground_truth=load_ground_truth(STORED_GROUND_TRUTH_PATH), transform=transform)
+                              stored_ground_truth=load_ground_truth(global_configs.STORED_GROUND_TRUTH_PATH), transform=transform)
         testset = ZodDataset(zod_frames=zod_frames, frames_id_set=partitioned_frame_ids,
-                             stored_ground_truth=load_ground_truth(STORED_GROUND_TRUTH_PATH), transform=transform)
+                             stored_ground_truth=load_ground_truth(global_configs.STORED_GROUND_TRUTH_PATH), transform=transform)
 
         # Split each partition into train/val and create DataLoader
-        len_val = int(len(trainset) * VAL_FACTOR)
+        len_val = int(len(trainset) * global_configs.VAL_FACTOR)
         len_train = int(len(trainset) - len_val)
 
         lengths = [len_train, len_val]
         ds_train, ds_val = random_split(trainset, lengths, Generator().manual_seed(seed))
         train_sampler = RandomSampler(ds_train)
-        trainloader = DataLoader(ds_train, batch_size=BATCH_SIZE, shuffle=False, num_workers=4, sampler=train_sampler)
-        valloader = DataLoader(ds_val, batch_size=BATCH_SIZE, num_workers=4)
+        trainloader = DataLoader(ds_train, batch_size=global_configs.BATCH_SIZE, shuffle=False, num_workers=4, sampler=train_sampler)
+        valloader = DataLoader(ds_val, batch_size=global_configs.BATCH_SIZE, num_workers=4)
 
-        testloader = DataLoader(testset, batch_size=BATCH_SIZE, num_workers=4)
+        testloader = DataLoader(testset, batch_size=global_configs.BATCH_SIZE, num_workers=4)
 
         # """report to tensor board"""
         # save_dataset_tb_plot(self.tb_path, lengths_train, "training", seed)

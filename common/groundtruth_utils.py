@@ -1,5 +1,4 @@
-from common.static_params import *
-from common.utilities import *
+from common.static_params import global_configs
 
 import numpy as np
 from tqdm import tqdm
@@ -12,7 +11,7 @@ import json
 from zod.constants import Camera
 from zod.utils.geometry import get_points_in_camera_fov, project_3d_to_2d_kannala, transform_points
 import cv2
-from common.logger import log
+from common.logger import fleet_log
 from logging import INFO
 
 def get_ground_truth(zod_frames, frame_id):
@@ -37,16 +36,16 @@ def get_ground_truth(zod_frames, frame_id):
             distances = np.linalg.norm(np.diff(translations, axis=0), axis=1)
             accumulated_distances = np.cumsum(distances).astype(int).tolist()
 
-            pose_idx = [accumulated_distances.index(i) for i in TARGET_DISTANCES] 
+            pose_idx = [accumulated_distances.index(i) for i in global_configs.TARGET_DISTANCES] 
             return poses[pose_idx]
 
         used_poses = travelled_distance(transformed_poses)
     
     except:
-        log(INFO,'detected invalid frame: ', frame_id)
+        fleet_log(INFO,'detected invalid frame: ', frame_id)
         return np.array([])
     
-    log(INFO,f"{used_poses.shape}")
+    fleet_log(INFO,f"{used_poses.shape}")
     points = used_poses[:, :3, -1]
     return flatten_ground_truth(points)
 
@@ -73,11 +72,11 @@ def visualize_HP_on_image(zod_frames, frame_id, preds=None):
     # transform point to camera coordinate system
     T_inv = np.linalg.pinv(calibs.get_extrinsics(camera).transform)
     camerapoints = transform_points(points[:, :3], T_inv)
-    log(INFO,f"Number of points: {points.shape[0]}")
+    fleet_log(INFO,f"Number of points: {points.shape[0]}")
 
     # filter points that are not in the camera field of view
     points_in_fov = get_points_in_camera_fov(calibs.cameras[camera].field_of_view, camerapoints)
-    log(INFO,f"Number of points in fov: {len(points_in_fov)}")
+    fleet_log(INFO,f"Number of points in fov: {len(points_in_fov)}")
 
     # project points to image plane
     xy_array = project_3d_to_2d_kannala(
@@ -103,7 +102,7 @@ def visualize_HP_on_image(zod_frames, frame_id, preds=None):
     # transform and draw predictions 
     if(preds):
         preds = reshape_ground_truth(preds)
-        log(INFO,f"Number of pred points on image: {preds.shape[0]}")
+        fleet_log(INFO,f"Number of pred points on image: {preds.shape[0]}")
         predpoints = transform_points(preds[:, :3], T_inv)
         predpoints_in_fov = get_points_in_camera_fov(calibs.cameras[camera].field_of_view, predpoints)
         xy_array_preds = project_3d_to_2d_kannala(
@@ -126,8 +125,8 @@ def visualize_HP_on_image(zod_frames, frame_id, preds=None):
 def flatten_ground_truth(label):
     return label.flatten()
 
-def reshape_ground_truth(label, output_size=NUM_OUTPUT):
-    return label.reshape(((NUM_OUTPUT//3),3))
+def reshape_ground_truth(label, output_size=global_configs.NUM_OUTPUT):
+    return label.reshape(((global_configs.NUM_OUTPUT//3),3))
 
 def create_ground_truth(zod_frames, training_frames, validation_frames, path):
     all_frames = validation_frames.copy()
@@ -137,7 +136,7 @@ def create_ground_truth(zod_frames, training_frames, validation_frames, path):
     ground_truth = {}
     for frame_id in tqdm(all_frames):
         gt = get_ground_truth(zod_frames, frame_id)
-        if(gt.shape[0] != NUM_OUTPUT):
+        if(gt.shape[0] != global_configs.NUM_OUTPUT):
             corrupted_frames.append(frame_id)
             continue
         else:
@@ -150,7 +149,7 @@ def create_ground_truth(zod_frames, training_frames, validation_frames, path):
     with open(path, "w") as outfile:
         outfile.write(json_object)
     
-    log(INFO,f"{corrupted_frames}")
+    fleet_log(INFO,f"{corrupted_frames}")
 
 def load_ground_truth(path):
     with open(path) as json_file:
@@ -163,14 +162,14 @@ def load_ground_truth(path):
 
 
 def main():
-    zod_frames = ZodFrames(dataset_root=DATASET_ROOT, version='full')
+    zod_frames = ZodFrames(dataset_root=global_configs.DATASET_ROOT, version='full')
     training_frames_all = zod_frames.get_split(constants.TRAIN)
     validation_frames_all = zod_frames.get_split(constants.VAL)
 
     #idx = "081294"
     #image = visualize_HP_on_image(zod.zod_frames, idx)
 
-    create_ground_truth(zod_frames, training_frames_all, validation_frames_all, STORED_GROUND_TRUTH_PATH)
+    create_ground_truth(zod_frames, training_frames_all, validation_frames_all, global_configs.STORED_GROUND_TRUTH_PATH)
 
 if __name__ == "__main__":
     main()

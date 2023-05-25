@@ -1,4 +1,4 @@
-from common.static_params import *
+from common.static_params import global_configs
 
 import numpy as np
 import torch
@@ -13,7 +13,7 @@ class Net(nn.Module):
         stride = 1
         nr_cv = 2
         # get the dimentions correct
-        size_before_fc = IMG_SIZE
+        size_before_fc = global_configs.IMG_SIZE
         for i in range(0, nr_cv):
             size_before_fc = (size_before_fc - 2 * stride) // 2
 
@@ -31,7 +31,7 @@ class Net(nn.Module):
             nn.Flatten(),
             nn.Linear(size_before_fc * size_before_fc * 64, 100),
             nn.ReLU(inplace=True),
-            nn.Linear(100, NUM_OUTPUT),
+            nn.Linear(100, global_configs.NUM_OUTPUT),
         )
 
     def forward(self, x):
@@ -60,7 +60,7 @@ class PTNet(nn.Module):
 
     def change_head_fc(self):
         num_ftrs = self.model.fc.in_features
-        self.model.fc = nn.Linear(num_ftrs, NUM_OUTPUT)
+        self.model.fc = nn.Linear(num_ftrs, global_configs.NUM_OUTPUT)
 
     def change_head_net(self):
         num_ftrs = self.model.fc.in_features
@@ -69,7 +69,7 @@ class PTNet(nn.Module):
             nn.ReLU(inplace=True),
             nn.Linear(100, 100, bias=True),
             nn.ReLU(inplace=True),
-            nn.Linear(100, NUM_OUTPUT, bias=True),
+            nn.Linear(100, global_configs.NUM_OUTPUT, bias=True),
         )
         self.model.fc = head_net
 

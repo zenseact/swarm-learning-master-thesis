@@ -1,8 +1,6 @@
 import paramiko
 import time
 from paramiko import RSAKey
-from common.logger import log
-from logging import INFO
 from pygit2 import Repository
 
 def run(ip, cid):

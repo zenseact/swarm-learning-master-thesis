@@ -4,8 +4,8 @@ import os
 import sys
 from edge_code.data_loader import load_datasets
 from common.utilities import train, use_gpu, net_instance, get_parameters, set_parameters
-from common.static_params import *
-from common.logger import log
+from common.static_params import global_configs
+from common.logger import fleet_log
 from logging import INFO
 
 if __name__ == '__main__':
@@ -14,44 +14,44 @@ if __name__ == '__main__':
     # Get the command-line arguments
     cid = sys.argv[1]
 
-    log(INFO,'download current model from server')
+    fleet_log(INFO,'download current model from server')
     
-    with SSHClient(hostname=VM_IP, private_key_path=VM_KEY_PATH) as ssh:
-        ssh.download_file("/root/Fleet/fleet-learning/tmp/agg.npz", "agg.npz")
+    with SSHClient(hostname=global_configs.VM_IP, private_key_path=global_configs.VM_KEY_PATH) as ssh:
+        ssh.download_file(global_configs.SERVER_MAIN_PATH + "tmp/agg.npz", "agg.npz")
     parameters = list(np.load("agg.npz",allow_pickle = True)['arr_0'])
     os.remove("agg.npz")
     model = net_instance(f"{cid}")
     set_parameters(model, parameters)
 
-    log(INFO,'current model downloaded')
+    fleet_log(INFO,'current model downloaded')
 
-    log(INFO,f"load the data partition for client cid {cid}")
+    fleet_log(INFO,f"load the data partition for client cid {cid}")
     
-    with SSHClient(hostname=VM_IP, private_key_path=VM_KEY_PATH) as ssh:
-        ssh.download_file("/root/Fleet/fleet-learning/tmp/partitions.npz", "partitions.npz")
+    with SSHClient(hostname=global_configs.VM_IP, private_key_path=global_configs.VM_KEY_PATH) as ssh:
+        ssh.download_file(global_configs.SERVER_MAIN_PATH + "tmp/partitions.npz", "partitions.npz")
     partition = np.load("partitions.npz")[cid]
     
-    log(INFO,'data partition loaded')
+    fleet_log(INFO,'data partition loaded')
     
-    log(INFO,'load dataset to ram')
+    fleet_log(INFO,'load dataset to ram')
     
     trainloader, valloader, testloader = load_datasets(partition)
     
-    log(INFO,'train the model')
+    fleet_log(INFO,'train the model')
     
-    losses, accs, val_losses, val_accs = train(model, trainloader, valloader, NUM_LOCAL_EPOCHS, plot = False,client_cid = cid)
+    losses, accs, val_losses, val_accs = train(model, trainloader, valloader, global_configs.NUM_LOCAL_EPOCHS, plot = False,client_cid = cid)
     
-    log(INFO,f"loss: {losses}, accs: {accs}, val_losses: {val_losses}, val_accs: {val_accs}")
+    fleet_log(INFO,f"loss: {losses}, accs: {accs}, val_losses: {val_losses}, val_accs: {val_accs}")
     
     # save the model
     params = get_parameters(model)
     params = np.array(params, dtype=object)
     np.savez("tmp/res"+cid+".npz", params)
     
-    log(INFO,'upload model to server')
-    with SSHClient(hostname=VM_IP, private_key_path=VM_KEY_PATH) as ssh:
-        ssh.upload_file("tmp/res"+cid+".npz", "/root/Fleet/fleet-learning/tmp/res"+cid+".npz")
+    fleet_log(INFO,'upload model to server')
+    with SSHClient(hostname=global_configs.VM_IP, private_key_path=global_configs.VM_KEY_PATH) as ssh:
+        ssh.upload_file("tmp/res"+cid+".npz", global_configs.SERVER_MAIN_PATH + "tmp/res"+cid+".npz")
 
     #remove the model
     os.remove("tmp/res"+cid+".npz")
-    log(INFO,'done')
+    fleet_log(INFO,'done')

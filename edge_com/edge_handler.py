@@ -1,4 +1,5 @@
-from server_code.shared_dict import *
+import ray
+from server_code.shared_dict import SharedDict
 
 class EdgeHandler():
     def __init__(self, node_capacity: int, shared_dict_remote: SharedDict):

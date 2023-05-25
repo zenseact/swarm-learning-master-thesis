@@ -28,7 +28,7 @@ from flwr.client.client import (
     maybe_call_get_parameters,
     maybe_call_get_properties,
 )
-from common.logger import log
+from common.logger import fleet_log
 from flwr.server.client_proxy import ClientProxy
 
 ClientFn = Callable[[str], ClientLike]
@@ -52,7 +52,7 @@ class RayClientProxy(ClientProxy):
         try:
             res = ray.get(future_get_properties_res, timeout=timeout)  # type: ignore
         except Exception as ex:
-            log(DEBUG, ex)
+            fleet_log(DEBUG, ex)
             raise ex
         return cast(
             common.GetPropertiesRes,
@@ -69,7 +69,7 @@ class RayClientProxy(ClientProxy):
         try:
             res = ray.get(future_paramseters_res, timeout=timeout)  # type: ignore
         except Exception as ex:
-            log(DEBUG, ex)
+            fleet_log(DEBUG, ex)
             raise ex
         return cast(
             common.GetParametersRes,
@@ -84,7 +84,7 @@ class RayClientProxy(ClientProxy):
         try:
             res = ray.get(future_fit_res, timeout=timeout)  # type: ignore
         except Exception as ex:
-            log(DEBUG, ex)
+            fleet_log(DEBUG, ex)
             raise ex
         return cast(
             common.FitRes,
@@ -101,7 +101,7 @@ class RayClientProxy(ClientProxy):
         try:
             res = ray.get(future_evaluate_res, timeout=timeout)  # type: ignore
         except Exception as ex:
-            log(DEBUG, ex)
+            fleet_log(DEBUG, ex)
             raise ex
         return cast(
             common.EvaluateRes,
