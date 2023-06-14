@@ -1,0 +1,14 @@
+version: "3"
+services:
+  
+  az-server:
+    build: server/
+    command: python ./server.py
+    ports:
+      - 65432:65432
+  vv-client:
+    build: client/
+    command: python ./client.py
+    network_mode: host
+    depends_on:
+      - az-server
