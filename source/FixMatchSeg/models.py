@@ -31,72 +31,11 @@ class PTModel(pl.LightningModule):
 
     def forward(self, image):
         # normalize image here
-        image = (image - self.mean) / self.std
+        #image = (image - self.mean) / self.std
         mask = self.model(image)
         ema_mask = self.ema(image)
     
-        return mask, ema_mask
-
-    def shared_step(self, batch, stage, outputs):
-        image = batch["image"]
-
-        # Shape of the image should be (batch_size, num_channels, height, width)
-        # if you work with grayscale images, expand channels dim to have [batch_size, 1, height, width]
-        assert image.ndim == 4
-
-        # Check that image dimensions are divisible by 32, 
-        # encoder and decoder connected by `skip connections` and usually encoder have 5 stages of 
-        # downsampling by factor 2 (2 ^ 5 = 32); e.g. if we have image with shape 65x65 we will have 
-        # following shapes of features in encoder and decoder: 84, 42, 21, 10, 5 -> 5, 10, 20, 40, 80
-        # and we will get an error trying to concat these features
-        h, w = image.shape[2:]
-        assert h % 32 == 0 and w % 32 == 0
-
-        mask = batch["mask"]
-
-        # Shape of the mask should be [batch_size, num_classes, height, width]
-        # for binary segmentation num_classes = 1
-        assert mask.ndim == 4
-
-        # Check that mask values in between 0 and 1, NOT 0 and 255 for binary segmentation
-        assert mask.max() <= 1.0 and mask.min() >= 0
-
-        logits_mask, ema_mask = self.forward(image)
-        
-        # Predicted mask contains logits, and loss_fn param `from_logits` is set to True
-        #loss = dice_loss(logits_mask, mask)
-        #ema_loss = dice_loss(ema_mask, mask)
-        loss = self.DiceLoss(logits_mask, mask) 
-        ema_loss = self.DiceLoss(ema_mask, mask)
-
-        # Lets compute metrics for some threshold
-        # first convert mask values to probabilities, then 
-        # apply thresholding
-        prob_mask = logits_mask.sigmoid()
-        pred_mask = (prob_mask > 0.5).float()
-
-        # We will compute IoU metric by two ways
-        #   1. dataset-wise
-        #   2. image-wise
-        # but for now we just compute true positive, false positive, false negative and
-        # true negative 'pixels' for each image and class
-        # these values will be aggregated in the end of an epoch
-        tp, fp, fn, tn = smp.metrics.get_stats(pred_mask.long(), mask.long(), mode="binary")
-
-        if(stage == 'train'):
-            self.ema.update()
-        
-        output = {
-            "loss": loss,
-            "ema_loss": ema_loss,
-            "tp": tp,
-            "fp": fp,
-            "fn": fn,
-            "tn": tn,
-        }
-
-        outputs.append(output)
-        return output
+        return mask.sigmoid(), ema_mask.sigmoid()
 
     def shared_step_fixmatch(self, batch, stage, outputs):
         image = batch["image"]
@@ -123,6 +62,8 @@ class PTModel(pl.LightningModule):
             logits_mask, ema_mask = self.forward(image)
             combinedLoss = self.DiceLoss(logits_mask, mask)
             combinedEmaLoss = self.DiceLoss(ema_mask, mask)
+            
+            self.log_dict({f"{stage} supervised loss": combinedLoss.item()}, prog_bar=True)
 
         else:
             loss_u = 0; loss = 0; ema_loss = 0
@@ -137,38 +78,41 @@ class PTModel(pl.LightningModule):
             image_u_s = image_u_s[unlabeled_idx]
 
             logits_mask, ema_mask = self.forward(image)
+
+            #logits_mask = binary_mask(logits_mask)
+            #ema_mask = binary_mask(ema_mask)
+
             if(not is_all_labeled):
                 logits_mask_u_w, _ = self.forward(image_u_w)
                 logits_mask_u_s, _ = self.forward(image_u_s)
 
                 loss_u = compute_unsupervised_loss(logits_mask_u_w, logits_mask_u_s, THRESHOLD)
+                self.log_dict({f"{stage} unsupervised loss": loss_u.item()}, prog_bar=True)
             
             if(not is_all_unlabeled):
-                loss = compute_supervised_loss(mask, logits_mask)
-                ema_loss = compute_supervised_loss(mask, ema_mask)
+                #loss = compute_supervised_loss(mask, logits_mask)
+                #ema_loss = compute_supervised_loss(mask, ema_mask)
+                
+                loss = self.DiceLoss(mask, logits_mask)
+                ema_loss = self.DiceLoss(mask, ema_mask)
+                
+                self.log_dict({f"{stage} supervised loss": loss.item()}, prog_bar=True)
+                
 
             # combined loss
             combinedLoss = loss + LAMBDA * loss_u
             combinedEmaLoss = ema_loss + LAMBDA * loss_u
 
+
         tp, fp, fn, tn = None, None, None, None
         if(not is_all_unlabeled):
-            # Lets compute metrics for some threshold
-            # first convert mask values to probabilities, then 
-            # apply thresholding
             prob_mask = logits_mask.sigmoid()
             pred_mask = (prob_mask > 0.5).float()
-
-            # We will compute IoU metric by two ways
-            #   1. dataset-wise
-            #   2. image-wise
-            # but for now we just compute true positive, false positive, false negative and
-            # true negative 'pixels' for each image and class
-            # these values will be aggregated in the end of an epoch
             tp, fp, fn, tn = smp.metrics.get_stats(pred_mask.long(), mask.long(), mode="binary")
 
         if(stage == 'train'):
             self.ema.update()
+            
         
         output = {
             "loss": combinedLoss,

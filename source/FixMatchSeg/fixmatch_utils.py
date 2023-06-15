@@ -42,7 +42,7 @@ def boundary_loss(pred, target):
 
 def dice_loss(pred, target):
     loss = smp.losses.DiceLoss(smp.losses.BINARY_MODE, from_logits=True)
-    pred = (pred.sigmoid() > 0.5).float()
+    #pred = (pred.sigmoid() > 0.5).float()
     loss = loss(pred, target)
     return loss
 
@@ -58,7 +58,8 @@ def compute_supervised_loss(preds, labels):
     for b in range(B):
         # Compute Dice loss and Boundary loss for each image
         dl = dice_loss(preds[b], labels[b])
-        bl = boundary_loss(preds[b], labels[b])
+        #bl = boundary_loss(preds[b], labels[b])
+        bl = 0
         # Add to total loss
         loss += dl + bl
 
@@ -74,7 +75,6 @@ def should_include_in_loss(pred_prob, threshold):
     return mask
 
 def compute_unsupervised_loss(pred_weak, pred_strong, threshold):
-    pseudo_labels = (pred_weak > 0.5).float() # using 0.5 as a threshold to determine class
     mask = should_include_in_loss(pred_weak, threshold)
     
     loss = 0
@@ -83,14 +83,23 @@ def compute_unsupervised_loss(pred_weak, pred_strong, threshold):
     if mask_sum.item() > 0:
         for b in range(mask.shape[0]):
             if mask[b]:
-                dl = dice_loss(pred_strong[b], pseudo_labels[b]) # expand dimensions to match original dice_loss function requirements
-                bl = boundary_loss(pred_strong[b], pseudo_labels[b]) # expand dimensions to match original boundary_loss function requirements
+                #logits_mask_u_s = binary_mask(pred_strong[b])
+                #logits_mask_u_w = binary_mask(pred_weak[b])
+
+                dl = dice_loss(pred_strong[b], pred_weak[b]) 
+                #bl = boundary_loss(pred_strong[b], pseudo_labels[b]) 
+                bl = 0
                 loss += dl + bl
         loss = loss / mask_sum
+        print('Accepted')
     else:
-        loss = torch.tensor(0.0, requires_grad=True).to(pred_weak.device)
+        loss = torch.zeros(1, device=DEVICE)
+        #loss = torch.tensor(0.0, requires_grad=True).to(DEVICE)
 
     return loss
+
+def binary_mask(mask):
+    return (mask.sigmoid() > 0.5).float()
 
 class BoundaryLoss(nn.Module):
     """Boundary Loss proposed in:
