@@ -17,5 +17,7 @@ To learn more about our project, we recommend reading our blog post and our Mast
 
 Blog post: https://my.ai.se/projects/259
 
+Thesis: [to-be-added]
+
 ## Note
 The repository will be polished and made more accessible by July. We encourage you to revisit it then for an updated, user-friendly version.
