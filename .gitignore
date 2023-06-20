@@ -8,6 +8,7 @@ __pycache__/
 
 # Distribution / packaging
 .Python
+docker/images/*.tar
 build/
 develop-eggs/
 dist/

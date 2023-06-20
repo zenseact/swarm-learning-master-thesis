@@ -31,7 +31,7 @@ class GlobalConfigs:
                 }
 
         self.TARGET_DISTANCES = [5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 70, 80, 95, 110, 125, 145, 165]
-        self.NUM_CLIENTS = 5
+        self.NUM_CLIENTS = len(self.DEVICE_DICT.keys())
         self.PERCENTAGE_OF_DATA = 0.02
         self.NUM_OUTPUT = 51
         self.IMG_SIZE = 256
