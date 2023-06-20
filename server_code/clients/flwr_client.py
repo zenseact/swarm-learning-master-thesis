@@ -16,7 +16,7 @@ class FlowerClient(fl.client.NumPyClient):
         #self.tb_writer = SummaryWriter(self.tb_path)s
 
     def fit(self, parameters, config):
-        fleet_log(INFO,'Starting edge devie training process for cid: {self.cid}')
+        fleet_log(INFO,f'Starting edge devie training process for cid: {self.cid}')
         params = self.edge_com.update_model(self.cid)
         # return 1 as nr of training examples for now
         return params, 1, {}

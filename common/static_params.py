@@ -22,7 +22,7 @@ class GlobalConfigs:
         self.VM_KEY_PATH = '/home/nvidia/.ssh/id_rsa'
 
         self.DEVICE_DICT = {
-                    #"agx4.nodes.edgelab.network" : 0, NOT WORKING ATM, fix it!! (flush and reinstall)
+                    # "agx4.nodes.edgelab.network" : 0, NOT WORKING ATM, fix it!! (flush and reinstall)
                     "agx6.nodes.edgelab.network": 0,
                     "agx9.nodes.edgelab.network": 0,
                     "agx10.nodes.edgelab.network": 0,

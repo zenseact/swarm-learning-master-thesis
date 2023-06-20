@@ -42,5 +42,7 @@ def partition_train_data(strat: PartitionStrategy, no_clients: int):
     if strat == PartitionStrategy.LOCATION:
         pass
 
+    return cid_partitions
+
 def is_valid_frame(frame_id, ground_truth):
     return frame_id in ground_truth

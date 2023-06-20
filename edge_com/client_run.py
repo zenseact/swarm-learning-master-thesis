@@ -11,7 +11,7 @@ def run(ip, cid):
     ssh.connect(ip, username='nvidia', pkey=private_key)
 
     repo_location = '/home/nvidia/Fleet/fleet-learning'
-    
+
     branch = Repository('.').head.shorthand
 
     channel = ssh.invoke_shell()

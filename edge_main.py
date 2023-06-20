@@ -8,7 +8,7 @@ from common.static_params import global_configs
 from common.logger import fleet_log
 from logging import INFO
 
-if __name__ == '__main__':
+def main():
     # use gpu on edge devices
     use_gpu()
     # Get the command-line arguments
@@ -55,3 +55,7 @@ if __name__ == '__main__':
     #remove the model
     os.remove("tmp/res"+cid+".npz")
     fleet_log(INFO,'done')
+
+
+if __name__ == "__main__":
+    main()
