@@ -1,0 +1,37 @@
+{
+    "data": {
+        "path": "/mnt/ZOD",
+        "version": "full",
+        "ratio": 1,
+        "img_size": [
+            400,
+            1420
+        ],
+        "transforms": "[CustomCrop(800, 500, 800, 2840), Resize((400, 1420)), Normalize(mean=[0.337, 0.345, 0.367], std=[0.160, 0.180, 0.214])]",
+        "shuffle_seed": 101,
+        "decentralised_shuffle_seed": 101,
+        "dataloader_args": {
+            "num_workers": 4,
+            "prefetch_factor": 2,
+            "batch_size": 8,
+            "pin_memory": true,
+            "shuffle": true
+        },
+        "train_val_id_generator": "manually_selected",
+        "dataset_getitem": "noise"
+    },
+    "model": {
+        "name": "resnet18",
+        "args": {
+            "num_output": 51
+        },
+        "loss": "L1Loss",
+        "optimiser": "Adam",
+        "optimiser_args": {}
+    },
+    "central": {
+        "train": true,
+        "use_gpu": true,
+        "epochs": 15
+    }
+}

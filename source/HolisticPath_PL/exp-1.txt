@@ -1,101 +1,0 @@
-{'exp_id': 1, 'type': 'centralized', 'agent_id': 1, 'output_size': 51, 'image_size': 256, 'run_pretrained': True, 'batch_size': 8, 'val_factor': 0.1, 'subset_factor': 0.2, 'use_gpu': True, 'model': 'resnet18', 'num_global_rounds': None, 'num_local_epochs': 250, 'print_debug_data': True, 'num_workers': 0, 'prefetch_factor': None, 'frames_image_mean': [0.337, 0.345, 0.367], 'frames_image_std': [0.16, 0.18, 0.214], 'dataset_root': '/mnt/ZOD', 'zenseact_dataset_root': '/staging/dataset_donation/round_2', 'checkpoint_path': None, 'start_from_checkpoint': False, 'use_ema': True, 'dataset_division': 'balanced', 'learning_rate': 0.001, 'target_distances': [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85], 'loss': 'L1', 'gpu_id': 1}
-PyTorch=2.0.0+cu117. Pytorch vision=0.15.1+cu117. Flower=1.3.0
-Training will run on: cudas
-exp-1_centralized_agent-1_resnet18_balanced_L1_85m_imgnet_normalized_250epochs_lr0.001_6800.0trainImages_bs8_imgSize256_unfreezed_ema-True
-Loading infos: 0it [00:00, ?it/s]Loading infos: 1001it [00:01, 605.48it/s]Loading infos: 2201it [00:01, 1498.24it/s]Loading infos: 3351it [00:01, 2510.27it/s]Loading infos: 4301it [00:02, 3073.88it/s]Loading infos: 6451it [00:02, 5643.00it/s]Loading infos: 7681it [00:02, 6403.44it/s]Loading infos: 9101it [00:02, 7822.12it/s]Loading infos: 10318it [00:02, 8198.00it/s]Loading infos: 11444it [00:04, 1823.82it/s]Loading infos: 12237it [00:04, 2093.42it/s]Loading infos: 14201it [00:04, 3289.50it/s]Loading infos: 16051it [00:04, 4708.75it/s]Loading infos: 17196it [00:04, 5067.61it/s]Loading infos: 18451it [00:05, 5800.55it/s]Loading infos: 20401it [00:05, 7027.41it/s]Loading infos: 21751it [00:07, 1696.37it/s]Loading infos: 23751it [00:07, 2543.18it/s]Loading infos: 24802it [00:07, 3019.07it/s]Loading infos: 25820it [00:08, 3406.08it/s]Loading infos: 27351it [00:08, 4478.30it/s]Loading infos: 29201it [00:08, 6171.22it/s]Loading infos: 30445it [00:08, 6787.27it/s]Loading infos: 31851it [00:08, 7975.59it/s]Loading infos: 33101it [00:08, 8803.72it/s]Loading infos: 34321it [00:08, 9083.91it/s]Loading infos: 35601it [00:08, 9906.80it/s]Loading infos: 36788it [00:09, 9398.20it/s]Loading infos: 37868it [00:11, 1320.81it/s]Loading infos: 38751it [00:11, 1651.84it/s]Loading infos: 39951it [00:11, 2266.34it/s]Loading infos: 40861it [00:12, 2799.28it/s]Loading infos: 41768it [00:12, 3360.81it/s]Loading infos: 43151it [00:12, 4582.52it/s]Loading infos: 44122it [00:12, 5027.07it/s]Loading infos: 45651it [00:12, 5996.15it/s]Loading infos: 47751it [00:12, 8466.63it/s]Loading infos: 48943it [00:12, 9027.48it/s]Loading infos: 50113it [00:13, 7933.75it/s]Loading infos: 51801it [00:13, 8878.32it/s]Loading infos: 53751it [00:13, 11044.22it/s]Loading infos: 55049it [00:16, 1256.06it/s] Loading infos: 57051it [00:17, 1904.09it/s]Loading infos: 58286it [00:17, 2224.16it/s]Loading infos: 60151it [00:17, 3124.45it/s]Loading infos: 61901it [00:17, 3913.03it/s]Loading infos: 62943it [00:17, 4327.81it/s]Loading infos: 65051it [00:17, 5957.57it/s]Loading infos: 66851it [00:18, 6849.63it/s]Loading infos: 69151it [00:18, 9179.91it/s]Loading infos: 70586it [00:18, 9323.04it/s]Loading infos: 71901it [00:18, 10026.84it/s]Loading infos: 73203it [00:18, 9607.85it/s] Loading infos: 74372it [00:18, 9612.89it/s]Loading infos: 75479it [00:18, 9431.78it/s]Loading infos: 77101it [00:18, 10928.37it/s]Loading infos: 78301it [00:23, 988.84it/s]  Loading infos: 79151it [00:23, 1183.60it/s]Loading infos: 81401it [00:23, 2045.48it/s]Loading infos: 82562it [00:23, 2492.16it/s]Loading infos: 83851it [00:23, 3169.75it/s]Loading infos: 85101it [00:23, 4004.75it/s]Loading infos: 86801it [00:23, 5473.46it/s]Loading infos: 88069it [00:24, 5996.30it/s]Loading infos: 89198it [00:24, 6604.15it/s]Loading infos: 90268it [00:24, 6373.13it/s]Loading infos: 91501it [00:24, 7033.13it/s]Loading infos: 93451it [00:24, 9443.16it/s]Loading infos: 94674it [00:24, 10049.01it/s]Loading infos: 95897it [00:24, 9892.15it/s] Loading infos: 97201it [00:25, 10642.01it/s]Loading infos: 98390it [00:25, 10467.75it/s]Loading infos: 100000it [00:25, 3963.84it/s]
-balanced sample: ['003298', '074927', '038839', '021686', '088515']
-  0%|          | 0/7039 [00:00<?, ?it/s]100%|██████████| 7039/7039 [00:00<00:00, 2570855.61it/s]
-  0%|          | 0/2004 [00:00<?, ?it/s]100%|██████████| 2004/2004 [00:00<00:00, 1895239.06it/s]
-GPU available: True (cuda), used: True
-TPU available: False, using: 0 TPU cores
-IPU available: False, using: 0 IPUs
-HPU available: False, using: 0 HPUs
-LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0,1]
-
-  | Name    | Type   | Params
------------------------------------
-0 | model   | ResNet | 12.3 M
-1 | ema     | EMA    | 24.5 M
-2 | loss_fn | L1Loss | 0     
------------------------------------
-12.3 M    Trainable params
-12.3 M    Non-trainable params
-24.5 M    Total params
-98.022    Total estimated model params size (MB)
-length of training_frames subset: 7011
-length of test_frames subset: 1604
-Sanity Checking: 0it [00:00, ?it/s]/home/yasan/miniconda3/envs/zen/lib/python3.9/site-packages/pytorch_lightning/trainer/connectors/data_connector.py:478: PossibleUserWarning: Your `val_dataloader`'s sampler has shuffling enabled, it is strongly recommended that you turn shuffling off for val/test dataloaders.
-  rank_zero_warn(
-/home/yasan/miniconda3/envs/zen/lib/python3.9/site-packages/pytorch_lightning/trainer/connectors/data_connector.py:430: PossibleUserWarning: The dataloader, val_dataloader, does not have many workers which may be a bottleneck. Consider increasing the value of the `num_workers` argument` (try 20 which is the number of cpus on this machine) in the `DataLoader` init to improve performance.
-  rank_zero_warn(
-Sanity Checking:   0%|          | 0/2 [00:00<?, ?it/s]Sanity Checking DataLoader 0:   0%|          | 0/2 [00:00<?, ?it/s]True
-Sanity Checking DataLoader 0:  50%|█████     | 1/2 [00:00<00:00,  1.23it/s]True
-Sanity Checking DataLoader 0: 100%|██████████| 2/2 [00:02<00:00,  1.47s/it]                                                                           /home/yasan/miniconda3/envs/zen/lib/python3.9/site-packages/pytorch_lightning/trainer/connectors/data_connector.py:430: PossibleUserWarning: The dataloader, train_dataloader, does not have many workers which may be a bottleneck. Consider increasing the value of the `num_workers` argument` (try 20 which is the number of cpus on this machine) in the `DataLoader` init to improve performance.
-  rank_zero_warn(
-Training: 0it [00:00, ?it/s]Training:   0%|          | 0/789 [00:00<?, ?it/s]Epoch 0:   0%|          | 0/789 [00:00<?, ?it/s] True
-Epoch 0:   0%|          | 1/789 [00:02<30:53,  2.35s/it]Epoch 0:   0%|          | 1/789 [00:02<30:54,  2.35s/it, v_num=55]True
-Epoch 0:   0%|          | 2/789 [00:04<31:09,  2.38s/it, v_num=55]Epoch 0:   0%|          | 2/789 [00:04<31:09,  2.38s/it, v_num=55]True
-Epoch 0:   0%|          | 3/789 [00:07<30:36,  2.34s/it, v_num=55]Epoch 0:   0%|          | 3/789 [00:07<30:36,  2.34s/it, v_num=55]True
-Epoch 0:   1%|          | 4/789 [00:09<30:57,  2.37s/it, v_num=55]Epoch 0:   1%|          | 4/789 [00:09<30:57,  2.37s/it, v_num=55]True
-Epoch 0:   1%|          | 5/789 [00:11<30:49,  2.36s/it, v_num=55]Epoch 0:   1%|          | 5/789 [00:11<30:49,  2.36s/it, v_num=55]True
-Epoch 0:   1%|          | 6/789 [00:14<30:46,  2.36s/it, v_num=55]Epoch 0:   1%|          | 6/789 [00:14<30:46,  2.36s/it, v_num=55]True
-Epoch 0:   1%|          | 7/789 [00:16<30:50,  2.37s/it, v_num=55]Epoch 0:   1%|          | 7/789 [00:16<30:50,  2.37s/it, v_num=55]True
-Epoch 0:   1%|          | 8/789 [00:18<30:35,  2.35s/it, v_num=55]Epoch 0:   1%|          | 8/789 [00:18<30:35,  2.35s/it, v_num=55]True
-Epoch 0:   1%|          | 9/789 [00:21<30:32,  2.35s/it, v_num=55]Epoch 0:   1%|          | 9/789 [00:21<30:32,  2.35s/it, v_num=55]True
-Epoch 0:   1%|▏         | 10/789 [00:23<30:19,  2.34s/it, v_num=55]Epoch 0:   1%|▏         | 10/789 [00:23<30:19,  2.34s/it, v_num=55]True
-Epoch 0:   1%|▏         | 11/789 [00:25<30:12,  2.33s/it, v_num=55]Epoch 0:   1%|▏         | 11/789 [00:25<30:12,  2.33s/it, v_num=55]True
-Epoch 0:   2%|▏         | 12/789 [00:27<30:07,  2.33s/it, v_num=55]Epoch 0:   2%|▏         | 12/789 [00:27<30:07,  2.33s/it, v_num=55]True
-Epoch 0:   2%|▏         | 13/789 [00:30<30:11,  2.33s/it, v_num=55]Epoch 0:   2%|▏         | 13/789 [00:30<30:11,  2.33s/it, v_num=55]True
-Epoch 0:   2%|▏         | 14/789 [00:32<30:12,  2.34s/it, v_num=55]Epoch 0:   2%|▏         | 14/789 [00:32<30:12,  2.34s/it, v_num=55]True
-Epoch 0:   2%|▏         | 15/789 [00:35<30:12,  2.34s/it, v_num=55]Epoch 0:   2%|▏         | 15/789 [00:35<30:12,  2.34s/it, v_num=55]True
-Epoch 0:   2%|▏         | 16/789 [00:37<30:15,  2.35s/it, v_num=55]Epoch 0:   2%|▏         | 16/789 [00:37<30:15,  2.35s/it, v_num=55]True
-Epoch 0:   2%|▏         | 17/789 [00:39<30:12,  2.35s/it, v_num=55]Epoch 0:   2%|▏         | 17/789 [00:39<30:12,  2.35s/it, v_num=55]True
-Epoch 0:   2%|▏         | 18/789 [00:42<30:10,  2.35s/it, v_num=55]Epoch 0:   2%|▏         | 18/789 [00:42<30:10,  2.35s/it, v_num=55]True
-Epoch 0:   2%|▏         | 19/789 [00:44<30:06,  2.35s/it, v_num=55]Epoch 0:   2%|▏         | 19/789 [00:44<30:06,  2.35s/it, v_num=55]True
-Epoch 0:   3%|▎         | 20/789 [00:46<30:04,  2.35s/it, v_num=55]Epoch 0:   3%|▎         | 20/789 [00:46<30:04,  2.35s/it, v_num=55]True
-Epoch 0:   3%|▎         | 21/789 [00:49<30:06,  2.35s/it, v_num=55]Epoch 0:   3%|▎         | 21/789 [00:49<30:06,  2.35s/it, v_num=55]True
-Epoch 0:   3%|▎         | 22/789 [00:51<29:59,  2.35s/it, v_num=55]Epoch 0:   3%|▎         | 22/789 [00:51<29:59,  2.35s/it, v_num=55]True
-Epoch 0:   3%|▎         | 23/789 [00:54<29:58,  2.35s/it, v_num=55]Epoch 0:   3%|▎         | 23/789 [00:54<29:58,  2.35s/it, v_num=55]True
-Epoch 0:   3%|▎         | 24/789 [00:56<29:58,  2.35s/it, v_num=55]Epoch 0:   3%|▎         | 24/789 [00:56<29:58,  2.35s/it, v_num=55]True
-Epoch 0:   3%|▎         | 25/789 [00:58<29:55,  2.35s/it, v_num=55]Epoch 0:   3%|▎         | 25/789 [00:58<29:55,  2.35s/it, v_num=55]True
-Epoch 0:   3%|▎         | 26/789 [01:01<29:56,  2.35s/it, v_num=55]Epoch 0:   3%|▎         | 26/789 [01:01<29:56,  2.35s/it, v_num=55]True
-Epoch 0:   3%|▎         | 27/789 [01:03<29:54,  2.35s/it, v_num=55]Epoch 0:   3%|▎         | 27/789 [01:03<29:54,  2.35s/it, v_num=55]True
-Epoch 0:   4%|▎         | 28/789 [01:06<29:54,  2.36s/it, v_num=55]Epoch 0:   4%|▎         | 28/789 [01:06<29:54,  2.36s/it, v_num=55]True
-Epoch 0:   4%|▎         | 29/789 [01:08<29:52,  2.36s/it, v_num=55]Epoch 0:   4%|▎         | 29/789 [01:08<29:52,  2.36s/it, v_num=55]True
-Epoch 0:   4%|▍         | 30/789 [01:10<29:51,  2.36s/it, v_num=55]Epoch 0:   4%|▍         | 30/789 [01:10<29:51,  2.36s/it, v_num=55]True
-Epoch 0:   4%|▍         | 31/789 [01:13<29:47,  2.36s/it, v_num=55]Epoch 0:   4%|▍         | 31/789 [01:13<29:47,  2.36s/it, v_num=55]True
-Epoch 0:   4%|▍         | 32/789 [01:15<29:44,  2.36s/it, v_num=55]Epoch 0:   4%|▍         | 32/789 [01:15<29:44,  2.36s/it, v_num=55]True
-Epoch 0:   4%|▍         | 33/789 [01:17<29:43,  2.36s/it, v_num=55]Epoch 0:   4%|▍         | 33/789 [01:17<29:43,  2.36s/it, v_num=55]True
-Epoch 0:   4%|▍         | 34/789 [01:20<29:42,  2.36s/it, v_num=55]Epoch 0:   4%|▍         | 34/789 [01:20<29:42,  2.36s/it, v_num=55]True
-Epoch 0:   4%|▍         | 35/789 [01:22<29:40,  2.36s/it, v_num=55]Epoch 0:   4%|▍         | 35/789 [01:22<29:40,  2.36s/it, v_num=55]True
-Epoch 0:   5%|▍         | 36/789 [01:24<29:36,  2.36s/it, v_num=55]Epoch 0:   5%|▍         | 36/789 [01:24<29:36,  2.36s/it, v_num=55]True
-Epoch 0:   5%|▍         | 37/789 [01:27<29:32,  2.36s/it, v_num=55]Epoch 0:   5%|▍         | 37/789 [01:27<29:32,  2.36s/it, v_num=55]True
-Epoch 0:   5%|▍         | 38/789 [01:29<29:29,  2.36s/it, v_num=55]Epoch 0:   5%|▍         | 38/789 [01:29<29:29,  2.36s/it, v_num=55]True
-Epoch 0:   5%|▍         | 39/789 [01:32<29:30,  2.36s/it, v_num=55]Epoch 0:   5%|▍         | 39/789 [01:32<29:30,  2.36s/it, v_num=55]True
-Epoch 0:   5%|▌         | 40/789 [01:34<29:30,  2.36s/it, v_num=55]Epoch 0:   5%|▌         | 40/789 [01:34<29:30,  2.36s/it, v_num=55]True
-Epoch 0:   5%|▌         | 41/789 [01:36<29:27,  2.36s/it, v_num=55]Epoch 0:   5%|▌         | 41/789 [01:36<29:27,  2.36s/it, v_num=55]True
-Epoch 0:   5%|▌         | 42/789 [01:39<29:26,  2.36s/it, v_num=55]Epoch 0:   5%|▌         | 42/789 [01:39<29:26,  2.36s/it, v_num=55]True
-Epoch 0:   5%|▌         | 43/789 [01:41<29:25,  2.37s/it, v_num=55]Epoch 0:   5%|▌         | 43/789 [01:41<29:25,  2.37s/it, v_num=55]True
-Epoch 0:   6%|▌         | 44/789 [01:44<29:25,  2.37s/it, v_num=55]Epoch 0:   6%|▌         | 44/789 [01:44<29:25,  2.37s/it, v_num=55]True
-Epoch 0:   6%|▌         | 45/789 [01:46<29:23,  2.37s/it, v_num=55]Epoch 0:   6%|▌         | 45/789 [01:46<29:23,  2.37s/it, v_num=55]True
-Epoch 0:   6%|▌         | 46/789 [01:49<29:22,  2.37s/it, v_num=55]Epoch 0:   6%|▌         | 46/789 [01:49<29:22,  2.37s/it, v_num=55]True
-Epoch 0:   6%|▌         | 47/789 [01:51<29:19,  2.37s/it, v_num=55]Epoch 0:   6%|▌         | 47/789 [01:51<29:19,  2.37s/it, v_num=55]True
-Epoch 0:   6%|▌         | 48/789 [01:53<29:15,  2.37s/it, v_num=55]Epoch 0:   6%|▌         | 48/789 [01:53<29:15,  2.37s/it, v_num=55]True
-Epoch 0:   6%|▌         | 49/789 [01:55<29:11,  2.37s/it, v_num=55]Epoch 0:   6%|▌         | 49/789 [01:55<29:11,  2.37s/it, v_num=55]True
-Epoch 0:   6%|▋         | 50/789 [01:58<29:08,  2.37s/it, v_num=55]Epoch 0:   6%|▋         | 50/789 [01:58<29:08,  2.37s/it, v_num=55]True
-Epoch 0:   6%|▋         | 51/789 [02:00<29:04,  2.36s/it, v_num=55]Epoch 0:   6%|▋         | 51/789 [02:00<29:04,  2.36s/it, v_num=55]True
-Epoch 0:   7%|▋         | 52/789 [02:02<29:01,  2.36s/it, v_num=55]Epoch 0:   7%|▋         | 52/789 [02:02<29:01,  2.36s/it, v_num=55]True
-Epoch 0:   7%|▋         | 53/789 [02:05<28:58,  2.36s/it, v_num=55]Epoch 0:   7%|▋         | 53/789 [02:05<28:58,  2.36s/it, v_num=55]True
-Epoch 0:   7%|▋         | 54/789 [02:07<28:54,  2.36s/it, v_num=55]Epoch 0:   7%|▋         | 54/789 [02:07<28:54,  2.36s/it, v_num=55]True
-Epoch 0:   7%|▋         | 55/789 [02:09<28:50,  2.36s/it, v_num=55]Epoch 0:   7%|▋         | 55/789 [02:09<28:50,  2.36s/it, v_num=55]True
-Epoch 0:   7%|▋         | 56/789 [02:11<28:47,  2.36s/it, v_num=55]Epoch 0:   7%|▋         | 56/789 [02:11<28:47,  2.36s/it, v_num=55]True
-Epoch 0:   7%|▋         | 57/789 [02:14<28:43,  2.36s/it, v_num=55]Epoch 0:   7%|▋         | 57/789 [02:14<28:43,  2.36s/it, v_num=55]True
-Epoch 0:   7%|▋         | 58/789 [02:16<28:41,  2.35s/it, v_num=55]Epoch 0:   7%|▋         | 58/789 [02:16<28:41,  2.35s/it, v_num=55]True
-Epoch 0:   7%|▋         | 59/789 [02:18<28:38,  2.35s/it, v_num=55]Epoch 0:   7%|▋         | 59/789 [02:18<28:38,  2.35s/it, v_num=55]True
-Epoch 0:   8%|▊         | 60/789 [02:21<28:33,  2.35s/it, v_num=55]Epoch 0:   8%|▊         | 60/789 [02:21<28:33,  2.35s/it, v_num=55]True
-Epoch 0:   8%|▊         | 61/789 [02:23<28:30,  2.35s/it, v_num=55]Epoch 0:   8%|▊         | 61/789 [02:23<28:30,  2.35s/it, v_num=55]True
-Epoch 0:   8%|▊         | 62/789 [02:25<28:28,  2.35s/it, v_num=55]Epoch 0:   8%|▊         | 62/789 [02:25<28:28,  2.35s/it, v_num=55]True
-Epoch 0:   8%|▊         | 63/789 [02:28<28:26,  2.35s/it, v_num=55]Epoch 0:   8%|▊         | 63/789 [02:28<28:26,  2.35s/it, v_num=55]True
-Epoch 0:   8%|▊         | 64/789 [02:30<28:25,  2.35s/it, v_num=55]Epoch 0:   8%|▊         | 64/789 [02:30<28:25,  2.35s/it, v_num=55]True
-Epoch 0:   8%|▊         | 65/789 [02:32<28:22,  2.35s/it, v_num=55]Epoch 0:   8%|▊         | 65/789 [02:32<28:22,  2.35s/it, v_num=55]True
-Epoch 0:   8%|▊         | 66/789 [02:35<28:19,  2.35s/it, v_num=55]Epoch 0:   8%|▊         | 66/789 [02:35<28:19,  2.35s/it, v_num=55]

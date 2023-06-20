@@ -1,0 +1,51 @@
+{
+    "data": {
+        "path": "/mnt/ZOD",
+        "version": "full",
+        "ratio": 0.003,
+        "shuffle_seed": 42,
+        "img_size": 160,
+        "transforms": "[Resize(img_size)]",
+        "dataloader_args": {
+            "prefetch_factor": 2,
+            "num_workers": 2,
+            "batch_size": 32
+        }
+    },
+    "model": {
+        "name": "default",
+        "args": {
+            "num_output": 66
+        },
+        "loss": "MSELoss"
+    },
+    "central": {
+        "train": true,
+        "use_gpu": true,
+        "epochs": 10
+    },
+    "decentralised": {
+        "train": [
+            "swarm",
+            "federated",
+            "baseline"
+        ],
+        "global": {
+            "n_clients": 5,
+            "global_rounds": 3,
+            "client_resources": {
+                "num_cpus": 2,
+                "num_gpus": 0.2
+            },
+            "ray_init_args": {
+                "include_dashboard": true,
+                "num_cpus": 12,
+                "num_gpus": 2
+            },
+            "swarm_orchestrator": "synchronous_fixed_rounds_fc"
+        },
+        "client": {
+            "epochs": 3
+        }
+    }
+}
