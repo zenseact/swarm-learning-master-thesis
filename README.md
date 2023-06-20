@@ -15,9 +15,10 @@ This repository is a testament to our belief in open research and collaboration,
 ## Resources
 To learn more about our project, we recommend reading our blog post and our Master's thesis. The blog post provides an accessible overview of our research, while the thesis offers a comprehensive look at our methodology, results, and implications for the field.
 
-Blog post: https://my.ai.se/projects/259
+__Blog post:__ https://my.ai.se/projects/259
 
-Thesis: [to-be-added]
+__Thesis (local):__ [thesis.pdf](thesis.pdf)
 
-## Note
-The repository will be polished and made more accessible by July. We encourage you to revisit it then for an updated, user-friendly version.
+__Thesis (online @ Chalmers University of Technology):__ [to-be-added]
+
+__Final presentation slide deck:__ [presentation-slide-deck.pdf](presentation-slide-deck.pdf)
