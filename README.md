@@ -1,4 +1,8 @@
+
 # Towards Federated Fleet Learning Using Unannotated Data: A Master's Thesis Project
+
+<img width="1483" alt="IMG (1)" src="https://github.com/zenseact/swarm-learning-master-thesis/assets/42417723/7af330b6-e476-4d24-941b-07077b8fafa4">
+
 This repository contains the code and resources used in our Master's thesis project titled, "Towards Federated Fleet Learning Using Unannotated Data". The project was carried out at Zenseact & AI Sweden under the expert guidance of Johan Östman, PhD, and Mina Alibeigi, PhD.
 
 ## About the Project
