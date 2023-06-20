@@ -1,6 +1,7 @@
 from __future__ import annotations
 from collections import OrderedDict
 import importlib
+import os
 
 import ray
 import networkx as nx
@@ -8,6 +9,7 @@ import matplotlib.pyplot as plt
 import itertools
 import logging
 import torch
+import segmentation_models_pytorch as smp
 
 from uuid import uuid4
 from datetime import datetime
@@ -20,9 +22,11 @@ from pathlib import Path
 from ray.actor import ActorHandle
 
 from ..models.model_manager import load_model
-from .utils import train
+from .utils import train, get_best_device, train_fixmatchseg
 from ..data.data_handler import DataObject
 from .aggregators import average
+
+from torchvision.transforms import *
 
 logger = logging.getLogger(__name__)
 
@@ -34,8 +38,10 @@ def run_swarm(
     baseline: bool = False,
 ) -> None:
     try:
+        config_key = "baseline" if baseline else "swarm"
         logger.info("Initialising Ray runtime")
-        ray.init(**config["swarm"]["global"]["ray_init_args"])
+
+        ray.init(**config[config_key]["global"]["ray_init_args"])
     except Exception as e:
         logger.error("Error initialising Ray runtime: {}".format(e))
         logger.exception(e)
@@ -85,29 +91,39 @@ class Client:
         valloader,
         epochs,
         models: object,
-        loss_function,
+        loss_class,
+        optimiser_class,
         torch_model: Module,
         log_dir: str,
         method_string: str,
         config: dict,
+        weak_augmentation=None,
+        strong_augmentation=None,
+        normalisation=None,
     ) -> None:
         self.full_config = config
         self.cid = cid
         self.icid = icid
-        self.trainloader = trainloader
+        if isinstance(trainloader, dict):
+            self.fixmatchseg = True
+            self.labelled_trainloader = trainloader.get("labelled")
+            self.unlabelled_trainloader = trainloader.get("unlabelled")
+            self.weak_augmentation = weak_augmentation
+            self.strong_augmentation = strong_augmentation
+            self.normalisation = normalisation
+        else:
+            self.fixmatchseg = False
+            self.trainloader = trainloader
         self.valloader = valloader
         self.epochs = epochs
         self.model = TemporalModel(id, uuid4().hex, torch_model)
-        self.loss_function = loss_function
+        self.loss_class = loss_class
+        self.optimiser_class = optimiser_class
         self.models = models
         self.aggregation_queue = []
         self.log_dir = log_dir
         self.round = 0
         self.method_string = method_string
-
-        if torch.cuda.is_available:
-            logger.debug("Moving model to CUDA device")
-            self.model.model = self.model.model.cuda()
 
         # Logging
         logging.basicConfig(
@@ -118,6 +134,9 @@ class Client:
             level=logging.DEBUG,
             format="%(asctime)s %(levelname)s %(name)s %(message)s",
         )
+
+        logger.debug("Visible: {}".format(os.environ.get("CUDA_VISIBLE_DEVICES", None)))
+        self.model.model = self.model.model.cuda()
 
     # Get and set methods
 
@@ -179,19 +198,38 @@ class Client:
             optimiser_args = self.full_config["model"]["optimiser_args"]
         except KeyError:
             optimiser_args = {}
-
-        mean_epoch_loss, batch_losses, mean_validation_loss, network = train(
-            network=self.model.model,
-            trainloader=self.trainloader,
-            valloader=self.valloader,
-            epochs=self.epochs,
-            loss_function=self.loss_function,
-            optimiser=self.optimiser_function,
-            optimiser_args=optimiser_args,
-            writer=SummaryWriter(self.log_dir),
-            writer_path="{}/loss/clients/{}/".format(self.method_string, self.icid),
-            server_round=self.round,
-        )
+            
+        if self.fixmatchseg:
+            train_fixmatchseg(
+                network=self.model.model,
+                labelled_loader=self.labelled_trainloader,
+                unlabelled_loader=self.unlabelled_trainloader,
+                valloader=self.valloader,
+                epochs=self.epochs,
+                loss_class=self.loss_class,
+                optimiser_class=self.optimiser_class,
+                weak_augmentation=self.weak_augmentation,
+                strong_augmentation=self.strong_augmentation,
+                normalisation=self.normalisation,
+                optimiser_args=optimiser_args,
+                writer=SummaryWriter(self.log_dir),
+                writer_path="{}/loss/clients/{}/".format(self.method_string, self.icid),
+                server_round=self.round,
+                tau=self.full_config["model"]["tau"],
+            )
+        else:
+            train(
+                network=self.model.model,
+                trainloader=self.trainloader,
+                valloader=self.valloader,
+                epochs=self.epochs,
+                loss_class=self.loss_class,
+                optimiser_class=self.optimiser_class,
+                optimiser_args=optimiser_args,
+                writer=SummaryWriter(self.log_dir),
+                writer_path="{}/loss/clients/{}/".format(self.method_string, self.icid),
+                server_round=self.round,
+            )
         logger.info("{} Training finished".format(self.cid[:7]))
 
 
@@ -207,17 +245,45 @@ class SimulationRunner:
         self.config = config
         self.topology_round = 0
         self.baseline = baseline
+        self.fixmatchseg = config["model"]["name"] == "fixmatchseg"
 
+        # None-deep references to the dataloaders
+        if not self.fixmatchseg:
+            train_loaders = data.train.dataloaders
+        else:
+            labelled_train_loaders = data.train.labelled.dataloaders
+            unlabelled_train_loaders = data.train.unlabelled.dataloaders  
+        val_loaders = data.val.dataloaders
+        full_val_loader = data.val.dataloader
+        if len(data.test.dataset) > 0:
+            test_loader = data.test.dataloader
+        else:
+            test_loader = None
+            logger.debug("No test dataset provided, skipping test evaluation")
+            
+        # Swarm interpretation of datasets
+        train_loaders = train_loaders if not self.fixmatchseg else labelled_train_loaders
+        
+        # Load augmentation and normalisation if fixmatchseg
+        if self.fixmatchseg:
+            self.weak_augmentation = Compose(eval(self.config["data"]["weak_augmentation"]))
+            self.strong_augmentation = Compose(eval(self.config["data"]["strong_augmentation"]))
+            self.normalisation = Compose(eval(self.config["data"]["normalisation"]))
+            self.fixmatch_payload = {"weak_augmentation": self.weak_augmentation,
+                                    "strong_augmentation": self.strong_augmentation,
+                                    "normalisation": self.normalisation,
+                                    "train_loaders_unlabelled": unlabelled_train_loaders}
         # Init the simulator
         logger.debug("Creating simulator instance...")
         self.sim = Simulator.remote(
             config=config,
             log_dir=log_dir,
-            train_loaders=data.train.dataloaders,
-            val_loaders=data.val.dataloaders,
-            test_loader=data.test.dataloader,
+            train_loaders=train_loaders,
+            val_loaders=full_val_loader,
+            test_loader=test_loader,
             aggregation_function=aggregation_function,
             baseline=baseline,
+            fixmatch_payload=self.fixmatch_payload if self.fixmatchseg else None,
         )
         logger.debug("Simulator instance created")
 
@@ -312,15 +378,18 @@ class SimulationRunner:
 
 @ray.remote
 class Simulator:
+
     def __init__(
         self,
         config: dict,
         train_loaders: List[DataObject],
-        val_loaders: List[DataObject],
+        val_loaders,
         test_loader: DataObject,
         log_dir: str,
         aggregation_function: callable,
         baseline: bool = False,
+        fixmatch_payload: dict = None,
+
     ) -> None:
         # Shared variables
         self.clients: Dict[str, ActorHandle[Client]] = {}
@@ -328,7 +397,7 @@ class Simulator:
 
         # Swarm or baseline string variable
         self._method_string = "baseline" if baseline else "swarm"
-
+        
         # Sim properties
         self._n_clients = config[self._method_string]["global"]["n_clients"]
         self._topology: List[str] = []
@@ -342,28 +411,58 @@ class Simulator:
         self._client_resources = config[self._method_string]["global"][
             "client_resources"
         ]
+        if fixmatch_payload is not None:
+            self.fixmatchseg = True
+            self.fixmatch_payload = fixmatch_payload
+            
+        # Logging
+        logger = logging.getLogger(__name__)
 
         # Load the loss function
-        loss_method = self._config["model"]["loss"]
-        module = importlib.import_module("torch.nn")
-        self._loss_function = getattr(module, loss_method)
+        # Does not create an instance of the loss, just gets the class
+        # flag for success
+        success = False
+        if not self.fixmatchseg:
+            try:
+                loss_method = self._config["model"]["loss"]
+                module = importlib.import_module("torch.nn")
+                self.loss_class = getattr(module, loss_method)
+                logger.debug("Using loss function: {}".format(loss_method))
+                success = True
+            except Exception as e:
+                logger.error("Error loading loss function: {}".format(e))
+                raise e
+        else:
+            self.loss_class = smp.losses.DiceLoss
 
         # Load the optimiser function
         try:
-            opt_method = config["model"]["optimiser"]
+            opt_method = self._config["model"]["optimiser"]
             module = importlib.import_module("torch.optim")
-            self.optimiser_function = getattr(module, opt_method)
-            logger.debug("Using optimiser function: {}".format(self.optimiser_function))
+            optimiser_class = getattr(module, opt_method)
+            logger.debug("Using optimiser function: {}".format(optimiser_class))
         except KeyError:
             logger.debug("No optimiser specified, using Adam")
-            self.optimiser_function = torch.optim.Adam
+            optimiser_class = torch.optim.Adam
         except Exception as e:
             logger.error("Error loading loss function: {}".format(e))
             logger.exception(e)
             raise e
 
-        # Logging
-        logger = logging.getLogger(__name__)
+        # Load the optimiser function
+        try:
+            opt_method = self._config["model"]["optimiser"]
+            module = importlib.import_module("torch.optim")
+            self.optimiser_class = getattr(module, opt_method)
+            logger.debug("Using optimiser function: {}".format(self.optimiser_class))
+        except KeyError:
+            logger.debug("No optimiser specified, using Adam")
+            self.optimiser_class = torch.optim.Adam
+        except Exception as e:
+            logger.error("Error loading loss function: {}".format(e))
+            logger.exception(e)
+            raise e
+
         logging.basicConfig(
             filename="{}.log".format(Path(self._log_dir, self._method_string)),
             encoding="utf-8",
@@ -391,19 +490,33 @@ class Simulator:
         model = load_model(self._config)
 
         logger.info("Created client with short id: {}".format(id[:7]))
-        client_ref = Client.options(**self._client_resources).remote(
-            config=self._config,
-            cid=id,
-            icid=index,
-            trainloader=self._train_loaders[index],
-            valloader=self._val_loaders[index],
-            epochs=self._config[self._method_string]["client"]["epochs"],
-            models=self.models[id],
-            loss_function=self._loss_function,
-            torch_model=model,
-            log_dir=self._log_dir,
-            method_string=self._method_string,
-        )
+        if isinstance(self._val_loaders, list):
+            val_loader = self._val_loaders[index]
+        else:
+            val_loader = self._val_loaders
+        
+        if self.fixmatchseg:
+            labelled_trainloader = self._train_loaders[int(index)]
+            unlablled_trainloader = self.fixmatch_payload["train_loaders_unlabelled"][int(index)]
+            trainloader = {"labelled": labelled_trainloader, "unlabelled": unlablled_trainloader}
+            
+            client_ref = Client.options(**self._client_resources).remote(
+                config=self._config,
+                cid=id,
+                icid=index,
+                trainloader=trainloader,
+                valloader=val_loader,
+                epochs=self._config[self._method_string]["client"]["epochs"],
+                models=self.models[id],
+                loss_class=self.loss_class,
+                optimiser_class=self.optimiser_class,
+                torch_model=model,
+                log_dir=self._log_dir,
+                method_string=self._method_string,
+                weak_augmentation=self.fixmatch_payload["weak_augmentation"],
+                strong_augmentation=self.fixmatch_payload["strong_augmentation"],
+                normalisation=self.fixmatch_payload["normalisation"],
+            )
         return id, client_ref
 
     def spawn_clients(self) -> None:

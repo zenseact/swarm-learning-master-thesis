@@ -10,8 +10,7 @@ class Resnet18(nn.Module):
     def __init__(self, /, num_output, **kwargs) -> None:
         super(Resnet18, self).__init__()
         self.num_output = num_output
-        self.model = models.resnet18(
-            weights=models.ResNet18_Weights.IMAGENET1K_V1)
+        self.model = models.resnet18(weights=models.ResNet18_Weights.IMAGENET1K_V1)
         self.is_pretrained = True
         self.change_head_net(**kwargs)
 

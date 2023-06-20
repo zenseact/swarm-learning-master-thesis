@@ -66,7 +66,7 @@ def get_image(zod_frames, frame_id):
 def draw_circles(image, image_points, colour=(255, 0, 0)):
     for i in range(image_points.shape[0]):
         x, y = int(image_points[i, 0]), int(image_points[i, 1])
-        circle(image, (x, y), 20, colour, -1)
+        circle(image, (x, y), 7, colour, -1)
     return image
 
 
@@ -131,8 +131,7 @@ def present_predictions(img, loss, ground_truth, output, frame_id):
     plt.legend(["Ground Truth", "Prediction"])
     plt.title("Birds-eye view")
 
-    plt.suptitle(
-        "{} | Prediction vs Ground Truth | loss: {}".format(frame_id, loss))
+    plt.suptitle("{} | Prediction vs Ground Truth | loss: {}".format(frame_id, loss))
 
 
 def euclidean_distance(coords):
@@ -153,8 +152,7 @@ def get_points_at_distance(points, target_distances):
     interpolated_points = np.empty((len(target_distances), points.shape[1]))
 
     if max(target_distances) > accumulated_distances[-1]:
-        raise ValueError(
-            "Target distance is larger than the accumulated distance")
+        raise ValueError("Target distance is larger than the accumulated distance")
 
     index = 0
     inter_idx = 0

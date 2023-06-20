@@ -3,35 +3,39 @@
         "path": "/mnt/ZOD",
         "version": "full",
         "ratio": 0.05,
+        "ratio_val": 1,
+        "skip_test": true,
         "img_size": [
-            400,
-            1420
+            256,
+            256
         ],
-        "transforms": "[CustomCrop(800, 500, 800, 2840), Resize((400, 1420)), Normalize(mean=[0.337, 0.345, 0.367], std=[0.160, 0.180, 0.214])]",
+        "transforms": "[CustomCrop(800, 500, 800, 2840), Resize(img_size), Normalize(mean=[0.337, 0.345, 0.367], std=[0.160, 0.180, 0.214])]",
         "shuffle_seed": 101,
         "decentralised_shuffle_seed": 101,
         "dataloader_args": {
-            "num_workers": 4,
-            "prefetch_factor": 2,
-            "batch_size": 32,
-            "pin_memory": true,
+            "num_workers": 8,
+            "prefetch_factor": 128,
+            "batch_size": 16,
+            "pin_memory": false,
             "shuffle": true
         },
-        "train_val_id_generator": "balanced_frames_borrowed",
+        "train_val_id_generator": "balanced_frames_kilichenko",
         "dataset_getitem": "interpolated_target_distances"
     },
     "model": {
-        "name": "resnet18",
+        "name": "mobilenet",
         "args": {
             "num_output": 51
         },
         "loss": "L1Loss",
         "optimiser": "Adam",
-        "optimiser_args": {}
+        "optimiser_args": {
+            "lr": 0.001
+        }
     },
     "central": {
-        "train": true,
+        "train": false,
         "use_gpu": true,
-        "epochs": 15
+        "epochs": 150
     }
 }

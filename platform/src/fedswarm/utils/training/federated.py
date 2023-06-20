@@ -5,6 +5,7 @@ import numpy as np
 import flwr as fl
 import ray
 import torch
+import segmentation_models_pytorch as smp
 
 from torch.nn import Module
 from torch import Tensor, Size
@@ -13,9 +14,10 @@ from typing import Dict, List, Optional, Tuple
 from torch.utils.data import DataLoader
 from pathlib import Path
 from datetime import datetime
+from torchvision.transforms import *
 
 from ..models.model_manager import load_model
-from .utils import save_model, train, test
+from .utils import save_model, train, test, train_fixmatchseg
 
 logger = logging.getLogger(__name__)
 
@@ -34,26 +36,50 @@ def run_federated(
     global_rounds = config["federated"]["global"]["global_rounds"]
     client_resources = config["federated"]["global"]["client_resources"]
     ray_init_args = config["federated"]["global"]["ray_init_args"]
+    
+    # check if the model is fixmatchseg
+    fixmatchseg = config["model"]["name"] == "fixmatchseg"
 
     # None-deep references to the dataloaders
-    train_loaders = data.train.dataloaders
+    if not fixmatchseg:
+        train_loaders = data.train.dataloaders
+    else:
+        labelled_train_loaders = data.train.labelled.dataloaders
+        unlabelled_train_loaders = data.train.unlabelled.dataloaders  
     val_loaders = data.val.dataloaders
-    test_loader = data.test.dataloader
+    full_val_loader = data.val.dataloader
+    if len(data.test.dataset) > 0:
+        test_loader = data.test.dataloader
+    else:
+        test_loader = None
+        logger.debug("No test dataset provided, skipping test evaluation")
 
     # Load the loss function
-    loss_method = config["model"]["loss"]
-    module = importlib.import_module("torch.nn")
-    loss_function = getattr(module, loss_method)
+    # Does not create an instance of the loss, just gets the class
+    # flag for success
+    success = False
+    if not config["model"]["name"] == "fixmatchseg":
+        try:
+            loss_method = config["model"]["loss"]
+            module = importlib.import_module("torch.nn")
+            loss_class = getattr(module, loss_method)
+            logger.debug("Using loss function: {}".format(loss_method))
+            success = True
+        except Exception as e:
+            logger.error("Error loading loss function: {}".format(e))
+            raise e
+    else:
+        loss_class = smp.losses.DiceLoss
 
     # Load the optimiser function
     try:
         opt_method = config["model"]["optimiser"]
         module = importlib.import_module("torch.optim")
-        optimiser_function = getattr(module, opt_method)
-        logger.debug("Using optimiser function: {}".format(optimiser_function))
+        optimiser_class = getattr(module, opt_method)
+        logger.debug("Using optimiser function: {}".format(optimiser_class))
     except KeyError:
         logger.debug("No optimiser specified, using Adam")
-        optimiser_function = torch.optim.Adam
+        optimiser_class = torch.optim.Adam
     except Exception as e:
         logger.error("Error loading loss function: {}".format(e))
         logger.exception(e)
@@ -71,8 +97,8 @@ def run_federated(
 
         test_loss = test(
             network=model,
-            dataloader=test_loader,
-            loss_function=loss_function,
+            dataloader=full_val_loader,
+            loss_class=loss_class,
         )
 
         writer = SummaryWriter(log_dir)
@@ -106,7 +132,7 @@ def run_federated(
         evaluate_fn=global_evaluate,
         on_fit_config_fn=on_fit_config_fn,
     )
-
+    
     # Define the client function
     def client_fn(cid: str) -> FlowerClient:
         logger = logging.getLogger(__name__)
@@ -124,17 +150,31 @@ def run_federated(
             model.to("cuda")
         else:
             model.to("cpu")
+        
+        valloader = full_val_loader  # val_loaders[int(cid)]
 
-        trainloader = train_loaders[int(cid)]
-        valloader = val_loaders[int(cid)]
-        client = FlowerClient(
-            config,
-            cid,
-            model,
-            trainloader,
-            valloader,
-            log_dir=log_dir,
-        )
+        if fixmatchseg:
+            labelled_trainloader = labelled_train_loaders[int(cid)]
+            unlablled_trainloader = unlabelled_train_loaders[int(cid)]
+            trainloader = {"labelled": labelled_trainloader, "unlabelled": unlablled_trainloader}
+            client = FlowerClient(
+                config,
+                cid,
+                model,
+                trainloader,
+                valloader,
+                log_dir=log_dir,
+            )
+        else:
+            trainloader = train_loaders[int(cid)]
+            client = FlowerClient(
+                config,
+                cid,
+                model,
+                trainloader,
+                valloader,
+                log_dir=log_dir,
+            )
         return client
 
     # Start the federated learning simulation
@@ -179,7 +219,7 @@ class FlowerClient(fl.client.NumPyClient):
         config: dict,
         cid: int,
         model: Module,
-        trainloader: DataLoader,
+        trainloader: DataLoader|dict[DataLoader],
         valloader: DataLoader,
         log_dir: str,
     ) -> None:
@@ -187,24 +227,42 @@ class FlowerClient(fl.client.NumPyClient):
         self.config = config["federated"]
         self.cid = cid
         self.net = model
-        self.trainloader = trainloader
+        if isinstance(trainloader, dict):
+            self.fixmatchseg = True
+            self.labelled_trainloader = trainloader.get("labelled")
+            self.unlabelled_trainloader = trainloader.get("unlabelled")
+        else:
+            self.fixmatchseg = False
+            self.trainloader = trainloader
         self.valloader = valloader
         self.writer = SummaryWriter(log_dir)
 
         # Load the loss function
-        loss_method = config["model"]["loss"]
-        module = importlib.import_module("torch.nn")
-        self.loss_function = getattr(module, loss_method)
+        # Does not create an instance of the loss, just gets the class
+        # flag for success
+        success = False
+        if not self.full_config["model"]["name"] == "fixmatchseg":
+            try:
+                loss_method = self.full_config["model"]["loss"]
+                module = importlib.import_module("torch.nn")
+                self.loss_class = getattr(module, loss_method)
+                logger.debug("Using loss function: {}".format(loss_method))
+                success = True
+            except Exception as e:
+                logger.error("Error loading loss function: {}".format(e))
+                raise e
+        else:
+            self.loss_class = smp.losses.DiceLoss
 
         # Load the optimiser function
         try:
-            opt_method = config["model"]["optimiser"]
+            opt_method = self.full_config["model"]["optimiser"]
             module = importlib.import_module("torch.optim")
-            self.optimiser_function = getattr(module, opt_method)
-            logger.debug("Using optimiser function: {}".format(self.optimiser_function))
+            self.optimiser_class = getattr(module, opt_method)
+            logger.debug("Using optimiser function: {}".format(self.optimiser_class))
         except KeyError:
             logger.debug("No optimiser specified, using Adam")
-            self.optimiser_function = torch.optim.Adam
+            self.optimiser_class = torch.optim.Adam
         except Exception as e:
             logger.error("Error loading loss function: {}".format(e))
             logger.exception(e)
@@ -224,20 +282,45 @@ class FlowerClient(fl.client.NumPyClient):
         logger.debug("Start training of client %s", self.cid)
         set_parameters(self.net, parameters)
         logger.info("SERVER ROUND: {}".format(config["server_round"]))
-        mean_epoch_loss, batch_losses, mean_validation_loss, network = train(
-            network=self.net,
-            trainloader=self.trainloader,
-            valloader=self.valloader,
-            epochs=self.config["client"]["epochs"],
-            loss_function=self.loss_function,
-            optimiser=self.optimiser_function,
-            optimiser_args=optimiser_args,
-            writer=self.writer,
-            writer_path="federated/loss/clients/{}/".format(self.cid),
-            server_round=config["server_round"],
-        )
-        new_parameters = get_parameters(self.net)
-        return new_parameters, len(self.trainloader), {}
+        if self.fixmatchseg:
+            weak_augmentation = Compose(eval(self.full_config["data"]["weak_augmentation"]))
+            strong_augmentation = Compose(eval(self.full_config["data"]["strong_augmentation"]))
+            normalisation = Compose(eval(self.full_config["data"]["normalisation"]))
+            mean_epoch_loss, batch_losses, mean_validation_loss, network = train_fixmatchseg(
+                network=self.net,
+                labelled_loader=self.labelled_trainloader,
+                unlabelled_loader=self.unlabelled_trainloader,
+                valloader=self.valloader,
+                epochs=self.config["client"]["epochs"],
+                loss_class=self.loss_class,
+                optimiser_class=self.optimiser_class,
+                weak_augmentation=weak_augmentation,
+                strong_augmentation=strong_augmentation,
+                normalisation=normalisation,
+                optimiser_args=optimiser_args,
+                writer=self.writer,
+                writer_path="federated/loss/clients/{}/".format(self.cid),
+                server_round=config["server_round"],
+                tau=self.full_config["model"]["tau"],
+            )
+            new_parameters = get_parameters(self.net)
+            return new_parameters, len(self.unlabelled_trainloader), {}
+
+        else:
+            mean_epoch_loss, batch_losses, mean_validation_loss, network = train(
+                network=self.net,
+                trainloader=self.trainloader,
+                valloader=self.valloader,
+                epochs=self.config["client"]["epochs"],
+                loss_class=self.loss_class,
+                optimiser_class=self.optimiser_class,
+                optimiser_args=optimiser_args,
+                writer=self.writer,
+                writer_path="federated/loss/clients/{}/".format(self.cid),
+                server_round=config["server_round"],
+            )
+            new_parameters = get_parameters(self.net)
+            return new_parameters, len(self.trainloader), {}
 
     def evaluate(self, parameters, config):
         logger.debug("Start evaluation of client %s", self.cid)
@@ -245,7 +328,7 @@ class FlowerClient(fl.client.NumPyClient):
         val_loss = test(
             network=self.net,
             dataloader=self.valloader,
-            loss_function=self.loss_function,
+            loss_class=self.loss_class,
         )
 
         return np.mean(val_loss), len(self.valloader), {}

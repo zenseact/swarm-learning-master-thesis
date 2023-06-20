@@ -3,10 +3,13 @@
 
 import os
 import numpy as np
+import json
 
 from pathlib import Path
 from fedswarm.utils.data.utils.oxts import get_points_at_distance, id_to_car_points
 from zod.constants import AnnotationProject
+from zod.utils.polygon_transformations import polygons_to_binary_mask
+from torchvision.transforms import Compose
 
 current_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
@@ -15,11 +18,44 @@ def overfit_turn():
     return ["012589"], ["012589"]
 
 
+def kilichenko_val():
+    with open(Path(current_dir, "resources/kilichenko_subset.txt"), "r") as f:
+        content_val = f.read().splitlines()
+    return None, content_val
+
+
+def kilichenko_val_clean():
+    with open(Path(current_dir, "resources/kilichenko_subset_clean.txt"), "r") as f:
+        content_val = f.read().splitlines()
+    return None, content_val
+
+
+def balanced_frames_kilichenko():
+    with open(
+        Path(current_dir, "resources/balanced_train_ids_kilichenko_removed_v2.txt"), "r"
+    ) as f:
+        content_train = f.read().splitlines()
+
+    _, content_val = kilichenko_val_clean()
+
+    return content_train, content_val
+
+
 def balanced_frames():
     with open(Path(current_dir, "resources/balanced_train_ids.txt"), "r") as f:
         content_train = f.read().splitlines()
 
     with open(Path(current_dir, "resources/balanced_val_ids.txt"), "r") as f:
+        content_val = f.read().splitlines()
+
+    return content_train, content_val
+
+
+def reduced_balanced_frames():
+    with open(Path(current_dir, "resources/reduced_balanced_train.txt"), "r") as f:
+        content_train = f.read().splitlines()
+
+    with open(Path(current_dir, "resources/reduced_balanced_val.txt"), "r") as f:
         content_val = f.read().splitlines()
 
     return content_train, content_val
@@ -49,6 +85,14 @@ def balanced_frames_borrowed(train=0.9):
     return all_samples[:index_threshold], all_samples[index_threshold:]
 
 
+def ego_road():
+    with open(Path(current_dir, "resources/ego_road_id_set_valid.json"), "r") as f:
+        file_data = json.load(f)
+    train_ids = file_data["train"]
+    val_ids = file_data["val"]
+    return train_ids, val_ids
+
+
 def turns(direction: str = "right"):
     assert direction in ["right", "left"]
     with open(Path(current_dir, f"resources/train_turns_{direction}.txt"), "r") as f:
@@ -58,6 +102,7 @@ def turns(direction: str = "right"):
         content_val = f.read().splitlines()
 
     return content_train, content_val
+
 
 # GET ITEM FUNCTIONS FOR THE DATASET
 
@@ -93,9 +138,12 @@ def interpolated_target_distances(dataset_class: "ZodDataset", idx: int):
     ]
 
     # Get the points at the target distances
-    interpolated_car_relative_points = get_points_at_distance(
-        car_relative_points, target_distances
-    )
+    try:
+        interpolated_car_relative_points = get_points_at_distance(
+            car_relative_points, target_distances
+        )
+    except Exception as e:
+        raise Exception(f"Error in frame {frame_id}: {e}")
 
     label = interpolated_car_relative_points.flatten().astype("float32")
     image = image.astype("uint8")
@@ -145,16 +193,12 @@ def ego_road_segmentation(dataset_class: "ZodDataset", idx: int):
     zod_frames = dataset_class.zod_frames
     frame_id = dataset_class.frames_id_set[idx]
 
-    print(f"GetItem: [idx: {idx}, {frame_id}]")
-
     image = zod_frames[frame_id].get_image().astype("uint8")
-
     label = zod_frames[frame_id].get_annotation(AnnotationProject.EGO_ROAD)
-
-    print(
-        f"GetItem: [idx: {idx}, {frame_id}] ImageType {type(image)}, LabelType {type(label)}, LabelLen {len(label)}")
-
-    return label, image
+    mask = polygons_to_binary_mask(label)
+    mask = mask.astype("float32")
+    mask = dataset_class.transforms(mask).squeeze()
+    return mask, image
 
 
 def noise(dataset_class: "ZodDataset", idx: int):
@@ -162,8 +206,7 @@ def noise(dataset_class: "ZodDataset", idx: int):
     frame_id = dataset_class.frames_id_set[idx]
 
     # get the oxts points for the frame
-    _, car_relative_points = id_to_car_points(
-        zod_frames, frame_id, return_image=False)
+    _, car_relative_points = id_to_car_points(zod_frames, frame_id, return_image=False)
 
     # Multimodal Trajectory Prediction for Self-driving Vehicles using a Single Monocular Camera
     # Hlib Kilichenko (2023)

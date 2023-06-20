@@ -1,0 +1,48 @@
+{
+    "data": {
+        "path": "/mnt/ZOD",
+        "version": "full",
+        "ratio": 0.0977035,
+        "ratio_val": 0.43385,
+        "img_size": [
+            160,
+            160
+        ],
+        "split_train": 0.01961,
+        "skip_test": true,
+        "transforms": "[Resize(img_size)]",
+        "weak_augmentation": "[RandomHorizontalFlip(p=1), RandomAffine(degrees=10, translate=(0.1, 0.1), scale=(0.9, 1.1))]",
+        "strong_augmentation": "[GaussianBlur(13, sigma=(0.01, 2.0)), RandomAdjustSharpness(10, p=.5), RandomSolarize(.5, p=.5), ColorJitter(.2,.7,.4,.5), RandomInvert(p=0.5)]",
+        "normalisation": "[Normalize(mean=[0.337, 0.345, 0.367], std=[0.160, 0.180, 0.214])]",
+        "shuffle_seed": 150,
+        "decentralised_shuffle_seed": 150,
+        "dataloader_args": {
+            "batch_size": [
+                8,
+                0
+            ],
+            "num_workers": 12,
+            "prefetch_factor": 128,
+            "shuffle": true
+        },
+        "train_val_id_generator": "ego_road",
+        "dataset_getitem": "ego_road_segmentation"
+    },
+    "model": {
+        "name": "fixmatchseg",
+        "args": {},
+        "loss": "",
+        "optimiser": "Adam",
+        "optimiser_args": {
+            "lr": 0.001
+        },
+        "tau": 0.99
+    },
+    "central": {
+        "train": true,
+        "use_gpu": true,
+        "epochs": 100
+    },
+    "note": "central supervised, only labelled subset, no fixmatch",
+    "name": "central_100labelled_100epochs_99tau"
+}

@@ -1,0 +1,63 @@
+{
+    "data": {
+        "path": "/mnt/ZOD",
+        "version": "full",
+        "ratio": 0.05,
+        "ratio_val": 1,
+        "skip_test": true,
+        "img_size": [
+            256,
+            256
+        ],
+        "transforms": "[CustomCrop(800, 500, 800, 2840), Resize(img_size), Normalize(mean=[0.337, 0.345, 0.367], std=[0.160, 0.180, 0.214])]",
+        "shuffle_seed": 101,
+        "decentralised_shuffle_seed": 101,
+        "dataloader_args": {
+            "num_workers": 2,
+            "prefetch_factor": 128,
+            "batch_size": 16,
+            "pin_memory": false,
+            "shuffle": true
+        },
+        "train_val_id_generator": "balanced_frames_kilichenko",
+        "dataset_getitem": "interpolated_target_distances"
+    },
+    "model": {
+        "name": "mobilenet",
+        "args": {
+            "num_output": 51
+        },
+        "loss": "L1Loss",
+        "optimiser": "Adam",
+        "optimiser_args": {
+            "lr": 0.001
+        }
+    },
+    "central": {
+        "train": false,
+        "use_gpu": true,
+        "epochs": 150
+    },
+    "decentralised": {
+        "train": [
+            "baseline"
+        ],
+        "global": {
+            "n_clients": 5,
+            "global_rounds": 10,
+            "client_resources": {
+                "num_cpus": 1,
+                "num_gpus": 0.19
+            },
+            "ray_init_args": {
+                "include_dashboard": true,
+                "num_cpus": 7,
+                "num_gpus": 1
+            },
+            "swarm_orchestrator": "synchronous_fixed_rounds_fc"
+        },
+        "client": {
+            "epochs": 10
+        }
+    }
+}

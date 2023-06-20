@@ -30,7 +30,17 @@
                     "type": "object",
                     "properties": {
                         "batch_size": {
-                            "type": "number"
+                            "anyOf": [
+                                {
+                                    "type": "number"
+                                },
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "number"
+                                    }
+                                }
+                            ]
                         }
                     },
                     "required": [

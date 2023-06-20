@@ -50,7 +50,9 @@ class Platform:
         methods (list): A list of methods to be used for training.
     """
 
-    def __init__(self, config: dict, data_only: bool = False, write=True, force=False) -> None:
+    def __init__(
+        self, config: dict, data_only: bool = False, write=True, force=False, name=None
+    ) -> None:
         try:
             # Save config
             self.config = deepcopy(config)
@@ -58,6 +60,8 @@ class Platform:
             self.top_log_dir = Path("runs")
             self.create_if_not_exists(self.top_log_dir)
             self.run_id = self.create_run()
+            name = name if name else config.get("name", None)
+            self.run_id = self.run_id if name is None else name
             self.run_dir = Path(self.top_log_dir, self.run_id)
             self.write = write
             self.skip = False
@@ -124,6 +128,8 @@ class Platform:
         except Exception as e:
             logger.exception(e)
             logger.error("UNCAUGHT EXCEPTION - SHUTTING DOWN")
+            self.writer.close()
+            logging.shutdown()
             raise e
         if self.write:
             self.writer.close()
@@ -178,6 +184,11 @@ class Platform:
 
     def validate_config(self) -> None:
         logger.debug("Validating configuration")
+        # check if fixmatchseg is used
+        if self.config["model"]["name"] == "fixmatchseg":
+            logger.warning(
+                "FixMatchSeg is not well supported, please use it with caution as config validation may not work"
+            )
         try:
             jsonschema.validate(instance=self.config, schema=CONFIG_SCHEMA)
             logger.info("Configuration is valid")

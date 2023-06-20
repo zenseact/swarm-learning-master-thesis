@@ -55,8 +55,10 @@ class DataObject:
     @property
     def dataloader(self) -> DataLoader:
         if not hasattr(self, "_dataset"):
-            raise AttributeError(
-                "No dataset attribute found when creating dataloader")
+            raise AttributeError("No dataset attribute found when creating dataloader")
+        if len(self._dataset) == 0:
+            logger.warning("Dataset is empty, skipping")
+            return None
         if not hasattr(self, "_dataloader"):
             logger.warning(
                 "Dataloader not created explicitly, creating it, do not forget to unmount it!"
@@ -137,8 +139,7 @@ class DataHandler:
                 self.__val_ids = val_ids
 
                 # Log that the custom train_val_id_generator is used
-                logger.info("Using custom train_val_id_generator: %s" %
-                            script_name)
+                logger.info("Using custom train_val_id_generator: %s" % script_name)
         except KeyError:
             logger.warning("No train_val_id_generator found, using default")
             default_id_generator()
@@ -150,22 +151,36 @@ class DataHandler:
 
         # Reduce the number of ids if specified in the config
         self.__train_ids = self._ratio(self._config["ratio"], self.__train_ids)
-        self.__val_ids = self._ratio(self._config["ratio"], self.__val_ids)
-
+        if self._config.get("split_train") is not None:
+            self.__train_ids_labelled = self._ratio(
+                self._config["split_train"], self.__train_ids
+            )
+            self.__train_ids_unlabelled = self._ratio(
+                self._config["split_train"], self.__train_ids, inverse=True
+            )
+        if not self._config.get("ratio_val"):
+            self.__val_ids = self._ratio(self._config["ratio"], self.__val_ids)
+        else:
+            self.__val_ids = self._ratio(self._config["ratio_val"], self.__val_ids)
         # Shuffle the ids
         try:
             random.seed(self._config["shuffle_seed"])
-            random.shuffle(self.__train_ids)
             random.shuffle(self.__val_ids)
-
-            logger.info("Shuffled ids with seed %s" %
-                        self._config["shuffle_seed"])
+            if self._config.get("split_train") is not None:
+                random.shuffle(self.__train_ids_labelled)
+                random.shuffle(self.__train_ids_unlabelled)
+            else:
+                random.shuffle(self.__train_ids)
+            logger.info("Shuffled ids with seed %s" % self._config["shuffle_seed"])
         except KeyError:
             logger.warning("No shuffle seed found, not shuffling ids")
 
         # Create a test set from the val set
-        self.__test_ids = self.__val_ids[: len(self.__val_ids) // 2]
-        self.__val_ids = self.__val_ids[len(self.__val_ids) // 2:]
+        if not self._config.get("skip_test"):
+            self.__test_ids = self.__val_ids[: len(self.__val_ids) // 2]
+            self.__val_ids = self.__val_ids[len(self.__val_ids) // 2 :]
+        else:
+            self.__test_ids = []
 
         # The default transforms and additional transforms from config
         try:
@@ -205,18 +220,62 @@ class DataHandler:
             ),
             _loader_args=self._config["dataloader_args"],
         )
-
-        self._train = DataObject(
-            _ids=self.__train_ids,
-            _dataset=ZodDataset(
-                self._zod_frames,
-                self.__train_ids,
-                transforms=transforms,
-                config=full_config,
-            ),
-            _loader_args=self._config["dataloader_args"],
-        )
-
+            
+        if self._config.get("split_train") is not None:
+            logger.debug("Splitting train set into labelled and unlabelled")
+            # parse batch size argument, if a list is given, use first argument for labelled and second for unlabelled
+            if type(self._config["dataloader_args"]["batch_size"]) is list:
+                logger.debug("Batch size is list, using first argument for labelled and second for unlabelled")
+                l_s, u_s = self._config["dataloader_args"]["batch_size"]
+                data_loader_args_labelled = self._config["dataloader_args"].copy()
+                data_loader_args_labelled.update({"batch_size": l_s})
+                data_loader_args_unlabelled = self._config["dataloader_args"].copy()
+                data_loader_args_unlabelled.update({"batch_size": u_s})
+            
+            self._train_labelled = DataObject(
+                _ids=self.__train_ids_labelled,
+                _dataset=ZodDataset(
+                    self._zod_frames,
+                    self.__train_ids_labelled,
+                    transforms=transforms,
+                    config=full_config,
+                ),
+                _loader_args=data_loader_args_labelled,
+            )
+            if data_loader_args_unlabelled["batch_size"] == 0:
+                logger.debug("Unlabelled batch size is 0, skipping unlabelled dataset")
+                self._train_unlabelled = []
+            else:
+                self._train_unlabelled = DataObject(
+                    _ids=self.__train_ids_unlabelled,
+                    _dataset=ZodDataset(
+                        self._zod_frames,
+                        self.__train_ids_unlabelled,
+                        transforms=transforms,
+                        config=full_config,
+                    ),
+                    _loader_args=data_loader_args_unlabelled,
+                )
+            logger.debug("Adding labelled and unlabelled datasets to train data object")
+            self._train = DataObject(
+                labelled=self._train_labelled, unlabelled=self._train_unlabelled
+            )
+            assert hasattr(self._train, "labelled"), "Train object does not have labelled attribute"
+            assert hasattr(self._train, "unlabelled"), "Train object does not have unlabelled attribute"
+        else:
+            logger.debug("Not splitting train set into labelled and unlabelled")
+            self._train = DataObject(
+                _ids=self.__train_ids,
+                _dataset=ZodDataset(
+                    self._zod_frames,
+                    self.__train_ids,
+                    transforms=transforms,
+                    config=full_config,
+                ),
+                _loader_args=self._config["dataloader_args"],
+            )
+        if self._config.get("split_train") is not None:
+            self._config["dataloader_args"]["batch_size"] = sum(self._config["dataloader_args"]["batch_size"])            
         self._val = DataObject(
             _ids=self.__val_ids,
             _dataset=ZodDataset(
@@ -236,11 +295,21 @@ class DataHandler:
         )
 
         # Log the number of samples in each set
-        logger.info(
-            "Training samples: {}, Validation samples: {}, Test samples: {}".format(
-                len(self._train), len(self._val), len(self._test)
+        if self._config.get("split_train") is not None: 
+            logger.info(
+                "Training samples: (labelled: {}, unlabelled: {}), Validation samples: {}, Test samples: {} ".format(
+                    len(self._train_labelled),
+                    len(self._train_unlabelled),
+                    len(self._val),
+                    len(self._test),
+                )
             )
-        )
+        else:
+            logger.info(
+                "Training samples: {}, Validation samples: {}, Test samples: {}".format(
+                    len(self._train), len(self._val), len(self._test)
+                )
+            )
 
         # Create decentralised data objects
         if full_config["federated"]["train"]:
@@ -254,19 +323,52 @@ class DataHandler:
 
     def create_decentralised_datasets(self, config: dict, method: str) -> None:
         n_clients = config[method]["global"]["n_clients"]
-        logger.info("[{}] Splitting dataset for {} clients".format(
-            method, n_clients))
+        logger.info("[{}] Splitting dataset for {} clients".format(method, n_clients))
 
         writer = SummaryWriter(self.log_dir)
+        if config["data"].get("split_train"):
+            train_datasets_labelled = [self._train.labelled.dataset] * n_clients
+            sample_distribution = [len(x) for x in train_datasets_labelled]
+            logger.debug("Sample distribution: {}".format(sample_distribution))
+            # legacy code below, not sure it is needed.
+            # split_dataset(
+            #     self._train.labelled.dataset,
+            #     n_clients,
+            #     seed=self._config["shuffle_seed"],
+            #     distribution="uniform",
+            #     writer=writer,
+            #     subtitle="training_labelled",
+            # )
+            train_datasets_unlabelled = split_dataset(
+                self._train.unlabelled.dataset,
+                n_clients,
+                seed=self._config["shuffle_seed"],
+                distribution="uniform",
+                writer=writer,
+                subtitle="training_unlabelled",
+            )
+            train = DataObject(
+                labelled = DataObject(
+                    _datasets=train_datasets_labelled,
+                    _loader_args=self._config["dataloader_args"],
+                ), 
+                unlabelled = DataObject(
+                    _datasets=train_datasets_unlabelled,
+                    _loader_args=self._config["dataloader_args"],
+                )
+            )
+            
+        else:
+            train_datasets = split_dataset(
+                self._train.dataset,
+                n_clients,
+                seed=self._config["shuffle_seed"],
+                distribution="uniform",
+                writer=writer,
+                subtitle="training",
+            )
+            train = DataObject(_datasets=train_datasets, _loader_args=self._config["dataloader_args"])
 
-        train_datasets = split_dataset(
-            self._train.dataset,
-            n_clients,
-            seed=self._config["shuffle_seed"],
-            distribution="uniform",
-            writer=writer,
-            subtitle="training",
-        )
         validation_datasets = split_dataset(
             self._val.dataset,
             n_clients,
@@ -280,11 +382,9 @@ class DataHandler:
             method,
             DataObject(
                 _n_clients=n_clients,
-                _train=DataObject(
-                    _datasets=train_datasets,
-                    _loader_args=self._config["dataloader_args"],
-                ),
+                _train=train,
                 _val=DataObject(
+                    _dataset=self._val.dataset,
                     _datasets=validation_datasets,
                     _loader_args=self._config["dataloader_args"],
                 ),
@@ -294,9 +394,11 @@ class DataHandler:
 
         writer.close()
 
-    def _ratio(self, ratio, data):
-        # TODO: shuffle data? and hash indicies?
-        return data[: int(len(data) * ratio)]
+    def _ratio(self, ratio, data, inverse=False):
+        if inverse:
+            return data[int(len(data) * ratio) :]
+        else:
+            return data[: int(len(data) * ratio)]
 
     @property
     def config(self) -> dict:
@@ -413,8 +515,7 @@ def split_dataset(
         lengths = [int(len(data) * d) for d in distribution]
 
         # check error size
-        pct_errors = [1 - p / len(data) / d for p,
-                      d in zip(lengths, distribution)]
+        pct_errors = [1 - p / len(data) / d for p, d in zip(lengths, distribution)]
 
         # if error is greater than 5%, raise error
         if max(pct_errors) > 0.05:

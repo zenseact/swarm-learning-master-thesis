@@ -5,8 +5,9 @@ from zod import ZodFrames
 import concurrent.futures
 import logging
 
-logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
 
 def process_image(i, zod_frames):
@@ -33,7 +34,9 @@ def calculate_mean_std():
 
     logging.info("Starting loop")
     with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
-        for step, (mean_i, squared_mean_i) in enumerate(executor.map(process_image, ids, [zod_frames] * num_images)):
+        for step, (mean_i, squared_mean_i) in enumerate(
+            executor.map(process_image, ids, [zod_frames] * num_images)
+        ):
             if step % 1000 == 0:
                 logging.info(f"Processing image {step}/{num_images}")
             mean += mean_i
