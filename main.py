@@ -19,8 +19,8 @@ def main(
     ray_init_args = {
         "ignore_reinit_error": True,
         "include_dashboard": False,
-        "object_store_memory": 1024 * 1024 * 1024/(global_configs.NUM_CLIENTS*1.2), # for some reason clients have to share 1 GB memory.. But its fine probably
-        "num_cpus" : 4,
+        "object_store_memory": global_configs.GB_RAM * 1024 * 1024 * 1024/(global_configs.NUM_CLIENTS), # for some reason clients have to share 1 GB memory.. But its fine probably
+        "num_cpus" : global_configs.NUM_CPUS,
     }
     ray.init(**ray_init_args)  # type: ignore
     fleet_log(

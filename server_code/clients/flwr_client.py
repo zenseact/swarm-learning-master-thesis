@@ -3,6 +3,8 @@ from edge_com.edge_com import EdgeCom
 import flwr as fl
 from common.logger import fleet_log
 from logging import INFO
+from common.static_params import global_configs
+from server_code.clients.simulated_train import train_simulated
 
 class FlowerClient(fl.client.NumPyClient):
     def __init__(self, cid, edge_handler: EdgeHandler, tb_path=None, federated_subpath=None):
@@ -16,7 +18,10 @@ class FlowerClient(fl.client.NumPyClient):
         #self.tb_writer = SummaryWriter(self.tb_path)s
 
     def fit(self, parameters, config):
-        fleet_log(INFO,f'Starting edge devie training process for cid: {self.cid}')
-        params = self.edge_com.update_model(self.cid)
-        # return 1 as nr of training examples for now
+        if global_configs.SIMULATED:
+            params = train_simulated(parameters, self.cid)
+        else:
+            fleet_log(INFO,'Starting edge devie training process for cid: {self.cid}')
+            params = self.edge_com.update_model(self.cid)
+            # return 1 as nr of training examples for now
         return params, 1, {}

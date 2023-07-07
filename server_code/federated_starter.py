@@ -52,8 +52,8 @@ class FederatedStarter:
         return dict(server_round=server_round)
 
     def create_server_strategy(self,
-                               fraction_fit=1, fraction_evaluate=1, min_fit_clients=global_configs.NUM_CLIENTS,
-                               min_evaluate_clients=global_configs.NUM_CLIENTS, min_available_clients=global_configs.NUM_CLIENTS):
+                               fraction_fit=global_configs.FRACTION_FIT, fraction_evaluate=1, min_evaluate_clients=global_configs.NUM_CLIENTS, 
+                               min_available_clients=global_configs.NUM_CLIENTS):
         # Pass parameters to the Strategy for server-side parameter initialization
         server_model = net_instance(f"server")
         server_params = get_parameters(server_model)
@@ -62,10 +62,10 @@ class FederatedStarter:
         strategy = BaseStrategy(
             fraction_fit=fraction_fit,
             fraction_evaluate=fraction_evaluate,
-            min_fit_clients=min_fit_clients,
             min_evaluate_clients=min_evaluate_clients,
             min_available_clients=min_available_clients,
             initial_parameters=fl.common.ndarrays_to_parameters(server_params),
+            min_fit_clients = 1,
             evaluate_fn=self.evaluate,
             on_fit_config_fn=self.on_fit_config_fn
         )
@@ -77,9 +77,12 @@ class FederatedStarter:
         partitions_not_to_use = 1/global_configs.PERCENTAGE_OF_DATA
         partition_train_data(PartitionStrategy.RANDOM, int(global_configs.NUM_CLIENTS*partitions_not_to_use))
 
-        # Available edge devices shared dictionary
-        shared_device_dict = global_configs.DEVICE_DICT
-        shared_dict_remote = SharedDict.remote(shared_device_dict)
+        if global_configs.SIMULATED:
+            shared_dict_remote = None
+        else:
+            # Available edge devices shared dictionary
+            shared_device_dict = global_configs.DEVICE_DICT
+            shared_dict_remote = SharedDict.remote(shared_device_dict)
 
         self.edge_handler = EdgeHandler(1, shared_dict_remote)
 
@@ -91,6 +94,7 @@ class FederatedStarter:
             client_resources=self.client_resources,
             strategy=self.create_server_strategy(),
             keep_initialised=True,
+            
         )
         
 

@@ -22,6 +22,7 @@ dependencies:
 - pytest
 - pytest-mock
 - pip:
+  - pytorch-lightning
   - pygit2
   - paramiko
   - PyQt5

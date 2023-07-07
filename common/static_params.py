@@ -17,13 +17,17 @@ class PartitionStrategy(Enum):
 @dataclass
 class GlobalConfigs:
     def __init__(self):
+        self.SIMULATED = False
+        self.NUM_CPUS = 6 # how many processes to allow ray to start up
+        self.GB_RAM = 2 # how many GB ram per process
+        self.FRACTION_FIT = 1 # percentage of total clients to use in a round
         self.SERVER_MAIN_PATH = "/root/Fleet/fleet-learning/"
         self.VM_IP = '172.25.16.67'
         self.VM_KEY_PATH = '/home/nvidia/.ssh/id_rsa'
 
         self.DEVICE_DICT = {
-                    # "agx4.nodes.edgelab.network" : 0, NOT WORKING ATM, fix it!! (flush and reinstall)
-                    "agx6.nodes.edgelab.network": 0,
+                    "agx4.nodes.edgelab.network" : 0,
+                    # "agx6.nodes.edgelab.network": 0, reinstall
                     "agx9.nodes.edgelab.network": 0,
                     "agx10.nodes.edgelab.network": 0,
                     "orin1.nodes.edgelab.network": 0,
@@ -32,7 +36,7 @@ class GlobalConfigs:
 
         self.TARGET_DISTANCES = [5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 70, 80, 95, 110, 125, 145, 165]
         self.NUM_CLIENTS = len(self.DEVICE_DICT.keys())
-        self.PERCENTAGE_OF_DATA = 0.02
+        self.PERCENTAGE_OF_DATA = 0.005
         self.NUM_OUTPUT = 51
         self.IMG_SIZE = 256
         self.RUN_PRETRAINED = False
