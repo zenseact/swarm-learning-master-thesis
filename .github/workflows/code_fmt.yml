@@ -1,0 +1,32 @@
+name: Code formatting
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  code-fmt:
+    name: black
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the commit that triggered the workflow
+        uses: actions/checkout@v3.2.0
+
+      - name: Load project python version from .env.dev file
+        id: dotenv
+        uses: falti/dotenv-action@v1.0.2
+        with:
+          path: ".env.dev"
+
+      - name: Setup python
+        uses: actions/setup-python@v4.3.1
+        with:
+          python-version: ${{ steps.dotenv.outputs.python_version }}
+
+      - name: Install code formatting dependencies
+        run: pip install black~=22.3.0
+
+      - name: Run black formatting check
+        run: black . --check --diff

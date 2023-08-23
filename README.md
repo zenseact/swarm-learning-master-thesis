@@ -25,4 +25,8 @@ bash Anaconda3-2021.11-Linux-x86_64.sh
 
 `conda activate fleet`
 
+`pip install -e .`
+
 Now you have a virtual environment from which you can use all functionalities in the ZOD sdk and you have pytorch installed also!
+
+To create the target variables (ground truth) for ZOD, run the main function in common/groundtruth_utils.py. This will store a dictionary with frame id -> target in the global_configs.STORED_GROUND_TRUTH_PATH path. - NOTE: there will be many failed frames that looks like errors.

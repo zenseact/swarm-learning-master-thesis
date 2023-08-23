@@ -141,3 +141,5 @@ output.log
 *.tar
 .vscode
 *.npz
+*.DS_Store
+tmp/global_params/*.npz

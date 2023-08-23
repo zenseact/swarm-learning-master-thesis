@@ -1,11 +1,14 @@
 name: fleet
 channels:
-- defaults
-- pytorch
+  - pytorch
+  - nvidia
+  - defaults
 dependencies:
 - python=3.8
 - pytorch
 - torchvision
+- torchaudio
+- pytorch-cuda=11.8
 - cudatoolkit
 - pip
 - numpy
@@ -43,14 +46,15 @@ dependencies:
   - pyproj==3
   - plotly==5.11.0
   - ipykernel>=5
-  - zod[cli]==0.1.8
+  - zod[cli]==0.3.3
   - imageio
   - timezonefinder
   - flwr[simulation]
   - pyyaml
-  - psycopg2
+  # - psycopg2
   - sqlparse
   - numba
   - networkx
   - torchsummary
   - Flask 
+  - black~=22.3.0

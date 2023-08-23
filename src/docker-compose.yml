@@ -1,0 +1,40 @@
+version: "3"
+services:
+  az-server:
+    image: server-app
+    volumes:
+      - /mnt/ZOD2/:/mnt/ZOD2/
+    command: python -u src/server/server_main.py
+    ports:
+      - 65432:65432
+    environment:
+      - "constraint:node==172.25.16.71"
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: "on-failure"
+  agx-scheduler:
+    image: scheduler-app
+    volumes:
+      - /mnt/ZOD2/:/mnt/ZOD2/
+    command: python -u src/scheduler/scheduler_main.py
+    ports:
+      - 59999:59999
+    environment:
+      - "constraint:node==agx6.nodes.lab.ai.se"
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: "on-failure"
+  vv-client:
+    image: client-app
+    command: python -u src/client/client_main.py
+    depends_on:
+      - az-server
+      - agx-scheduler
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: "on-failure"
+    environment:
+      - "contraint:node==172.25.16.68"

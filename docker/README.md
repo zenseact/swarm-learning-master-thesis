@@ -18,5 +18,5 @@ docker load -i <path to image tar file>
 
 
 ```docker
-docker run -v /mnt/ZOD:/mnt/ZOD <image name> --cpus=<num_cpus> -m <num_of_GB>GB
+docker run -v /mnt/ZOD2:/mnt/ZOD2 <image name> --cpus=<num_cpus> -m <num_of_GB>GB
 ```

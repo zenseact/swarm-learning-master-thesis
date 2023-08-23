@@ -22,6 +22,7 @@ dependencies:
   - unidecode
   - pytest
   - pytest-mock
+  - libgl1-mesa-glx
   - pip:
       - pytorch-lightning
       - pygit2
@@ -45,15 +46,16 @@ dependencies:
       - pyproj
       - plotly==5.11.0
       - ipykernel>=5
-      - zod[cli]==0.1.8
+      - zod[cli]==0.3.3
       - imageio
       - timezonefinder
       - flwr[simulation]
       - pyyaml
-      - psycopg2
+      # - psycopg2
       - sqlparse
       - tqdm
       - numba
       - networkx
       - Flask
       - torch-summary
+      - black~=22.3.0

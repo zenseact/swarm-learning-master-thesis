@@ -1,5 +1,31 @@
 # pyproject.toml
+
+# -------------------------------------- Tools -----------------------------------------
 [tool.pytest.ini_options]
 filterwarnings = [
     "ignore:Blowfish has been deprecated:cryptography.utils.CryptographyDeprecationWarning",
     ]
+
+[tool.black]
+line-length = 88
+# Uses the minimum supported Python version.
+# Must be kept in sync with the version specified in .env.dev.
+target-version = ["py39"]
+include = '\.pyi?$'
+exclude = '''
+(
+  /(
+      \.eggs
+    | \.git
+    | \.hg
+    | \.ipynb_checkpoints
+    | \.mypy_cache
+    | \.tox
+    | \.venv
+    | _build
+    | buck-out
+    | build
+    | dist
+  )/
+)
+'''
