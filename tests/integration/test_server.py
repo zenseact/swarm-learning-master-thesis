@@ -10,7 +10,7 @@ import numpy as np
 from flwr.common import FitRes, Status, Code, ndarrays_to_parameters, EvaluateRes
 import ray
 
-from src.common.static_params import global_configs
+from fleetlearning.common.static_params import global_configs
 
 
 @pytest.fixture(autouse=True)
@@ -37,7 +37,7 @@ def mock_static_params(mocker):
 
 @pytest.fixture()
 def model_parameters():
-    from src.common.utilities import net_instance, get_parameters
+    from fleetlearning.common.utilities import net_instance, get_parameters
 
     model = net_instance("dummy_name")
     params = get_parameters(model)
@@ -103,7 +103,7 @@ def test_pipeline_server(caplog):
             os.remove(os.path.join(ROOT, "tmp", file))
 
     # run main script
-    import src.server.server_main as server_main
+    import fleetlearning.server.server_main as server_main
 
     reload(server_main)  # to avoid using cached non-mocked global params
     server_main.main()

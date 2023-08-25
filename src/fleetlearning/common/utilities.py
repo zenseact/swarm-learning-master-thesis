@@ -1,5 +1,5 @@
-from common.static_params import TASK, global_configs
-from common.models import PTNet, Net
+from fleetlearning.common.static_params import TASK, global_configs
+from fleetlearning.common.models import PTNet, Net
 
 from collections import OrderedDict
 import numpy as np
@@ -8,7 +8,7 @@ import gc
 import time
 from matplotlib import pyplot as plt
 from typing import List
-from common.logger import fleet_log
+from fleetlearning.common.logger import fleet_log
 from logging import INFO
 
 # from torch.utils.tensorboard import SummaryWriter
@@ -41,7 +41,7 @@ def train(
         epoch_train_losses.append(sum(batch_train_losses) / len(batch_train_losses))
         epoch_val_losses.append(test(net, valloader))
         print(
-            f"[AGX] Epcoh completed in {time.time()-tstart:.2f} seconds with {len(trainloader)} batches of batch size {global_configs.BATCH_SIZE}"
+            f"[AGX] Epoch completed in {time.time()-tstart:.2f} seconds with {len(trainloader)} batches of batch size {global_configs.BATCH_SIZE}"
         )
         print(f"[AGX] Train loss for epoch {epoch}: {epoch_train_losses[-1]:.2f}")
         print(f"[AGX] Validation loss for epoch {epoch}: {epoch_val_losses[-1][0]:.2f}")

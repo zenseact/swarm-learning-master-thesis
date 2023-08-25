@@ -7,9 +7,9 @@ import pytest
 import logging
 import numpy as np
 
-from src.common.static_params import PartitionStrategy, global_configs
-from src.common.utilities import net_instance, get_parameters
-from src.server.data_partitioner import partition_train_data
+from fleetlearning.common.static_params import PartitionStrategy, global_configs
+from fleetlearning.common.utilities import net_instance, get_parameters
+from fleetlearning.server.data_partitioner import partition_train_data
 from tests.utils.cleanup import cleanup_modules
 
 

@@ -3,7 +3,7 @@ import torchvision
 from enum import Enum
 from datetime import datetime
 from logging import INFO
-from common.logger import fleet_log
+from fleetlearning.common.logger import fleet_log
 from dataclasses import dataclass
 
 
@@ -62,15 +62,13 @@ class GlobalConfigs:
         self.BATCH_SIZE = 8
         self.VAL_FACTOR = 0.1  # percentage of train data to use for validation
         self.SUBSET_FACTOR = 0.003  # subset of test frames to use
-        self.USE_GPU = False
+        self.USE_GPU = True
         self.NUM_GLOBAL_ROUNDS = 3
         self.NUM_LOCAL_EPOCHS = 4
         self.PRINT_DEBUG_DATA = True
         self.ML_TASK = TASK.REGRESSION
         self.OUTPUT_SIZE = 66
-        self.DEVICE = torch.device(
-            "cpu"
-        )  # cuda not working on swarm.. "cuda" if self.USE_GPU else "cpu")
+        self.DEVICE = torch.device("cuda" if self.USE_GPU else "cpu")
         self.STORED_GROUND_TRUTH_PATH = "/mnt/ZOD2/ground_truth.json"
         self.DATASET_ROOT = "/mnt/ZOD2"
         self.ZENSEACT_DATASET_ROOT = "/staging/dataset_donation/round_2"

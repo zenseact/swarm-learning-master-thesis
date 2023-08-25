@@ -1,4 +1,4 @@
-from common.static_params import global_configs
+from fleetlearning.common.static_params import global_configs
 
 # from common.static_params import *
 

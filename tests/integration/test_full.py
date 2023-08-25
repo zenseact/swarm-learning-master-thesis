@@ -10,8 +10,8 @@ import pathlib
 import logging
 import numpy as np
 
-import src.server.server_main as server_main
-from src.common.static_params import global_configs
+import fleetlearning.server.server_main as server_main
+from fleetlearning.common.static_params import global_configs
 from tests.utils.cleanup import cleanup_modules
 
 

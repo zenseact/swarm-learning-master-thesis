@@ -29,5 +29,5 @@ jobs:
         with:
           push: true
           tags: fleetvinnova/fleetlearning:latest
-          file: ./src/Dockerfile
+          file: ./src/fleetlearning/Dockerfile
           

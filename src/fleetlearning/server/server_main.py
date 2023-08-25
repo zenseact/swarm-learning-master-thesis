@@ -11,18 +11,18 @@ from typing import Any
 import os
 import glob
 
-from common.static_params import global_configs, TASK, PartitionStrategy
-from common.utilities import (
+from fleetlearning.common.static_params import global_configs, TASK, PartitionStrategy
+from fleetlearning.common.utilities import (
     test,
     net_instance,
     get_parameters,
     set_parameters,
 )
-from common.logger import fleet_log
-from common.datasets import ZODImporter
-from common.socket_utils import recieve_large_message, send_large_message
-from server.data_partitioner import partition_train_data
-from server.fleet_aggregators import BaseStrategy
+from fleetlearning.common.logger import fleet_log
+from fleetlearning.common.datasets import ZODImporter
+from fleetlearning.common.socket_utils import recieve_large_message, send_large_message
+from fleetlearning.server.data_partitioner import partition_train_data
+from fleetlearning.server.fleet_aggregators import BaseStrategy
 
 
 class GpuServer:

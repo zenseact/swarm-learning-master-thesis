@@ -1,32 +1,76 @@
-# Quick installation for command line tools including pytorch and ZOD sdk
+# Federated Fleet Learning
 
-* Download Anaconda Python from https://www.anaconda.com/distribution/ if you don't have it locally.
+## Environment setup
+To execute the scripts, create an environment and install the dependencies using the following steps:
 
-OR:
+Create a new vitual environment:
 
-curl -O https://repo.anaconda.com/archive/Anaconda3-2021.11-Linux-x86_64.sh
+```bash
+python3 -m venv .venv
+```
 
-bash Anaconda3-2021.11-Linux-x86_64.sh 
+Activate the environment:
+```bash
+source .venv/bin/activate
+```
 
-* After installation, run the command `conda init`
+If make is not installed, install it:
+```bash
+apt install make
+```
 
-* Close all terminal windows currently open (the conda init step above will not have any effect on existing terminal windows - only on new ones).
+Make sure you have the latest pip version:
+```bash
+python3 -m pip install --upgrade pip
+```
 
-* Run the following command in the terminal if you intend to use cpu (Mac or Linux)
+Finally, install all the dependencies with 
+```bash
+make install-dev
+```
 
-`conda env create -f conda-environment-files/conda-environment-cpu-unix.yml`
+If you are on a Nvidia edge node, make sure Cuda and Nvidia cuda compiler driver is installed:
+```bash
+apt show cuda
+nvcc --version
+```
 
-* OR the following if you use GPU (customize cuda version if neaded). This works on Mac and Linux.
-* Note! You need to change the version of CUDA drivers in the yml script before running the following command so you don't get inconsistent version with TorchVision  
+If your device has a GPU, install cude compatible packages with
+```bash
+make install-gpu
+```
 
-`conda env create -f conda-environment-files/conda-environment-gpu-unix.yml`
+Now you have a virtual environment!
 
-* Run
+## Mounting the ZOD dataset
+If the dataset is not mounted on your node, mount it with the following steps.
+This tool might be needed:
 
-`conda activate fleet`
+```bash
+sudo apt install nfs-common
+```
+To find out what you can mount:
+```bash
+showmount -e 172.25.16.66
+```
+To mount the new ZOD2 dataset on a VM or Edge Device in the edge lab:
+```bash
+sudo mkdir /mnt/ZOD2
+```
+```bash
+sudo chmod 775 /mnt/ZOD2
+```
+```bash
+sudo mount 172.25.16.66:/ZOD2_clone_vlan2002 /mnt/ZOD2
+```
+```bash
+sudo vi /etc/fstab
+```
 
-`pip install -e .`
+Add: 
+```bash
+172.25.16.66:/ZOD2_clone_vlan2002 /mnt/ZOD2 nfs defaults 0 0
+```
 
-Now you have a virtual environment from which you can use all functionalities in the ZOD sdk and you have pytorch installed also!
-
-To create the target variables (ground truth) for ZOD, run the main function in common/groundtruth_utils.py. This will store a dictionary with frame id -> target in the global_configs.STORED_GROUND_TRUTH_PATH path. - NOTE: there will be many failed frames that looks like errors.
+## Ground truth generation
+If the mounted dataset does not contain a ground truth, this needs to be generated. To create the target variables (ground truth) for ZOD, run the main function in common/groundtruth_utils.py. This will store a dictionary with frame id -> target in the global_configs.STORED_GROUND_TRUTH_PATH path. - NOTE: there will be many failed frames that looks like errors.

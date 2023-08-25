@@ -6,10 +6,10 @@ from logging import INFO
 import torch
 import pytest
 
-from src.server.data_partitioner import partition_train_data
-from src.common.static_params import PartitionStrategy
-from src.common.logger import fleet_log
-from src.common.static_params import global_configs
+from fleetlearning.server.data_partitioner import partition_train_data
+from fleetlearning.common.static_params import PartitionStrategy
+from fleetlearning.common.logger import fleet_log
+from fleetlearning.common.static_params import global_configs
 
 
 @pytest.fixture(autouse=True)
@@ -42,7 +42,7 @@ def test_dataloader(mock_static_params):
     fleet_log(INFO, partitions["1"][:5])
 
     # create dataloaders for first client
-    from src.scheduler.data_loader import load_datasets
+    from fleetlearning.scheduler.data_loader import load_datasets
 
     train_loader, val_loader, test_loader = load_datasets(partitions["0"])
     fleet_log(INFO, train_loader)
@@ -74,7 +74,7 @@ def test_dataloader(mock_static_params):
 
 
 def main():
-    test_dataloader()
+    test_dataloader(mock_static_params)
 
 
 if __name__ == "__main__":

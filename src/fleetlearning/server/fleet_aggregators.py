@@ -3,7 +3,7 @@ from typing import Optional, List, Tuple
 from flwr.common.typing import NDArrays
 from logging import INFO
 from flwr.server.strategy.aggregate import aggregate
-from common.logger import fleet_log
+from fleetlearning.common.logger import fleet_log
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 

@@ -1,13 +1,13 @@
-from common.static_params import PartitionStrategy
+from fleetlearning.common.static_params import PartitionStrategy
 from zod import ZodFrames
 import zod.constants as constants
 import random
 import numpy as np
-from common.static_params import global_configs
-from common.groundtruth_utils import load_ground_truth
-from common.logger import fleet_log
+from fleetlearning.common.static_params import global_configs
+from fleetlearning.common.groundtruth_utils import load_ground_truth
+from fleetlearning.common.logger import fleet_log
 from logging import INFO
-from common.datasets import ZODImporter
+from fleetlearning.common.datasets import ZODImporter
 
 # Data partition will be saved as a dictionary client_cid -> [frames_id's] and this dict is
 # downloaded by the client that loads the correct elements by the idx list in the dictionary

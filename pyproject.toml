@@ -1,10 +1,72 @@
 # pyproject.toml
 
+[build-system]
+requires = ["setuptools>=65.5.1", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+# name and version fields are mandatory
+name = "fleet-learning"
+# To keep in sync with the project version specified in fleetlearning/__version__.py
+version = "0.1.0"
+# To keep in sync with the project version specified in .env.dev
+requires-python = ">=3.9, <3.10"
+
+[project.optional-dependencies]
+
+
+default = [
+  "click~=8.0", 
+  "python-dotenv", 
+  "filelock>=3.12.2",
+  "torch~=2.0.1",
+  "torchvision~=0.15.2",
+  "flwr~=1.4.0",
+  "zod[cli]==0.3.3",
+  "matplotlib~=3.7.1",
+  "numpy~=1.23.5",
+  "opencv_python~=4.7.0.72",
+  "pytorch_lightning~=2.0.7",
+  ]
+
+dev = [
+  "fleet-learning[test,lint,formatter,docs]",
+  "ipython",
+  "pre-commit",
+  "tqdm~=4.65.2",
+]
+
+test = [
+  "fleet-learning[default]",
+  "pytest>=7.0",
+  "pytest-cov",
+  "pytest-mock",
+  "tomli",
+  "ray~=2.2.0",
+  "paramiko",
+]
+lint = ["ruff>=0.0.220"]
+formatter = ["black>=22.4.0"]
+docs = ["fleet-learning[default]", "sphinx-rtd-theme==1.0.0"]
+
+
 # -------------------------------------- Tools -----------------------------------------
 [tool.pytest.ini_options]
 filterwarnings = [
-    "ignore:Blowfish has been deprecated:cryptography.utils.CryptographyDeprecationWarning",
-    ]
+  "ignore:Blowfish has been deprecated:cryptography.utils.CryptographyDeprecationWarning",
+]
+addopts = [
+  "-ra",
+  "--cov",
+  "--cov-config=pyproject.toml",
+  "--import-mode=importlib",
+  "--color=yes",
+]
+minversion = "7.0"
+testpaths = [
+  "tests/unit",
+]
+
 
 [tool.black]
 line-length = 88
@@ -29,3 +91,113 @@ exclude = '''
   )/
 )
 '''
+
+
+# ======================================== Ruff ========================================
+
+[tool.ruff]
+line-length = 88
+target-version = "py39"
+
+select = [
+  "ANN", # flake8-annotations
+  "ARG", # flake8-unused-arguments
+  "B",   # flake8-bugbear
+  "C4",  # flake8-comprehensions
+  "C90", # mccabe
+  "D",   # pydocstyle
+  "DTZ", # flake8-datetimez
+  "E",   # pycodestyle
+  "ERA", # eradicate
+  "F",   # Pyflakes
+  "I",   # isort
+  "N",   # pep8-naming
+  "PD",  # pandas-vet
+  "PGH", # pygrep-hooks
+  "PLC", # Pylint
+  "PLE", # Pylint
+  "PLR", # Pylint
+  "PLW", # Pylint
+  "PT",  # flake8-pytest-style
+  "Q",   # flake8-quotes
+  "RET", # flake8-return
+  "S",   # flake8-bandit
+  "SIM", # flake8-simplify
+  "T20", # flake8-print
+  "TID", # flake8-tidy-imports
+  "W",   # pycodestyle
+]
+
+exclude = [
+  ".eggs",
+  ".git",
+  ".ipynb_checkpoints",
+  ".mypy_cache",
+  ".ruff_cache",
+  ".tox",
+  ".venv",
+  "*.egg",
+  "*.pxd",
+  "*.pyx",
+  "*cookiecutter.repo_name*",
+  "__pycache__",
+  "__pypackages__",
+  "_build",
+  "build",
+  "dist",
+]
+
+ignore = [
+  # ================================ flake8-annotations ================================
+  "ANN002", # Missing type annotation for *args
+  "ANN003", # Missing type annotation for **kwargs
+  "ANN101", # Missing type annotation for self in method
+  "ANN102", # Missing type annotation for cls in method
+  # ================================== flake8-commas ===================================
+  # flake8-commas is not supported by Ruff, neither it is on the roadmap yet.
+  # "C812",    # Missing trailing comma
+  # ================================= flake8-functions =================================
+  # flake8-functions is not supported by Ruff, neither it is on the roadmap yet.
+  # "CFQ001",    # Function length (default max length is 100)
+  # "CFQ003",    # Function is not pure (reproducible)
+  # ==================================== pydocstyle ====================================
+  "D107", # Missing docstring in __init__
+  "D200", # One-line docstring should fit on one line with quotes
+  "D212", # Multi-line docstring summary should start at the first line
+  # ===================================== darglint =====================================
+  # darglint support is WIP, see https://github.com/charliermarsh/ruff/issues/458.
+  # "DAR103",  # Parameter type mismatch:  ~arg2: expected str but was str, optional
+  # "DAR402",  # Excess exception(s) in Raises section: +r Exception
+  # ================================== flake8-quotes ===================================
+  "Q000", # Remove bad quotes
+  # ================================== flake8-bandit ===================================
+  "S101", # Use of assert detected. The enclosed code will be removed when compiling
+  # to optimised byte code.
+]
+
+[tool.ruff.per-file-ignores]
+"tests/*" = [
+  "D100", # Missing docstring in public module
+  "D103", # Missing docstring in public function
+]
+
+# darglint support is WIP, see https://github.com/charliermarsh/ruff/issues/458.
+# [tool.ruff.darglint]
+# strictness = long
+
+# flake8-functions is not supported by Ruff, neither is it on the roadmap yet.
+# [tool.ruff.functions]
+# max-parameters-amount = 4
+
+[tool.ruff.isort]
+force-sort-within-sections = true
+single-line-exclusions = ["typing", "collections.abc"]
+
+[tool.ruff.mccabe]
+max-complexity = 6
+
+[tool.ruff.pep8-naming]
+classmethod-decorators = ["pydantic.validator"]
+
+[tool.ruff.pydocstyle]
+convention = "google"

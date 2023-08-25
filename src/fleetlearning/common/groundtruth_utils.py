@@ -1,4 +1,4 @@
-from common.static_params import global_configs
+from fleetlearning.common.static_params import global_configs
 
 import numpy as np
 from tqdm import tqdm
@@ -14,7 +14,7 @@ from zod.utils.geometry import (
     transform_points,
 )
 import cv2
-from common.logger import fleet_log
+from fleetlearning.common.logger import fleet_log
 from logging import INFO
 
 
