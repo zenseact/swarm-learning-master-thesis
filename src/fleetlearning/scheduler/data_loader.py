@@ -3,9 +3,9 @@ from zod.constants import Anonymization
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader, random_split
 from torch import Generator
-from common.groundtruth_utils import get_ground_truth
-from common.static_params import global_configs
-from common.groundtruth_utils import load_ground_truth
+from fleetlearning.common.groundtruth_utils import get_ground_truth
+from fleetlearning.common.static_params import global_configs
+from fleetlearning.common.groundtruth_utils import load_ground_truth
 from torch.utils.data import Dataset, RandomSampler
 
 

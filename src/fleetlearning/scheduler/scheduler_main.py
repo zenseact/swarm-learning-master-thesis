@@ -1,10 +1,10 @@
 import socket
 import threading
 import select
-from common.socket_utils import recieve_large_message, send_large_message
-from common.utilities import net_instance, get_parameters
+from fleetlearning.common.socket_utils import recieve_large_message, send_large_message
+from fleetlearning.common.utilities import net_instance, get_parameters
 from zod import ZodFrames
-from scheduler.train import train_model
+from fleetlearning.scheduler.train import train_model
 
 
 class AGX:
@@ -17,12 +17,14 @@ class AGX:
         self.TIMEOUT = 1
         self.model = net_instance("agx")
         self.zod_frames = ZodFrames(dataset_root="/mnt/ZOD2", version="full")
+        self.run_flag = True
 
     def run_scheduler(self):
         self.print_lock = threading.Lock()
         self._open_socket()
         try:
-            while True:
+            while self.run_flag:
+
                 self._update_queue()
                 self._process_queue()
 

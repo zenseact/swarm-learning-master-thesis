@@ -1,5 +1,5 @@
-from common.utilities import train, set_parameters
-from scheduler.data_loader import load_datasets
+from fleetlearning.common.utilities import train, set_parameters
+from fleetlearning.scheduler.data_loader import load_datasets
 
 
 def train_model(message_from_virtual_vehicle, model, zod_frames):

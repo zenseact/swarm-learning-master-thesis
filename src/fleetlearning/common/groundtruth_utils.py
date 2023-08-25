@@ -1,5 +1,4 @@
 from fleetlearning.common.static_params import global_configs
-
 import numpy as np
 from tqdm import tqdm
 from matplotlib import pyplot as plt
