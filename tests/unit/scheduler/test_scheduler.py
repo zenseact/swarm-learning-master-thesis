@@ -18,7 +18,6 @@ global_configs.DEVICE = "cpu"
 @patch("fleetlearning.scheduler.scheduler_main.train_model")
 @patch("fleetlearning.scheduler.scheduler_main.ZodFrames")
 def test_scheduler(MockedZodFrames, mock_train_model, mock_get_parameters):
-
     agx = AGX(agx_ip="127.0.0.1")
 
     assert MockedZodFrames.call_count == 1
