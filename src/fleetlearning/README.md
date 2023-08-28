@@ -12,17 +12,16 @@ docker swarm join --token <ref-token-from-master-node>
 ```
 
 In a multiple hosts deployment, ensure the correct ip addresses are specified:
-- In `client_main.py`, change the `server_ip` and `agx_ip` to the corresponding IP addresses of the server node and agx node
+- Make sure the `static_params.py` file is updated with the available AGX IPs and number of clients
+- Run the script `src/fleetlearning/configure_node_ips.py`. A YAML file will be created, containing the mapping between clients and AGXs. Furthermore, the docker-compose file will be automatically updated.
+- In `client_main.py`, change the `server_ip` to the corresponding IP addresses of the server node
 - In `server_main.py`, set the server ip to `server_ip="0.0.0.0"`
 - In `scheduler_main.py`, set the agx ip to `agx_ip="0.0.0.0"`
-- In `docker-compose.yml`, set the constraints for the server node, agx node and client node to each node's corresponding ip address
-
-Finally, also ensure that the number of client replicas in `docker-compose.yml` correspond to `NUM_CLIENTS` in `static_params.py`.
 
 In a multiple hosts deployment, a pre-built image needs to be accessible on each worker node. Hence, start with building the right image on each worker by
 
 ```docker
-docker build -f src/Dockerfile . -t <tag-of-application>
+docker build -f src/fleetlearning/Dockerfile . -t <tag-of-application>
 ```
 
 If bulding the docker images on the AGXes is difficult, you can build them elsewhere and then export them as .tar files:
@@ -55,13 +54,13 @@ worker-app:
   server:
   image: <local-server-img> 
   environment:
-  - "contraint:node==<ip-adress-of-host>"
+  - "constraint:node==<ip-adress-of-host>"
 ```
 
 To run the full deployment, run following command on the master node:
 
 ```docker
- docker stack deploy -c docker-compose.yml <name-of-deployment>
+ docker stack deploy -c src/fleetlearning/docker-compose.yml <name-of-deployment>
 ```
 
 To remove the deployment, run:

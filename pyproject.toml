@@ -16,8 +16,8 @@ requires-python = ">=3.9, <3.10"
 
 
 default = [
-  "click~=8.0", 
-  "python-dotenv", 
+  "click~=8.0",
+  "python-dotenv",
   "filelock>=3.12.2",
   "torch~=2.0.1",
   "torchvision~=0.15.2",
@@ -27,7 +27,7 @@ default = [
   "numpy~=1.23.5",
   "opencv_python~=4.7.0.72",
   "pytorch_lightning~=2.0.7",
-  ]
+]
 
 dev = [
   "fleet-learning[test,lint,formatter,docs]",
@@ -63,9 +63,7 @@ addopts = [
   "--color=yes",
 ]
 minversion = "7.0"
-testpaths = [
-  "tests/unit",
-]
+testpaths = ["tests/unit"]
 
 
 [tool.black]

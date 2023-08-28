@@ -17,7 +17,7 @@ random.seed(2023)
 
 # load data based on cid and strategy
 def partition_train_data(
-    strat: PartitionStrategy, no_clients: int, zod_importer: ZODImporter
+    strat: PartitionStrategy, no_clients: int, zod_importer: ZODImporter, ip_maps: dict
 ):
     zod_frames = zod_importer.zod_frames
     training_frames_all = zod_frames.get_split(constants.TRAIN)
@@ -33,12 +33,11 @@ def partition_train_data(
     training_frames_all
 
     if strat == PartitionStrategy.RANDOM:
-        # cids are 0,1,2..N
         cid_partitions = {}
         random.shuffle(training_frames_all)
         sublist_size = len(training_frames_all) // no_clients
-        for i in range(no_clients):
-            cid_partitions[str(i)] = training_frames_all[
+        for i, client_ID in enumerate(ip_maps["client_id_to_node_map"].keys()):
+            cid_partitions[str(client_ID)] = training_frames_all[
                 i * sublist_size : (i + 1) * sublist_size
             ]
         # save partitions for clients to download

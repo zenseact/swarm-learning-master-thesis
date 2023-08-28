@@ -72,17 +72,17 @@ class AGX:
             message_from_virtual_vehicle = recieve_large_message(conn)
 
             if message_from_virtual_vehicle["message"] == "HELLO":
-                client_id = message_from_virtual_vehicle["data"]["client_id"]
+                self.client_id = message_from_virtual_vehicle["data"]["client_id"]
                 print("[AGX] Received msg from virtual vehicle: HELLO")
                 message_to_virtual_vehicle = {
                     "message": "TASK_SCHEDULED",
-                    "data": {"client_id": client_id},
+                    "data": {"client_id": self.client_id},
                 }
                 send_large_message(conn, message_to_virtual_vehicle)
 
             elif message_from_virtual_vehicle["message"] == "START":
                 print("[AGX] Received msg from virtual vehicle: START")
-                print("[AGX] Training started")
+                print(f"[AGX] Training started for client {self.client_id}")
 
                 train_model(message_from_virtual_vehicle, self.model, self.zod_frames)
 

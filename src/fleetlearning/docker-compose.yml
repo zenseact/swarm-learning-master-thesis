@@ -1,40 +1,110 @@
-version: "3"
+version: '3'
 services:
   az-server:
     image: server-app
     volumes:
-      - /mnt/ZOD2/:/mnt/ZOD2/
-    command: python -u src/server/server_main.py
+    - /mnt/ZOD2/:/mnt/ZOD2/
+    command: python -u src/fleetlearning/server/server_main.py
     ports:
-      - 65432:65432
+    - 65432:65432
     environment:
-      - "constraint:node==172.25.16.71"
+    - "constraint:node==172.25.16.71"
     deploy:
       replicas: 1
       restart_policy:
-        condition: "on-failure"
-  agx-scheduler:
+        condition: on-failure
+  agx-scheduler-1:
     image: scheduler-app
     volumes:
-      - /mnt/ZOD2/:/mnt/ZOD2/
-    command: python -u src/scheduler/scheduler_main.py
+    - /mnt/ZOD2/:/mnt/ZOD2/
+    command: python -u src/fleetlearning/scheduler/scheduler_main.py
     ports:
-      - 59999:59999
+    - 59999:59999
     environment:
-      - "constraint:node==agx6.nodes.lab.ai.se"
+    - "constraint:node==agx4.nodes.lab.ai.se"
     deploy:
       replicas: 1
       restart_policy:
-        condition: "on-failure"
+        condition: on-failure
+  agx-scheduler-2:
+    image: scheduler-app
+    volumes:
+    - /mnt/ZOD2/:/mnt/ZOD2/
+    command: python -u src/fleetlearning/scheduler/scheduler_main.py
+    ports:
+    - 59999:59999
+    environment:
+    - "constraint:node==agx6.nodes.lab.ai.se"
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+  agx-scheduler-3:
+    image: scheduler-app
+    volumes:
+    - /mnt/ZOD2/:/mnt/ZOD2/
+    command: python -u src/fleetlearning/scheduler/scheduler_main.py
+    ports:
+    - 59999:59999
+    environment:
+    - "constraint:node==agx9.nodes.lab.ai.se"
+    deploy:
+      replicas: 0
+      restart_policy:
+        condition: on-failure
+  agx-scheduler-4:
+    image: scheduler-app
+    volumes:
+    - /mnt/ZOD2/:/mnt/ZOD2/
+    command: python -u src/fleetlearning/scheduler/scheduler_main.py
+    ports:
+    - 59999:59999
+    environment:
+    - "constraint:node==agx10.nodes.lab.ai.se"
+    deploy:
+      replicas: 0
+      restart_policy:
+        condition: on-failure
+  agx-scheduler-5:
+    image: scheduler-app
+    volumes:
+    - /mnt/ZOD2/:/mnt/ZOD2/
+    command: python -u src/fleetlearning/scheduler/scheduler_main.py
+    ports:
+    - 59999:59999
+    environment:
+    - "constraint:node==orin1.nodes.lab.ai.se"
+    deploy:
+      replicas: 0
+      restart_policy:
+        condition: on-failure
+  agx-scheduler-6:
+    image: scheduler-app
+    volumes:
+    - /mnt/ZOD2/:/mnt/ZOD2/
+    command: python -u src/fleetlearning/scheduler/scheduler_main.py
+    ports:
+    - 59999:59999
+    environment:
+    - "constraint:node==orin2.nodes.lab.ai.se"
+    deploy:
+      replicas: 0
+      restart_policy:
+        condition: on-failure
   vv-client:
     image: client-app
-    command: python -u src/client/client_main.py
+    command: python -u src/fleetlearning/client/client_main.py
     depends_on:
-      - az-server
-      - agx-scheduler
+    - az-server
+    - agx-scheduler-1
+    - agx-scheduler-2
+    - agx-scheduler-3
+    - agx-scheduler-4
+    - agx-scheduler-5
+    - agx-scheduler-6
     deploy:
       replicas: 2
       restart_policy:
-        condition: "on-failure"
+        condition: on-failure
     environment:
-      - "contraint:node==172.25.16.68"
+    - "constraint:node==172.25.16.68"

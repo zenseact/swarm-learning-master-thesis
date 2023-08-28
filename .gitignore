@@ -143,3 +143,4 @@ output.log
 *.npz
 *.DS_Store
 tmp/global_params/*.npz
+src/fleetlearning/client_maps.yaml

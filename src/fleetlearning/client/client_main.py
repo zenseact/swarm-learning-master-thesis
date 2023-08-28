@@ -1,5 +1,5 @@
 import socket
-from common.socket_utils import recieve_large_message, send_large_message
+from fleetlearning.common.socket_utils import recieve_large_message, send_large_message
 import time
 
 
@@ -8,16 +8,12 @@ class VirtualVehicle:
         self,
         server_ip="172.25.16.71",
         server_port=65432,
-        agx_ip="agx6.nodes.lab.ai.se",
         agx_port=59999,
     ):
         self.SERVER_IP = server_ip
         self.SERVER_PORT = server_port
         self.SERVER_ADDR = (self.SERVER_IP, self.SERVER_PORT)
-
-        self.AGX_IP = agx_ip
         self.AGX_PORT = agx_port
-        self.AGX_ADDR = (self.AGX_IP, self.AGX_PORT)
 
         self.socket_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket_agx = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -25,6 +21,8 @@ class VirtualVehicle:
     def _train_on_AGX(self, message_from_server):
         message_from_agx = None
         client_id = message_from_server["data"]["client_id"]
+        agx_ip = message_from_server["data"]["agx_ip"]
+        self.AGX_ADDR = (agx_ip, self.AGX_PORT)
         while True:
             try:
                 self.socket_agx.connect(self.AGX_ADDR)

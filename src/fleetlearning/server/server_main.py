@@ -21,6 +21,7 @@ from fleetlearning.common.utilities import (
 from fleetlearning.common.logger import fleet_log
 from fleetlearning.common.datasets import ZODImporter
 from fleetlearning.common.socket_utils import recieve_large_message, send_large_message
+from fleetlearning.common.ip_utils import update_ip_maps
 from fleetlearning.server.data_partitioner import partition_train_data
 from fleetlearning.server.fleet_aggregators import BaseStrategy
 
@@ -31,7 +32,7 @@ class GpuServer:
         self.PORT = server_port
         self.ADDR = (self.SERVER_IP, self.PORT)
         self.global_model = net_instance("server")
-        self.connected_clients = []
+        self.connected_clients = {}
         self.number_of_clients = global_configs.NUM_CLIENTS
         self.zod_importer = ZODImporter(
             subset_factor=global_configs.SUBSET_FACTOR,
@@ -40,12 +41,14 @@ class GpuServer:
             tb_path=global_configs.TB_PATH,
             stored_gt_path=global_configs.STORED_GROUND_TRUTH_PATH,
         )
+        self.ip_map = update_ip_maps()
         self.data_partitions = partition_train_data(
             strat=PartitionStrategy.RANDOM,
-            no_clients=int(  # todo fix
+            no_clients=int(  # TODO: fix
                 global_configs.NUM_CLIENTS * (1 / global_configs.PERCENTAGE_OF_DATA)
             ),
             zod_importer=self.zod_importer,
+            ip_maps=self.ip_map,
         )
         self.strategy = BaseStrategy()
         self.current_round_results = []
@@ -64,13 +67,15 @@ class GpuServer:
 
         When a client has connected, add the client to a buffer.
         """
+        unused_client_IDs = list(self.ip_map["client_id_to_node_map"].keys())
         while len(self.connected_clients) < self.number_of_clients:
             conn, addr = self.s.accept()
             new_client = (conn, addr)
             message_from_client = self._receive_message_from_client(new_client)
             if message_from_client["message"] == "HELLO":
                 print(f"[SERVER] Connected to client: {addr[0]} port {addr[1]}")
-                self.connected_clients.append(new_client)
+                client_ID = unused_client_IDs.pop(0)
+                self.connected_clients[client_ID] = new_client
 
     def _create_dataloader(self) -> DataLoader:
         """Create a server side test dataloader for ZOD.
@@ -84,7 +89,8 @@ class GpuServer:
 
     def _send_model_and_partitions(self):
         """Send ML model and data partitions to clients."""
-        for client_id, connected_client in enumerate(self.connected_clients):
+
+        for client_id, connected_client in self.connected_clients.items():
             message_to_client = {
                 "message": "START",
                 "data": {
@@ -92,6 +98,7 @@ class GpuServer:
                     "model": get_parameters(self.global_model),
                     "partitions": self.data_partitions[str(client_id)],
                     "configs": None,
+                    "agx_ip": self.ip_map["client_id_to_node_map"][client_id],
                 },
             }
 
@@ -114,7 +121,7 @@ class GpuServer:
             Tuple[Any, Any]: Results and failures
         """
         # wait for client results in threads
-        for connected_client in self.connected_clients:
+        for connected_client in self.connected_clients.values():
             self.print_lock.acquire()
             start_new_thread(
                 self._receive_message_from_client,
@@ -146,16 +153,16 @@ class GpuServer:
         if global_configs.ML_TASK == TASK.CLASSIFICATION:
             fleet_log(
                 INFO,
-                f"Server-side evaluation loss {float(loss)} / accuracy {float(accuracy)}",
+                f"Server-side evaluation loss {float(loss):.2f} / accuracy {float(accuracy):.2f}",
             )
             return float(loss), {"accuracy": float(accuracy)}
         else:
-            fleet_log(INFO, f"Server-side evaluation loss {float(loss)}")
+            fleet_log(INFO, f"Server-side evaluation loss {float(loss):.2f}")
             return float(loss), {}
 
     def _send_stop_message(self):
         """Send stop message to clients."""
-        for client_id, connected_client in enumerate(self.connected_clients):
+        for client_id, connected_client in self.connected_clients.items():
             message_to_client = {
                 "message": "STOP",
                 "data": {
@@ -217,10 +224,6 @@ class GpuServer:
 
     def run_server(self) -> None:
         """Server main script."""
-        # remove any leftover files from previous runs that might be broken :)
-        files = glob.glob("tmp/fit_results/*.pickle")
-        for f in files:
-            os.remove(f)
         self.testloader = self._create_dataloader()
 
         while True:
@@ -259,7 +262,7 @@ class GpuServer:
 
                 # Finish FL
                 self.s.close()
-                self.connected_clients = []
+                self.connected_clients = {}
                 print("[SERVER] FL session finished.\n")
 
             except KeyboardInterrupt as e:
